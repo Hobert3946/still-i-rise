@@ -1765,7 +1765,27 @@ function rMais() {
   </section>
   
   <section class="card">
-    <div class="lbl">Dados e backup</div>
+    <div class="row between">
+        <h2 class="h1">Backup em Nuvem (Automático)</h2>
+        <span class="badge" style="background:var(--accent); color:#fff; font-size:10px;">Cloud Sync (Gist)</span>
+      </div>
+      <p class="muted" style="font-size:14px">Gera um Gist secreto no seu GitHub automaticamente a cada alteração no app.</p>
+      
+      <label class="lbl" style="margin-top:10px">Seu Token Pessoal (GitHub PAT - escopo 'gist')</label>
+      <input class="field" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off" value="${s.ghToken ? '********' : ''}">
+      
+      <label class="lbl">Gist ID (O app cria se estiver vazio)</label>
+      <input class="field" id="ghGistId" type="text" placeholder="Ex: 5b4e72a..." autocomplete="off" value="${esc(s.ghGistId || '')}">
+      
+      <div class="grid2" style="margin-top:10px;">
+        <button class="btn solid" data-act="gh-save">Salvar Token</button>
+        <button class="btn" data-act="gh-sync">⬇️ Forçar Download</button>
+      </div>
+      <p class="muted" style="margin-top:10px; font-size:12px;">Dica: Salve o Gist ID gerado se quiser restaurar seus dados em outro aparelho.</p>
+    </section>
+
+    <section class="card">
+      <div class="lbl">Dados e backup (Manual)</div>
     <p class="muted" style="font-size:15px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
     <div class="grid2"><button class="btn" data-act="export">${ic("download")} Exportar</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
     <input type="file" id="file" accept="application/json,.json" hidden>
