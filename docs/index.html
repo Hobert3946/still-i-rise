@@ -2315,7 +2315,13 @@ function rIA() {
             <div class="lbl">Chave API do Gemini (fica só neste aparelho)</div>
             <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui">
             <label class="lbl">Modelo</label>
-            <input class="field" id="gemModel" value="${esc(S.settings.gemModel || "gemini-2.5-flash-lite")}" autocomplete="off">
+            
+            <select class="field" id="gemModel" style="margin-bottom:10px;">
+                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
+                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
+                <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
+            </select>
+
             <div style="margin-top:10px;"><button class="btn solid full" data-act="gem-save">Conectar IA</button></div>
             <p class="muted" style="font-size:14px; margin-top:15px;">A chave nunca entra no backup nem vai para a internet. Crie gratuitamente no Google AI Studio.</p>
         </section>`;
@@ -2340,7 +2346,13 @@ function rIA() {
            <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">🔧 Modelo</summary>
              <div class="body" style="padding:10px; margin-top:5px; background:var(--surface2); border-radius:8px;">
                <div class="lbl">Modelo Atual</div>
-               <input class="field" id="gemModel" value="${esc(S.settings.gemModel || "gemini-2.5-flash-lite")}" style="margin-bottom:10px;" autocomplete="off">
+               
+            <select class="field" id="gemModel" style="margin-bottom:10px;">
+                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
+                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
+                <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
+            </select>
+
                <button class="btn sm solid full" data-act="gem-save">Salvar Modelo</button>
              </div>
            </details>
