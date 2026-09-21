@@ -39,6 +39,7 @@ function save() {
   const j = JSON.stringify(S);
   try { localStorage.setItem(KEY, j); } catch (e) { }
   clearTimeout(idbTimer); idbTimer = setTimeout(() => IDB.put(j), 300);
+  cloudQueue();
 }
 async function loadState() {
   let raw = null;
@@ -158,83 +159,6 @@ function render() {
 
 /* ============ DECK ============ */
 function tipOfDay() { const n = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); return TIPS[n % TIPS.length]; }
-function orig_rDeck() {
-  const k = today(), d = D(k), L = planLetter(k), tg = TG(), tot = dayTotals(k), h = new Date().getHours();
-  const hi = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
-  const week = activeInWeek(mondayOf(k)), ds = dayStreak(), ws = weekStreak(), abs = daysAbsent();
-  const ban = [];
-  const ab = ABSENCE.find(a => abs >= a.min);
-  if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
-  if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}. Continue de onde parou.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>`));
-  const pa = painAvg(); if (pa !== null && pa >= 4) ban.push(banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`));
-  if (deloadSignal()) ban.push(banner("warn", "info", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie."));
-  const bk = S.settings.lastBackup, bdays = bk ? diffDays(k, bk) : (Object.keys(S.days).length ? diffDays(k, firstDay()) : 0);
-  if (bdays > 21) ban.push(banner("warn", "download", "Backup atrasado", `${bk ? `Último backup há ${bdays} dias.` : "Você nunca exportou um backup."} O arquivo .json é o único que sobrevive à troca de celular.`, `<div style="margin-top:8px"><button class="btn sm" data-act="export">Exportar agora</button></div>`));
-  const isMon = parseKey(k).getDay() === 1, wk = mondayOf(k);
-  if (isMon && !S.weights.some(w => w.d >= wk)) ban.push(banner("acc", "scale", "Dia de pesagem", "Segunda: ao acordar, depois do banheiro, antes de comer. Meça a cintura junto.", `<div style="margin-top:8px"><button class="btn sm solid" data-act="weigh">Registrar peso</button></div>`));
-
-  const bars = Array.from({ length: 7 }, (_, i) => { const kk = addDays(k, i - 6), c = habitCount(kk); const dd = parseKey(kk); return `<div class="d ${kk === k ? "t" : ""}"><i style="height:${Math.max(8, c / 6 * 100)}%;background:${isActive(kk) ? "var(--ok)" : c ? "var(--accent)" : "var(--surface2)"}"></i><span>${DOW[dd.getDay()][0]}</span></div>`; }).join("");
-  const wtxt = week >= 5 ? "Meta da semana cumprida." : week === 4 ? "Semana amarela: um dia a mais e fecha." : `Faltam ${5 - week} dia(s) ativos para a meta.`;
-
-  const habits = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}${id === "acucar" ? `<span class="s">Regra nº 1. Se cumprir uma só, que seja esta.</span>` : ""}</span></button>`).join("");
-
-  const doneToday = !!D(k).wk && !S.cur;
-  let wk2;
-  if (L && doneToday) {
-    const nl = seqNext();
-    wk2 = `<div class="sec-t"><span class="dot ok"></span><span class="lbl">Treino de hoje</span></div><h3 class="mid">${L} · ${PLAN[L].name} concluído</h3><p class="muted">As cargas do próximo treino já foram atualizadas. Próximo: <b>${nl} · ${PLAN[nl].name}</b>.</p><button class="btn full" data-act="goto-treino" data-day="${nl}">Ver próximo treino</button>`;
-  } else if (L) {
-    const p = PLAN[L];
-    wk2 = `<div class="row between"><div><div class="sec-t"><span class="dot"></span><span class="lbl" style="color:var(--accent-ink)">Sessão do amanhecer · ${DOW[parseKey(k).getDay()]}</span></div><h3 class="mid" style="margin-top:4px">${L} · ${p.name}</h3></div><span class="pill">05:00 · ${estMin(L)} min</span></div>
-      <p class="muted">${p.focus}. ${p.cuff ? "Começa com aquecimento de manguito." : "Sem aquecimento de manguito hoje."} ${inAdapt() ? "Semana " + weekNo() + " de adaptação: carga leve." : ""}</p>
-      <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR TREINO" : "INICIAR TREINO DO DIA"}</button>`;
-  } else wk2 = `<div class="sec-t"><span class="dot sage"></span><span class="lbl">Descanso ativo</span></div><h3 class="mid">Fim de semana</h3><p class="muted">Sem treino de academia. Caminhada livre de 30 minutos conta como hábito. Se quiser treinar, escolha um dia na aba Treino.</p>`;
-
-  const pw = Math.min(1, d.water / S.settings.waterGoal);
-  const nextM = MILESTONES.find(m => !m.test(S.profile.startWeight, Math.min(...S.weights.map(w => w.kg), S.profile.startWeight)));
-  const sup = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}<span class="s">${s}</span></span></button>`).join("");
-
-  $("#v-deck").innerHTML = `
-  <section class="card hero" style="gap:8px">
-    <div class="row between"><span class="pill">${DOW[parseKey(k).getDay()]} · ${dispDate(k)}</span><span class="lbl">Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}</span></div>
-    <div class="row" style="gap:14px;margin-top:4px"><img class="avatar lg" src="%%AVATAR%%" alt="" width="56" height="56"><h2 class="h1 grow">${hi}, ${esc(S.profile.name)}.</h2></div>
-    <p class="quote">"Still I Rise. O crescimento é orgânico, como raízes antigas que se aprofundam calmas na terra morna."</p>
-  </section>
-  ${ban.length ? `<section style="order:1;display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
-  <section class="card" style="order:4">
-    <div class="row between"><div class="sec-t"><span class="dot sage"></span><span class="lbl">Ritmo semanal</span></div><span class="pill ok">Não-punitivo</span></div>
-    <div class="row" style="gap:16px">
-      ${ring(week / 5, 112, 8, "var(--sage)", `<div><div class="big tabnum">${week}<span class="muted" style="font-size:16px">/5</span></div><div class="lbl">dias ativos</div></div>`)}
-      <div class="grow" style="display:flex;flex-direction:column;gap:10px">
-        <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
-        <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
-      </div>
-    </div>
-    <div class="week">${bars}</div>
-    <p class="muted" style="font-size:15px">${wtxt} Dia ativo = zero açúcar + 2 outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
-  </section>
-  <section class="card" style="order:3">
-    <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">Hábitos de hoje</span></div><span class="pill">${habitCount(k)}/6</span></div>
-    <div style="display:flex;flex-direction:column;gap:10px">${habits}</div>
-  </section>
-  <section class="card" style="order:2">${wk2}</section>
-  <section class="card" style="order:5">
-    <div class="row between"><div class="sec-t"><span class="dot" style="background:var(--sage)"></span><span class="lbl">Hidratação</span></div><span class="lbl">Meta ${S.settings.waterGoal / 1000} L</span></div>
-    <div class="row between" style="align-items:baseline"><div><span class="big tabnum">${(d.water / 1000).toFixed(2)}</span><span class="muted"> / ${(S.settings.waterGoal / 1000).toFixed(2)} litros</span></div><span class="lbl">${Math.round(pw * 100)}%</span></div>
-    <div class="bar"><i style="width:${pw * 100}%"></i></div>
-    <div class="grid3"><button class="btn sm" data-act="water" data-ml="250">+250 ml</button><button class="btn sm" data-act="water" data-ml="500">+500 ml</button><button class="btn sm ghost" data-act="water" data-ml="-250">−250</button></div>
-  </section>
-  <section class="card" style="order:6">
-    <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Nutrição de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
-    <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
-      ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">/ ${tg.prot} g prot</div></div>`)}
-    </div>
-  </section>
-  <details class="fold card" style="order:7;padding:0 14px"><summary><span class="row"><span class="dot sage"></span><span class="lbl">Suplementos de hoje · ${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length}</span></span>${ic("down")}</summary><div class="body">${sup}</div></details>
-  ${nextM ? `<section class="card flat" style="order:8"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
-  <section class="card flat row" style="order:9;align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>`;
-}
 
 /* ============ TREINO ============ */
 function rTreino() {
@@ -242,7 +166,10 @@ function rTreino() {
   const p = PLAN[L], vol = weekVolume();
   const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div>${nextBadge(e, v[0])}<span class="tag">${e.v.length} variações</span></div>`; }).join("");
   const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:14px">${c.sets} × ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
-  const pa = painAvg();
+  const pa = painAvg(), kd = D(k), skipped = kd.skipWk && !UI.pickDay && !S.cur && !kd.wk;
+  if (skipped) { $("#v-treino").innerHTML = `
+  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E.</p></section>
+  <section class="card" style="text-align:center;padding:36px 20px"><h3 class="mid">Tudo bem, o foco hoje é a dieta.</h3><p class="muted" style="margin-top:10px">O treino <b>${L} · ${p.name}</b> fica guardado para amanhã. Sua sequência não quebra.</p><button class="btn ghost full" style="margin-top:20px" data-act="wk-unskip">Desfazer (vou treinar)</button></section>`; return; }
   $("#v-treino").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E: se você faltar um dia, o treino continua de onde parou. As cargas da próxima vez são recalculadas ao fim de cada treino.</p></section>
   ${S.cur ? banner("acc", "play", "Treino em andamento", `Treino ${S.cur.day} aberto.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar</button></div>`) : ""}
@@ -253,6 +180,7 @@ function rTreino() {
     <p class="muted">${p.focus}. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
     <div class="list">${warm}${list}</div>
     <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR" : `INICIAR TREINO ${L}`}</button>
+    ${!S.cur && !UI.pickDay && !kd.wk ? `<button class="btn ghost full" style="color:var(--muted)" data-act="wk-skip">Não consegui ir hoje</button>` : ""}
   </section>
   <section class="card flat">
     <div class="lbl">Balanço semanal de séries</div>
@@ -531,8 +459,7 @@ function rMais() {
 
 /* ============ ações ============ */
 function exportData() {
-  const safe = JSON.parse(JSON.stringify(S)); delete safe.settings.gemKey;
-  const blob = new Blob([JSON.stringify(safe, null, 1)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(safeState(), null, 1)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `still-i-rise-backup-${today()}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   S.settings.lastBackup = today(); save(); toast("Backup exportado."); render();
@@ -566,6 +493,7 @@ document.addEventListener("click", e => {
   const t = e.target.closest("[data-tab]"); if (t) return go(t.dataset.tab);
   const b = e.target.closest("[data-act]"); if (!b) { if (e.target.id === "sheet") closeSheet(); return; }
   const a = b.dataset.act, k = today(), c = S.cur;
+  if (ACT[a]) return ACT[a](b, e);
   switch (a) {
     case "habit": {
       const d = DW(k), wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5; d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); haptic();
@@ -574,6 +502,8 @@ document.addEventListener("click", e => {
     }
     case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); break; }
     case "water": waterAdd(num(b.dataset.ml)); render(); break;
+    case "wk-skip": DW(k).skipWk = true; save(); render(); break;
+    case "wk-unskip": DW(k).skipWk = false; save(); render(); break;
     case "pickday": UI.pickDay = b.dataset.day; render(); break;
     case "tog-rotate": S.settings.rotate = !S.settings.rotate; save(); render(); break;
     case "wk-start": wkStart(b.dataset.day); break;
@@ -666,19 +596,24 @@ document.addEventListener("click", e => {
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
   }
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet();
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "ia-input") { e.preventDefault(); ACT["ia-send"](); }
+});
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.dataset.ia !== undefined) { const f = t.dataset.ia, it = IA.items[+t.dataset.i]; if (it) { it[f] = f === "nome" ? t.value : num(t.value); iaTotal(); } }
+  else if (t.id === "ia-input") { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
   else if (t.id === "q") { UI.q = t.value; $("#foodlist").innerHTML = foodListHTML(); }
   else if (t.id === "g") gSum(+t.dataset.i);
   else if (t.dataset.f && S.cur) { const st = stepsOf(S.cur.day)[S.cur.i], dd = st.t === "ex" ? S.cur.data[st.e.id] : null; if (dd) { dd.sets[+t.dataset.i][t.dataset.f] = num(t.value); save(); } }
 });
 document.addEventListener("change", e => {
+  if (e.target.id === "ia-foto") return iaFoto(e);
   if (e.target.id === "foto") { const f = e.target.files[0]; e.target.value = ""; if (f) fotoAnalisar(f); return; }
   if (e.target.id !== "file") return;
   const f = e.target.files[0]; if (!f) return;
-  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const oldKey = S.settings.gemKey; S = mergeDefaults(o); S.settings.gemKey = oldKey; save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
+  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const keep = {}; ["gemKey", "ghToken", "ghGistId"].forEach(k => keep[k] = S.settings[k]); S = mergeDefaults(o); Object.assign(S.settings, keep); save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
   e.target.value = "";
 });
 $("#themeBtn").addEventListener("click", () => { const dark = document.documentElement.dataset.theme === "dark"; S.settings.theme = dark ? "light" : "dark"; save(); applyTheme(); if (UI.tab === "mais") rMais(); });
@@ -690,695 +625,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && S)
   await loadState(); applyTheme();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) { navigator.serviceWorker.register("sw.js").catch(() => { }); let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !sessionStorage.getItem("sir_reloaded")) { sessionStorage.setItem("sir_reloaded", "1"); location.reload(); } had = true; }); }
-  go("deck");
+  applyTimeTheme(); tickHeader(); go("deck");
   if (S.cur) toast("Treino em andamento. Abra pelo Deck.");
-})();
-
-
-/* === ANTIGRAVITY INJECTIONS === */
-function applyTimeTheme() {
-    const hr = new Date().getHours();
-    document.body.classList.remove('theme-morning', 'theme-night');
-    if(hr >= 4 && hr < 10) document.body.classList.add('theme-morning');
-    else if(hr >= 19 || hr < 4) document.body.classList.add('theme-night');
-}
-applyTimeTheme();
-
-function rDeck() {
-    orig_rDeck();
-    const vDeck = document.getElementById("v-deck");
-    if(!vDeck || document.getElementById("agy-deck-ext")) return;
-    
-    const ext = document.createElement("div");
-    ext.id = "agy-deck-ext";
-    ext.innerHTML = `
-      <div class="card">
-        <h3 class="h1" style="font-size:20px;">Cardio Detalhado</h3>
-        <button class="btn solid full" onclick="document.getElementById('cardioSheet').classList.add('on')">
-          <svg class="icon"><use href="#i-flame"/></svg> Registrar Cardio
-        </button>
-      </div>
-    `;
-    vDeck.insertBefore(ext, vDeck.firstChild.nextSibling); 
-}
-
-function rComer() {
-    orig_rComer();
-    const vComer = document.getElementById("v-comer");
-    if(!vComer || document.getElementById("agy-comer-ext")) return;
-    
-    const d = DW(today());
-    if(!d.fiber) d.fiber = 0;
-    
-    const ext = document.createElement("div");
-    ext.id = "agy-comer-ext";
-    ext.innerHTML = `
-      <div class="card">
-        <h3 class="h1" style="font-size:20px;">Meta Fibras & Refeição Rápida</h3>
-        <div class="row between"><div class="lbl">Fibras (Meta: 30g)</div><div style="font-weight:700">${d.fiber}g</div></div>
-        <div class="bar"><i style="width:${Math.min((d.fiber/30)*100, 100)}%; background:var(--ok)"></i></div>
-        <div class="alert-glicose" id="agyWalkAlert" style="display:none; background:var(--warn-soft); border-left:4px solid var(--warn); padding:12px; border-radius:8px; margin-top:12px;">
-            <strong>Pico Glicêmico!</strong> Caminhe 10-15 min para regular.
-            <button class="btn sm ghost" style="margin-top:10px" onclick="document.getElementById('agyWalkAlert').style.display='none'">Fiz a caminhada ✅</button>
-        </div>
-        <button class="btn solid full" style="margin-top:10px;" id="btnStdLunch">🍱 Meu Almoço Padrão (40g P / 10g F)</button>
-      </div>
-    `;
-    vComer.appendChild(ext);
-
-    document.getElementById("btnStdLunch").addEventListener("click", () => {
-        d.meals.push({ t: Date.now(), n: "Almoço Padrão (Antigravity)", g: 0, k: 450, p: 40, m: "Almoço" });
-        d.fiber += 10;
-        save();
-        rComer(); 
-        setTimeout(() => {
-           const alert = document.getElementById("agyWalkAlert");
-           if(alert) alert.style.display = "block";
-           if(window.haptic) haptic(50);
-        }, 100);
-    });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const saveCardio = document.getElementById("saveCardioBtn");
-  if(saveCardio) {
-    saveCardio.addEventListener("click", () => {
-        const d = DW(today());
-        if(!d.cardios) d.cardios = [];
-        d.cardios.push({
-           min: num(document.getElementById("cardioMins").value),
-           spd: num(document.getElementById("cardioSpd").value),
-           inc: num(document.getElementById("cardioInc").value)
-        });
-        save();
-        document.getElementById("cardioSheet").classList.remove("on");
-        toast("Cardio Registrado!");
-        rDeck();
-    });
-  }
-
-  setTimeout(() => {
-      if(new Date().getDay() === 1 && !sessionStorage.getItem("revSeen")) {
-          sessionStorage.setItem("revSeen", "1");
-          const rW = document.getElementById("revW");
-          const rS = document.getElementById("revSug");
-          if(rW) rW.innerText = "Semana " + weekNo() + "/8";
-          if(weekNo() >= 8 && rS) rS.innerText = "Semana de Manutenção! Teste cargas máximas.";
-          const sheet = document.getElementById("reviewSheet");
-          if(sheet) sheet.classList.add("on");
-      }
-  }, 1000);
-});
-
-
-// Update Header Clock and Name
-function updateTopHeader() {
-  const now = new Date();
-  const hr = now.getHours();
-  let greet = "Boa noite";
-  if (hr >= 5 && hr < 12) greet = "Bom dia";
-  else if (hr >= 12 && hr < 18) greet = "Boa tarde";
-  
-  const greetingEl = document.getElementById("topGreeting");
-  if(greetingEl) greetingEl.innerText = greet;
-  
-  const clockEl = document.getElementById("topClock");
-  if(clockEl) clockEl.innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-  
-  const nameEl = document.getElementById("topName");
-  if(nameEl && typeof S !== 'undefined' && S.profile) {
-     nameEl.innerText = S.profile.name || "Praticante";
-  }
-}
-setInterval(updateTopHeader, 1000);
-setTimeout(updateTopHeader, 200); // Initial call after state loads
-
-
-// AURA CORE UPDATE LOGIC
-function updateAuraCore() {
-    const vDeck = document.getElementById("v-deck");
-    if(!vDeck) return;
-    
-    let auraContainer = document.getElementById("aura-container");
-    if(!auraContainer) {
-        auraContainer = document.createElement("div");
-        auraContainer.id = "aura-container";
-        vDeck.insertBefore(auraContainer, vDeck.firstChild);
-    }
-    if(!document.getElementById("auraCoreEl")) {
-        auraContainer.className = "aura-container";
-        auraContainer.innerHTML = `
-            <div class="aura-core" id="auraCoreEl"></div>
-            <div class="aura-msg" id="auraMsgEl">O núcleo está ocioso. Vamos alimentar essa máquina?</div>
-        `;
-    }
-    
-    const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
-    if(!d) return;
-
-    // Calculate states
-    const prot = d.meals ? d.meals.reduce((a, m) => a + (m.p || 0), 0) : 0;
-    const water = d.water || 0;
-    const hasCardio = d.cardios && d.cardios.length > 0;
-    
-    const core = document.getElementById("auraCoreEl");
-    const msg = document.getElementById("auraMsgEl");
-    
-    if(prot >= 160 && hasCardio) {
-        core.className = "aura-core overdrive";
-        msg.innerText = "Overdrive ativado. Suas fibras e proteínas estão otimizadas.";
-        msg.style.color = "var(--accent)";
-    } else if (prot >= 40 || water > 1000) {
-        core.className = "aura-core fed";
-        msg.innerText = "O núcleo absorveu energia. Mantenha o fluxo de proteína e hidratação.";
-        msg.style.color = "var(--text)";
-    } else {
-        core.className = "aura-core";
-        msg.innerText = "Sua aura precisa fluir. Tome um copo grande de água agora.";
-        msg.style.color = "var(--muted)";
-    }
-}
-
-// Hook into rDeck
-const agy_orig_rDeck = typeof orig_rDeck === 'function' ? orig_rDeck : rDeck;
-rDeck = function() {
-    if(typeof orig_rDeck === 'function' && orig_rDeck !== rDeck) {
-       orig_rDeck();
-    } else {
-       agy_orig_rDeck();
-    }
-    
-    // Inject Cardio Button if not exists
-    const vDeck = document.getElementById("v-deck");
-    if(vDeck && !document.getElementById("agy-deck-ext")) {
-        const ext = document.createElement("div");
-        ext.id = "agy-deck-ext";
-        ext.innerHTML = `
-          <div class="card" style="margin-top:10px;">
-            <h3 class="h1" style="font-size:20px;">Cardio Detalhado</h3>
-            <button class="btn solid full" onclick="document.getElementById('cardioSheet').classList.add('on')">
-              <svg class="icon"><use href="#i-flame"/></svg> Registrar Cardio
-            </button>
-          </div>
-        `;
-        // Insert after aura
-        vDeck.insertBefore(ext, vDeck.children[1] || vDeck.firstChild); 
-    }
-    
-    updateAuraCore();
-}
-
-
-/* --- AURA CORE & NEXUS REST DAY PATCH --- */
-const agy_orig_rTreino = typeof orig_rTreino === 'function' ? orig_rTreino : (typeof rTreino !== 'undefined' ? rTreino : function(){});
-if (typeof rTreino !== 'undefined') {
-    window.orig_rTreino = agy_orig_rTreino; // Keep a reference
-    rTreino = function() {
-        const k = today();
-        const d = typeof DW === 'function' ? DW(k) : (S.days && S.days[k] ? S.days[k] : null);
-        
-        if (d && d.skipWk && !UI.pickDay) {
-            const L = (typeof planLetter === 'function' ? planLetter(k) : null) || (typeof seqNext === 'function' ? seqNext() : "A");
-            const pName = typeof PLAN !== 'undefined' && PLAN[L] ? PLAN[L].name : "";
-            
-            const vTreino = document.getElementById("v-treino");
-            if (vTreino) {
-                vTreino.innerHTML = `
-                <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E.</p></section>
-                <section class="card" style="text-align:center; padding: 40px 20px;">
-                    <div style="font-size:50px; margin-bottom:15px; animation: aura-levitate 3s infinite;">🛡️</div>
-                    <h3 class="mid" style="font-size: 22px; color: var(--text);">Tudo bem, o foco hoje é na dieta.</h3>
-                    <p class="muted" style="margin-top: 10px; line-height: 1.5;">Você marcou que não conseguiu ir hoje. O seu treino <b style="color:var(--text);">${L} - ${pName}</b> está guardado para amanhã. A sua sequência não foi quebrada.</p>
-                    <button class="btn ghost full" style="margin-top:25px; border: 1px solid var(--line);" data-act="wk-unskip">Desfazer (Vou treinar sim!)</button>
-                </section>`;
-            }
-            return;
-        }
-
-        // Call original rendering
-        orig_rTreino();
-        
-        // Inject the skip button if not already started and not picking a day
-        if (!S.cur && !UI.pickDay) {
-            const vTreino = document.getElementById("v-treino");
-            if (vTreino) {
-                const cards = vTreino.querySelectorAll("section.card");
-                if (cards.length >= 2) {
-                    const btnContainer = cards[1];
-                    if (!btnContainer.querySelector('[data-act="wk-skip"]')) {
-                       const skipBtn = document.createElement("button");
-                       skipBtn.className = "btn ghost full";
-                       skipBtn.style.marginTop = "12px";
-                       skipBtn.style.color = "var(--muted)";
-                       skipBtn.dataset.act = "wk-skip";
-                       skipBtn.innerText = "Não consegui ir hoje";
-                       btnContainer.appendChild(skipBtn);
-                    }
-                }
-            }
-        }
-    }
-}
-
-document.addEventListener("click", e => {
-    const b = e.target.closest("[data-act]");
-    if (!b) return;
-    const a = b.dataset.act;
-    if (a === "wk-skip") {
-        const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
-        if(d) {
-            d.skipWk = true;
-            if(typeof save === 'function') save();
-            rTreino();
-        }
-    } else if (a === "wk-unskip") {
-        const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
-        if(d) {
-            d.skipWk = false;
-            if(typeof save === 'function') save();
-            rTreino();
-        }
-    }
-});
-
-
-/* === PROGRESSIVE DISCLOSURE DECK REDESIGN === */
-function orig_rDeck() {
-    const k = today(), d = typeof DW === 'function' ? DW(k) : D(k), L = typeof planLetter === 'function' ? planLetter(k) : null;
-    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    const week = activeInWeek(mondayOf(k)), ds = dayStreak(), ws = weekStreak(), abs = daysAbsent();
-    const ban = [];
-    const ab = ABSENCE.find(a => abs >= a.min);
-    if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
-    if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}.`, '<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>'));
-    
-    const waterL = (d.water / 1000).toFixed(1);
-    const habitsList = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}</span></button>`).join("");
-    const supList = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}</span></button>`).join("");
-
-    $("#v-deck").innerHTML = `
-    ${ban.length ? '<section style="display:flex;flex-direction:column;gap:10px;margin-bottom:15px;">' + ban.join("") + '</section>' : ""}
-    
-    <!-- Aura Core Anchor -->
-    <div id="aura-container"></div>
-    
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="agua">
-          <div style="font-size:24px; margin-bottom:5px;">💧</div>
-          <div style="font-weight:700; font-size:16px;">${waterL} L</div>
-          <div class="lbl">Água · ${Math.round(Math.min(1, d.water / S.settings.waterGoal) * 100)}%</div>
-       </div>
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="comer">
-          <div style="font-size:24px; margin-bottom:5px;">🍱</div>
-          <div style="font-weight:700; font-size:16px;">${Math.round(tot.p)}g</div>
-          <div class="lbl">+ Dieta</div>
-       </div>
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="treino">
-          <div style="font-size:24px; margin-bottom:5px;">🏋️‍♂️</div>
-          <div style="font-weight:700; font-size:16px;">${L || "Descanso"}</div>
-          <div class="lbl">Treino Hoje</div>
-       </div>
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" onclick="document.getElementById('cardioSheet').classList.add('on')">
-          <div style="font-size:24px; margin-bottom:5px;">🔥</div>
-          <div style="font-weight:700; font-size:16px;">Cardio</div>
-          <div class="lbl">Registrar</div>
-       </div>
-    </div>
-    
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot ok"></span><span class="lbl" style="font-size:15px; font-weight:600;">Hábitos Diários (${habitCount(k)}/6)</span></span>${ic("down")}</summary><div class="body" style="display:flex;flex-direction:column;gap:10px">${habitsList}</div></details>
-    
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot sage"></span><span class="lbl" style="font-size:15px; font-weight:600;">Suplementação (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})</span></span>${ic("down")}</summary><div class="body">${supList}</div></details>
-    
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot" style="background:var(--accent)"></span><span class="lbl" style="font-size:15px; font-weight:600;">Ritmo Semanal (${week}/5)</span></span>${ic("down")}</summary><div class="body">
-       <div class="row" style="gap:16px; margin-top:10px;">
-          ${ring(week / 5, 80, 6, "var(--sage)", '<div><div class="big tabnum">' + week + '<span class="muted" style="font-size:12px">/5</span></div></div>')}
-          <div class="grow" style="display:flex;flex-direction:column;gap:10px">
-            <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
-            <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
-          </div>
-        </div>
-    </div></details>
-    `;
-}
-
-rDeck = function() {
-    orig_rDeck();
-    if(typeof updateAuraCore === 'function') updateAuraCore();
-    fraseInject();
-}
-
-
-/* === METABOLIC ENGINE === */
-function getMetabolicAdvice(k) {
-    const d = typeof DW === 'function' ? DW(k) : D(k);
-    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    
-    const now = new Date();
-    const h = now.getHours();
-    const endOfDay = 22; // 22:00
-    
-    if (h >= endOfDay) return { diet: "Dia finalizado. Hora de descansar o sistema digestivo.", water: "Beba água com moderação agora para não prejudicar o sono." };
-    if (h < 5) return { diet: "Madrugada. Se estiver acordado, mantenha-se hidratado.", water: "Beba água se tiver sede." };
-    
-    // 1. Diet Advice
-    let dietAdvice = "";
-    const remainingProt = Math.max(0, tg.prot - tot.p);
-    let lastMealTime = null;
-    
-    if (d.meals && d.meals.length > 0) {
-        for (let i = d.meals.length - 1; i >= 0; i--) {
-            if (d.meals[i].t) {
-                lastMealTime = new Date(d.meals[i].t);
-                break;
-            }
-        }
-    }
-    
-    const hoursLeft = endOfDay - h;
-    const mealsLeft = Math.max(1, Math.floor(hoursLeft / 3.5)); // estimate 1 meal every 3.5 hours
-    const protPerMeal = Math.round(remainingProt / mealsLeft);
-    
-    if (remainingProt <= 0) {
-        dietAdvice = "✅ Meta de proteína batida! Se for comer mais tarde, priorize fibras e vegetais.";
-    } else if (lastMealTime) {
-        const diffHrs = (now - lastMealTime) / (1000 * 60 * 60);
-        if (diffHrs < 2) {
-            let nextH = Math.floor(lastMealTime.getHours() + 3.5);
-            let nextM = Math.floor((lastMealTime.getHours() + 3.5 - nextH) * 60);
-            let nextTimeStr = String(nextH).padStart(2, '0') + ":" + String(nextM).padStart(2, '0');
-            dietAdvice = "⏳ Você comeu há pouco tempo. Próxima janela anabólica sugerida: " + nextTimeStr + ". Faltam " + Math.round(remainingProt) + "g no dia.";
-        } else if (diffHrs >= 3.5) {
-            dietAdvice = "🔥 Janela anabólica aberta! Faltam " + Math.round(remainingProt) + "g no dia. Tente bater " + protPerMeal + "g na próxima refeição.";
-        } else {
-            dietAdvice = "⏳ Faltam " + Math.round(remainingProt) + "g no dia. Sugestão para a próxima refeição: " + protPerMeal + "g de proteína.";
-        }
-    } else {
-        dietAdvice = "🌅 Primeira refeição do dia? Faltam " + Math.round(remainingProt) + "g. Comece forte com " + protPerMeal + "g de proteína!";
-    }
-    
-    if (remainingProt > 0 && h < endOfDay) {
-        const target = protPerMeal > 0 ? protPerMeal : Math.round(remainingProt);
-        const chicken = Math.round((target / 30) * 100);
-        const beef = Math.round((target / 26) * 100);
-        const eggs = Math.round(target / 6);
-        const cheese = Math.round((target / 25) * 100);
-        const whey = Math.round((target / 24) * 30);
-        dietAdvice += `
-        <details class="fold" style="margin-top:12px; background:var(--surface2);">
-          <summary style="font-size:13px; font-weight:600; color:var(--accent);">💡 Como bater ${target}g de proteína?</summary>
-          <div class="body" style="font-size:13px; line-height:1.5;">
-            <div style="font-weight:600; margin-top:5px; color:var(--text);">🥩 Carnes</div>
-            <div style="color:var(--muted);">~${chicken}g de Frango desfiado</div>
-            <div style="color:var(--muted);">~${beef}g de Patinho (moído)</div>
-            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥚 Laticínios e Ovos</div>
-            <div style="color:var(--muted);">~${eggs} Ovos inteiros</div>
-            <div style="color:var(--muted);">~${cheese}g de Queijo Muçarela</div>
-            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥤 Suplementos</div>
-            <div style="color:var(--muted);">~${whey}g de Whey Protein</div>
-          </div>
-        </details>`;
-    }
-    
-    // 2. Water Advice
-    let waterAdvice = "";
-    const goalWater = (S.settings.waterGoal || 3000);
-    const remainingWater = Math.max(0, goalWater - d.water);
-    if (remainingWater <= 0) {
-        waterAdvice = "✅ Meta de hidratação batida!";
-    } else {
-        const mlPerHour = Math.round(remainingWater / hoursLeft);
-        if (mlPerHour > 600) {
-            waterAdvice = "⚠️ Você está desidratado para esse horário. Tome 500ml de água agora.";
-        } else {
-            waterAdvice = "💧 Ritmo ideal: tome aprox. " + mlPerHour + "ml de água por hora até as " + endOfDay + "h.";
-        }
-    }
-    
-    return { diet: dietAdvice, water: waterAdvice };
-}
-
-/* === OVERRIDE ORIG_RDECK TO INJECT METABOLIC ADVICE === */
-const old_orig_rDeck_meta = orig_rDeck;
-orig_rDeck = function() {
-    old_orig_rDeck_meta();
-    
-    const k = today();
-    const advice = getMetabolicAdvice(k);
-    
-    const vDeck = document.getElementById("v-deck");
-    const auraContainer = document.getElementById("aura-container");
-    if(vDeck && auraContainer) {
-        const metaBanner = document.createElement("div");
-        metaBanner.id = "meta-deck-banner";
-        metaBanner.style.marginTop = "10px";
-        metaBanner.style.marginBottom = "20px";
-        metaBanner.style.padding = "12px 16px";
-        metaBanner.style.borderRadius = "12px";
-        metaBanner.style.background = "var(--surface2)";
-        metaBanner.style.borderLeft = "4px solid var(--accent)";
-        metaBanner.innerHTML = '<div style="font-size:14px; font-weight:600; margin-bottom:4px;">🧠 Dica do Núcleo</div><div style="font-size:14px; color:var(--muted); line-height:1.4;">' + advice.diet + ' <br><span style="color:var(--text);">' + advice.water + '</span></div>';
-        
-        // Insert right after aura container
-        vDeck.insertBefore(metaBanner, auraContainer.nextSibling);
-    }
-}
-
-/* === OVERRIDE ORIG_RCOMER TO INJECT METABOLIC ADVICE === */
-const agy_orig_rComer_meta = orig_rComer;
-orig_rComer = function() {
-    agy_orig_rComer_meta();
-    
-    const k = today();
-    const advice = getMetabolicAdvice(k);
-    const vComer = document.getElementById("v-comer");
-    if(vComer) {
-        // Insert right after the header section
-        const metaBanner = document.createElement("section");
-        metaBanner.className = "card";
-        metaBanner.style.background = "var(--surface2)";
-        metaBanner.style.borderTop = "4px solid var(--ok)";
-        metaBanner.innerHTML = '<h3 class="h1" style="font-size:18px; display:flex; align-items:center; gap:8px;">🧠 Inteligência Metabólica</h3><p class="muted" style="margin-top:8px;">' + advice.diet + '</p>';
-        
-        vComer.insertBefore(metaBanner, vComer.children[1]);
-    }
-}
-
-
-/* === AURA IA CHAT === */
-function rIA() {
-    const vIA = document.getElementById("v-ia");
-    if (!vIA) return;
-    
-    if (!S.settings.gemKey) {
-        vIA.innerHTML = `<section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
-           <h2 class="h1">A.I. Pessoal</h2>
-           <p class="muted">Conecte o cérebro da sua IA para ela analisar seus treinos, dieta e pratos de comida.</p>
-        </section>
-        <section class="card">
-            <div class="lbl">Chave API do Gemini (fica só neste aparelho)</div>
-            <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui">
-            <label class="lbl">Modelo</label>
-            
-            <select class="field" id="gemModel" style="margin-bottom:10px;">
-                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
-                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
-                <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
-            </select>
-
-            <div style="margin-top:10px;"><button class="btn solid full" data-act="gem-save">Conectar IA</button></div>
-            <p class="muted" style="font-size:14px; margin-top:15px;">A chave nunca entra no backup nem vai para a internet. Crie gratuitamente no Google AI Studio.</p>
-        </section>`;
-        return;
-    }
-    
-    let msgsHTML = "";
-    if (!S.chat || S.chat.length === 0) {
-        msgsHTML = `<div style="text-align:center; padding:40px 20px;">
-           <div style="font-size:48px; margin-bottom:15px; animation:aura-levitate 3s infinite;">✨</div>
-           <h3 class="mid">Sou o seu assistente Aura</h3>
-           <p class="muted" style="margin-top:10px;">Eu conheço a sua dieta, seus treinos e seu histórico. Me pergunte qualquer coisa, peça para eu montar seu prato ou tire foto de um rótulo.</p>
-        </div>`;
-    } else {
-        msgsHTML = '<div class="chat-container">' + S.chat.map(m => `<div class="chat-msg ${m.role}">${esc(m.text || "").replace(/\n/g, "<br>")}${m.img ? `<div class="chat-msg img"><img src="data:image/jpeg;base64,${m.img}"></div>` : ""}</div>`).join("") + '<div id="ai-typing" style="display:none;" class="chat-msg ai typing">Pensando...</div></div>';
-    }
-    
-    vIA.innerHTML = `
-    <section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
-       <div class="row between">
-           <h2 class="h1">A.I. Pessoal</h2>
-           <div style="display:flex; gap:10px; align-items:center;">
-             
-             <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">🔧 Modelo</summary>
-             <div class="body" style="padding:10px; margin-top:5px; background:var(--surface2); border-radius:8px;">
-               <div class="lbl">Modelo Atual</div>
-               
-            <select class="field" id="gemModel" style="margin-bottom:10px;">
-                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
-                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
-                <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
-            </select>
-
-               <button class="btn sm solid full" data-act="gem-save">Salvar Modelo</button>
-             </div>
-           </details>
-           </div>
-       </div>
-    </section>
-    <div id="chat-messages" style="padding-bottom: 70px;">${msgsHTML}</div>
-    
-    <div class="chat-input-area">
-       <button class="chat-btn" data-act="ia-clear" style="color:var(--bad);" aria-label="Limpar Conversa"><svg class="icon"><use href="#i-trash"/></svg></button>
-       <button class="chat-btn" data-act="ia-cam"><svg class="icon"><use href="#i-camera"/></svg></button>
-       <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none; padding-top:12px; max-height:120px; overflow-y:auto;"></textarea>
-       <button class="chat-btn primary" data-act="ia-send"><svg class="icon"><use href="#i-right"/></svg></button>
-       <input type="file" id="ia-foto" accept="image/*" hidden>
-    </div>
-    `;
-    
-    // Auto-resize textarea
-    setTimeout(() => {
-        const inp = document.getElementById("ia-input");
-        if(inp) {
-            inp.addEventListener("input", function() {
-                this.style.height = "auto";
-                this.style.height = (this.scrollHeight) + "px";
-            });
-            inp.addEventListener("keypress", function(e) {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.querySelector('[data-act="ia-send"]').click(); }
-            });
-        }
-        window.scrollTo(0, document.body.scrollHeight);
-    }, 50);
-}
-
-// IA Context Builder
-function buildAuraContext() {
-    const k = today();
-    const d = typeof DW === 'function' ? DW(k) : D(k);
-    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    const L = typeof planLetter === 'function' ? planLetter(k) : "Descanso";
-    
-    return `Você é a Aura, um assistente de saúde premium, direto, objetivo e amigável, integrado ao aplicativo Still I Rise.
-DADOS DO USUÁRIO HOJE:
-- Nome: ${S.profile.name || "Usuário"}
-- Meta de Calorias: ${Math.round(tot.k)} / ${tg.kcal} kcal
-- Meta de Proteína: ${Math.round(tot.p)} / ${tg.prot} g
-- Água: ${(d.water/1000).toFixed(1)} / ${(S.settings.waterGoal/1000).toFixed(1)} L
-- Treino do Dia: ${L}
-- Fibras Consumidas: ${d.fiber || 0}g
-- Horário Atual: ${new Date().toLocaleTimeString()}
-
-Regras:
-1. Responda de forma extremamente concisa, sem enrolação. Use no máximo 2-3 parágrafos curtos.
-2. Analise fotos de comida e sugira como encaixar na dieta restante do dia.
-3. Se perguntarem se podem comer algo, avalie se os macros restantes permitem.
-4. NUNCA diga que é uma IA. Aja como o núcleo inteligente do aplicativo. Mantenha um tom encorajador e prático.`;
-}
-
-// Ask Gemini
-async function askAuraIA(text, file = null) {
-    if (!S.settings.gemKey) {
-        toast("Configure a sua chave do Gemini na aba Mais primeiro!");
-        return;
-    }
-    
-    let base64 = null;
-    if (file) {
-        if (typeof fotoDownscale === 'function') {
-            base64 = await fotoDownscale(file);
-        }
-    }
-    
-    if (!S.chat) S.chat = [];
-    S.chat.push({ role: 'user', text: text, img: base64 });
-    rIA();
-    
-    const typing = document.getElementById("ai-typing");
-    if(typing) typing.style.display = "block";
-    window.scrollTo(0, document.body.scrollHeight);
-    
-    try {
-        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
-        const parts = [{ text: text || "O que acha dessa foto para a minha dieta hoje?" }];
-        if (base64) {
-            parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
-        }
-        
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.settings.gemModel || "gemini-2.5-flash-lite"}:generateContent`, {
-            method: "POST", signal: ctl.signal,
-            headers: { "Content-Type": "application/json", "x-goog-api-key": S.settings.gemKey },
-            body: JSON.stringify({ 
-                systemInstruction: { parts: [{ text: buildAuraContext() }] },
-                contents: [{ parts: parts }]
-            })
-        });
-        clearTimeout(t);
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error ? j.error.message : "Erro na IA");
-        
-        const reply = j.candidates[0].content.parts[0].text;
-        S.chat.push({ role: 'ai', text: reply });
-        save();
-        rIA();
-    } catch(e) {
-        S.chat.push({ role: 'ai', text: "Desculpe, ocorreu um erro na conexão: " + e.message });
-        save();
-        rIA();
-    }
-}
-
-// Inject Event Listeners globally via an IIFE
-(function() {
-    document.addEventListener("click", e => {
-        const b = e.target.closest("[data-act]");
-        if (!b) return;
-        const act = b.dataset.act;
-        
-        if (act === "ia-cam") {
-            const f = document.getElementById("ia-foto");
-            if (f) f.click();
-        } else if (act === "ia-clear") {
-            const html = `
-                <div style="text-align:center; padding: 10px 0;">
-                    <div style="font-size:40px; margin-bottom:10px;">🧹</div>
-                    <h3 style="margin-bottom:10px; color:var(--text);">Limpar Conversa?</h3>
-                    <p class="muted" style="margin-bottom:20px;">Todo o histórico com a sua A.I. será apagado. Tem certeza?</p>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn" style="flex:1;" onclick="closeSheet()">Cancelar</button>
-                        <button class="btn solid" style="flex:1; background:var(--bad); color:#fff;" data-act="ia-clear-confirm">Sim, apagar</button>
-                    </div>
-                </div>`;
-            openSheet(html);
-        } else if (act === "ia-clear-confirm") {
-            S.chat = [];
-            save();
-            closeSheet();
-            render();
-            toast("Conversa apagada");
-        } else if (act === "ia-send") {
-            const inp = document.getElementById("ia-input");
-            const text = inp.value.trim();
-            if (text) {
-                inp.value = "";
-                inp.style.height = "auto";
-                askAuraIA(text);
-            }
-        }
-    });
-    
-    document.addEventListener("change", e => {
-        if (e.target.id === "ia-foto") {
-            const file = e.target.files[0];
-            e.target.value = ""; // reset
-            if (file) {
-                const inp = document.getElementById("ia-input");
-                const text = inp ? inp.value.trim() : "";
-                if(inp) { inp.value = ""; inp.style.height = "auto"; }
-                askAuraIA(text, file);
-            }
-        }
-    });
+  setTimeout(maybeReview, 1000);
 })();

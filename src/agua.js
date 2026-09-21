@@ -27,13 +27,6 @@ function fraseHTML() {
     <div class="row between" style="align-items:center"><span class="lbl">${a ? esc(a) : "Frase do dia"}</span><button class="btn sm ghost" data-act="quote-next" aria-label="Outra frase">Outra frase</button></div>
   </section>`;
 }
-function fraseInject() {
-  const v = $("#v-deck"); if (!v || $("#quote-card", v)) return;
-  const tmp = document.createElement("div"); tmp.innerHTML = fraseHTML();
-  const el = tmp.firstElementChild, ref = $("#aura-container", v);
-  ref && ref.nextSibling ? v.insertBefore(el, ref.nextSibling) : v.appendChild(el);
-}
-
 /* --- água --- */
 const WSIZES = [["Gole", 100], ["Copo", 200], ["Copo grande", 300], ["Garrafa", 500], ["Squeeze", 750], ["1 litro", 1000]];
 function waterAdd(ml) {
@@ -121,15 +114,9 @@ function dockWater() {
   document.querySelectorAll("#dropg stop").forEach(s => s.setAttribute("offset", String(p)));
   const t = $('.tab[data-tab="agua"]'); if (t) t.classList.toggle("full", p >= 1);
 }
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  const a = b.dataset.act; let done = false;
-  if (a === "w-add") done = waterAdd(num(b.dataset.ml));
-  else if (a === "w-custom") { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); done = waterAdd(v); }
-  else if (a === "w-undo") waterUndo();
-  else if (a === "w-goal") { S.settings.waterGoal = Math.min(8000, Math.max(1000, S.settings.waterGoal + num(b.dataset.d))); const d = DW(today()); d.h.agua = (d.water || 0) >= S.settings.waterGoal; save(); }
-  else if (a === "quote-next") { UI.qOff = (UI.qOff || 0) + 1; const c = $("#quote-card"); if (c) { const t = document.createElement("div"); t.innerHTML = fraseHTML(); c.replaceWith(t.firstElementChild); } return; }
-  else return;
-  render();
-  if (done) toast("Meta de água batida. Sua garrafa está cheia.");
-});
+const afterWater = done => { render(); if (done) toast("Meta de água batida. Sua garrafa está cheia."); };
+ACT["w-add"] = b => afterWater(waterAdd(num(b.dataset.ml)));
+ACT["w-custom"] = () => { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); afterWater(waterAdd(v)); };
+ACT["w-undo"] = () => { waterUndo(); render(); };
+ACT["w-goal"] = b => { S.settings.waterGoal = Math.min(8000, Math.max(1000, S.settings.waterGoal + num(b.dataset.d))); const d = DW(today()); d.h.agua = (d.water || 0) >= S.settings.waterGoal; save(); render(); };
+ACT["quote-next"] = () => { UI.qOff = (UI.qOff || 0) + 1; const c = $("#quote-card"); if (c) { const t = document.createElement("div"); t.innerHTML = fraseHTML(); c.replaceWith(t.firstElementChild); } };

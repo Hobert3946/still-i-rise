@@ -109,32 +109,24 @@ window.addEventListener("error",function(){var d=document.getElementById("v-deck
 </script>
 
 
-<!-- Modais Antigravity -->
-<div class="overlay center" id="cardioSheet" role="dialog">
-  <div class="card" style="width:90%;max-width:350px;">
-    <h3>Registrar Cardio</h3>
-    <input type="number" id="cardioMins" placeholder="Minutos" class="btn ghost" style="width:100%;margin-top:10px;">
-    <input type="number" id="cardioSpd" placeholder="Velocidade (km/h)" class="btn ghost" style="width:100%;margin-top:10px;">
-    <input type="number" id="cardioInc" placeholder="Inclinação" class="btn ghost" style="width:100%;margin-top:10px;">
-    <div style="display:flex;gap:10px;margin-top:15px;">
-      <button class="btn ghost grow" onclick="document.getElementById('cardioSheet').classList.remove('on')">Cancelar</button>
-      <button class="btn solid grow" id="saveCardioBtn">Salvar</button>
-    </div>
+<!-- Modais: cardio e resumo semanal (ações via data-act, sem onclick inline) -->
+<div class="overlay center" id="cardioSheet" role="dialog" aria-modal="true" aria-label="Registrar cardio">
+  <div class="card" style="width:90%;max-width:350px">
+    <h3 class="mid">Registrar cardio</h3>
+    <input type="number" inputmode="decimal" id="cardioMins" placeholder="Minutos" class="field" aria-label="Minutos">
+    <input type="number" inputmode="decimal" id="cardioSpd" placeholder="Velocidade (km/h)" class="field" aria-label="Velocidade em km/h">
+    <input type="number" inputmode="decimal" id="cardioInc" placeholder="Inclinação (%)" class="field" aria-label="Inclinação em porcentagem">
+    <div class="row" style="gap:10px"><button class="btn ghost grow" data-act="cardio-close">Cancelar</button><button class="btn solid grow" data-act="cardio-save">Salvar</button></div>
   </div>
 </div>
 
-<div class="overlay center" id="reviewSheet" role="dialog">
-  <div class="card" style="width:90%;max-width:350px;text-align:center;">
-    <h2 class="h1">Resumo Semanal</h2>
-    <div class="grid2" style="margin:20px 0;">
-      <div class="tile"><div class="big" id="revP">0g</div><div class="lbl">Prot/Dia</div></div>
-      <div class="tile"><div class="big" id="revC">0</div><div class="lbl">Min Cardio</div></div>
-    </div>
-    <div class="tile in" style="margin-bottom:20px;">
-      <div class="mid" id="revW">Semana 1/8</div>
-      <div class="lbl" id="revSug">Continue focado!</div>
-    </div>
-    <button class="btn solid full" onclick="document.getElementById('reviewSheet').classList.remove('on')">Entendido</button>
+<div class="overlay center" id="reviewSheet" role="dialog" aria-modal="true" aria-label="Resumo da semana">
+  <div class="card" style="width:90%;max-width:350px;text-align:center">
+    <h2 class="h1">Resumo da semana</h2>
+    <p class="muted">Últimos 7 dias</p>
+    <div class="grid2"><div class="tile"><div class="big" id="revP">0 g</div><div class="lbl">Proteína/dia</div></div><div class="tile"><div class="big" id="revC">0 min</div><div class="lbl">Cardio</div></div></div>
+    <div class="tile in"><div class="mid" id="revW"></div><div class="muted" id="revSug" style="margin-top:6px"></div></div>
+    <button class="btn solid full" data-act="review-close">Entendido</button>
   </div>
 </div>
 

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Bloqueia o push se o build ou algum teste falhar. Vale para qualquer ferramenta que use este clone.
+echo "pre-push: build e testes..."
+node build.js >/dev/null && node test/run.js --strict > /tmp/sir-test.log 2>&1
+if [ $? -ne 0 ]; then
+  grep -E "^  FALHA|exceção|passaram" /tmp/sir-test.log
+  echo "PUSH BLOQUEADO: corrija os testes (npm test) e faça commit de docs/ (npm run build)."
+  exit 1
+fi
+tail -1 /tmp/sir-test.log

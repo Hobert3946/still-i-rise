@@ -45,20 +45,17 @@ function buildICS(sel) {
   });
   return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Still I Rise//PT-BR//", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Still I Rise", ...ev, "END:VCALENDAR"].join("\r\n") + "\r\n";
 }
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "rem-open") remSheet();
-  else if (b.dataset.act === "rem-gen") {
-    const cfg = {}, sel = [];
-    REMS.forEach(([id, , def]) => {
-      const on = $(`[data-rem="${id}"]`).checked, t = $(`[data-remt="${id}"]`).value || def;
-      cfg[id] = { on, t }; if (on) sel.push({ id, t });
-    });
-    S.settings.rem = cfg; save();
-    if (!sel.length) return toast("Marque pelo menos um lembrete.");
-    const blob = new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "still-i-rise-lembretes.ics";
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    closeSheet(); toast(`${sel.length} lembretes gerados. Abra o arquivo para adicionar.`);
-  }
-});
+ACT["rem-open"] = remSheet;
+ACT["rem-gen"] = () => {
+  const cfg = {}, sel = [];
+  REMS.forEach(([id, , def]) => {
+    const on = $(`[data-rem="${id}"]`).checked, t = $(`[data-remt="${id}"]`).value || def;
+    cfg[id] = { on, t }; if (on) sel.push({ id, t });
+  });
+  S.settings.rem = cfg; save();
+  if (!sel.length) return toast("Marque pelo menos um lembrete.");
+  const blob = new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "still-i-rise-lembretes.ics";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  closeSheet(); toast(`${sel.length} lembretes gerados. Abra o arquivo para adicionar.`);
+};

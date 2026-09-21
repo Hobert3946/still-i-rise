@@ -35,6 +35,13 @@ function findSheet(m) {
 function mealRow(x, i) {
   return `<div class="swipe" data-i="${i}"><div class="swipe-bg">${ic("trash")}<span>Excluir</span>${ic("trash")}</div><div class="swipe-in li"><div class="grow"><div style="font-weight:600">${esc(x.n)}</div><div class="muted" style="font-size:14px">${x.g ? x.g + " g · " : ""}${Math.round(x.k)} kcal · ${r1(x.p)} g prot</div></div></div></div>`;
 }
+/* repetir a mesma refeição da última vez em que ela foi registrada */
+function lastMealItems(m) {
+  const k = today();
+  for (const dk of Object.keys(S.days).sort().reverse()) { if (dk >= k) continue; const it = (S.days[dk].meals || []).filter(x => x.m === m); if (it.length) return it; }
+  return [];
+}
+function repeatBtn(m) { const it = lastMealItems(m); return it.length ? `<button class="btn sm ghost full" data-act="meal-repeat" data-m="${m}">Repetir a última vez (${it.length} ${it.length === 1 ? "item" : "itens"}, ${Math.round(it.reduce((a, x) => a + x.k, 0))} kcal)</button>` : ""; }
 function mealCard([m, hint, sug], d) {
   const it = d.meals.map((x, i) => [x, i]).filter(([x]) => x.m === m);
   const kk = it.reduce((a, [x]) => a + x.k, 0), pp = it.reduce((a, [x]) => a + x.p, 0);
@@ -47,11 +54,12 @@ function mealCard([m, hint, sug], d) {
     ${it.length ? `<div class="list">${it.map(([x, i]) => mealRow(x, i)).join("")}</div>` : ""}
     ${fv.length ? `<div><div class="lbl" style="margin-bottom:4px">Favoritos</div><div class="chips">${fv.map(i => chip(i, true)).join("")}</div></div>` : ""}
     <div><div class="lbl" style="margin-bottom:4px">Sugestões</div><div class="chips">${sg.map(i => chip(i, false)).join("")}</div></div>
+    ${it.length ? "" : repeatBtn(m)}
     <button class="btn sm full" data-act="find" data-m="${m}">${ic("plus")} Buscar outro alimento</button>
   </section>`;
 }
-function orig_rComer() {
-  const k = today(), d = D(k), tg = TG(), tot = dayTotals(k), rem = tg.kcal - tot.k;
+function rComer() {
+  const k = today(), d = D(k), tg = TG(), tot = dayTotals(k), rem = tg.kcal - tot.k, adv = getMetabolicAdvice(k), fib = d.fiber || 0;
   $("#v-comer").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Comer</h2><p class="muted">Meta: ${fmtInt(tg.kcal)} kcal e ${tg.prot} g de proteína. Toque num alimento para registrar; arraste um item para o lado para excluir.</p></section>
   <section class="card">
@@ -61,6 +69,12 @@ function orig_rComer() {
     </div>
     <p class="muted" style="text-align:center">${rem >= 0 ? `Restam ${fmtInt(rem)} kcal e ${Math.max(0, Math.round(tg.prot - tot.p))} g de proteína.` : `${fmtInt(-rem)} kcal acima da meta. Um dia acima não desfaz uma semana. A próxima refeição é normal.`}</p>
     ${fotoBtn()}
+  </section>
+  <section class="card tipcard"><div class="lbl" style="color:var(--text)">Dica para o resto do dia</div><div style="font-size:15px;line-height:1.5;color:var(--muted)">${adv.diet}</div></section>
+  <section class="card">
+    <div class="row between"><div class="lbl">Fibras (meta 30 g, registro manual)</div><b class="tabnum">${fib} g</b></div>
+    <div class="bar"><i style="width:${Math.min(100, fib / 30 * 100)}%;background:var(--ok)"></i></div>
+    <div class="grid2"><button class="btn sm" data-act="fiber-add" data-g="5">+5 g</button><button class="btn sm ghost" data-act="fiber-add" data-g="-5">−5 g</button></div>
   </section>
   ${MEALS.map(m => mealCard(m, d)).join("")}
   <button class="btn full" data-act="quick">${ic("plus")} Adicionar por rótulo (kcal e proteína)</button>
@@ -98,8 +112,7 @@ function mealRemove(i) {
   };
   document.addEventListener("pointerup", end); document.addEventListener("pointercancel", end);
 })();
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "find") findSheet(b.dataset.m);
-  else if (b.dataset.act === "fav-tog") { favToggle(+b.dataset.i); const n = $("#favbtn"); if (n) n.outerHTML = favBtn(+b.dataset.i); render(); }
-});
+ACT.find = b => findSheet(b.dataset.m);
+ACT["fav-tog"] = b => { favToggle(+b.dataset.i); const n = $("#favbtn"); if (n) n.outerHTML = favBtn(+b.dataset.i); render(); };
+ACT["fiber-add"] = b => { const d = DW(today()); d.fiber = Math.max(0, (d.fiber || 0) + num(b.dataset.g)); save(); render(); };
+ACT["meal-repeat"] = b => { const m = b.dataset.m, d = DW(today()), it = lastMealItems(m); it.forEach(x => d.meals.push({ ...x, t: Date.now() })); save(); render(); toast(`${it.length} ${it.length === 1 ? "item adicionado" : "itens adicionados"}.`); };

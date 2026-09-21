@@ -1,0 +1,36 @@
+// Progressão automática de carga e sequência de treinos A→E.
+const { boot, baseState } = require("./helpers");
+module.exports = async T => {
+  const a = await boot({ state: baseState() }), ev = a.ev;
+  const nl = (slot, sets, adapt) => JSON.parse(ev(`JSON.stringify(nextLoad(${slot}, ${JSON.stringify(sets)}${adapt === undefined ? "" : ", " + adapt}))`));
+  ev("var A1 = PLAN.A.ex[0], slotLeg = PLAN.C.ex[0], slotPl = PLAN.A.ex[4]");
+  const S4 = kg => [10, 10, 10, 10].map(reps => ({ kg, reps }));
+  let r = nl("A1", S4(20), false); T.ok(r.dir === "up" && r.kg === 22.5, "fechou tudo sobe +2,5");
+  r = nl("A1", [9, 9, 8, 8].map(reps => ({ kg: 20, reps })), false); T.ok(r.dir === "hold", "dentro da faixa mantém");
+  r = nl("A1", [6, 6, 5, 5].map(reps => ({ kg: 20, reps })), false); T.ok(r.dir === "down" && r.kg === 17.5, "falhou na 1ª série desce");
+  r = nl("A1", [10, 9, 9, 7].map(reps => ({ kg: 20, reps })), false); T.ok(r.dir === "hold", "só a última série cai: mantém");
+  r = nl("A1", S4(20), true); T.ok(r.dir === "hold", "na adaptação não sobe");
+  r = nl("slotLeg", [12, 12, 12, 12].map(reps => ({ kg: 100, reps })), false); T.ok(r.dir === "up" && r.kg === 110, "perna sobe +10");
+  r = nl("slotPl", [45, 45, 45].map(reps => ({ kg: 0, reps })), false); T.ok(r.dir === "hold", "prancha só mantém");
+  ev("S.settings.start = addDays(today(), -28); save()");
+  ev("go('treino'); wkStart('A')");
+  ev(`(function(){ stepsOf(S.cur.day).forEach(function(s){ var dd = wkData(s); if (s.t === 'warm') { dd.sets.forEach(function(x){ x.done = true }); return } dd.sets.forEach(function(x){ x.kg = (s.e.id === 'a1') ? 20 : 10; x.reps = s.e.reps[1]; x.done = true }) }) })()`);
+  ev("wkFinish()");
+  const sheet = () => a.q(".sheet").textContent;
+  T.ok(/Treino A registrado/.test(sheet()) && /↑ 22.5 kg/.test(sheet()), "resumo do treino mostra supino subindo para 22,5 kg");
+  T.ok(/Próximo treino[\s\S]*B · Costas/.test(sheet()), "resumo indica próximo treino B");
+  a.q("[data-act=sum-next]").click(); T.ok(/Dor no ombro/.test(sheet()), "depois pergunta a dor do ombro (dia A)");
+  a.q("[data-act=close]").click();
+  ev("wkStart('A'); (function(){ var st = stepsOf('A'); S.cur.i = st.findIndex(function(x){ return x.t === 'ex' && x.e.id === 'a1' }); wkRender() })()");
+  T.ok(a.qa('#wk-body input[data-f=kg]').every(i => i.value === "22.5"), "próximo supino já vem com 22,5 kg");
+  ev("wkClose(); S.cur = null; save()");
+  T.ok(ev("seqNext()") === "B", "sequência: depois do A vem o B");
+  ev("go('deck')"); const dk = a.q("#v-deck").textContent;
+  T.ok(/A · Peito concluído/.test(dk) && /B · Costas/.test(dk), "Deck mostra treino concluído e o próximo");
+  ev("go('treino')"); T.ok(/Treino B/.test(a.q("#v-treino").textContent), "aba Treino abre no próximo (B)");
+  ev("S.logs = { zz: [{date: addDays(today(), -1), day: 'E', sets: [{kg:1,reps:1}]}] }; S.days = {}");
+  T.ok(ev("seqNext()") === "A", "depois do E volta ao A");
+  ev("S.logs = {}; S.logs.a1_halt = [1,2,3].map(function(i){ return { date: addDays(today(), -i*3), day: 'A', sets: [9,9,8,8].map(function(r){ return { kg: 20, reps: r } }) } })");
+  T.ok(ev("stagnant(PLAN.A.ex[0], 'a1_halt')") === "Chest press na máquina", "3 treinos iguais sem progredir sugerem outra variação");
+  T.ok(!a.errors.length, "sem erros de script"); a.close();
+};

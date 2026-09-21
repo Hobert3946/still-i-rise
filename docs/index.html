@@ -347,6 +347,17 @@ nav.dock{width:min(480px,calc(100% - 16px));padding:5px}
 .list>.swipe+.swipe{border-top:1px solid var(--line)}
 .meal .chips{margin:0 -2px}
 
+/* --- DECK e utilidades --- */
+.stack{display:flex;flex-direction:column;gap:10px}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qtile{padding:16px;align-items:center;text-align:center;gap:4px;background:var(--surface2);cursor:pointer}
+.qtile b{font:700 20px var(--f-display)}
+.qi{color:var(--accent-ink);display:grid;place-items:center}
+.qi .icon{width:26px;height:26px}
+.tipcard{background:var(--surface2);border-left:4px solid var(--accent);gap:6px}
+.ia-spark{color:var(--accent);animation:aura-levitate 3s infinite}
+.ia-spark .icon{width:48px;height:48px}
+
 </style>
 </head>
 <body>
@@ -434,6 +445,11 @@ function sirReset(){var p=navigator.serviceWorker?navigator.serviceWorker.getReg
 window.addEventListener("error",function(){var d=document.getElementById("v-deck");if(d&&!d.innerHTML.trim()){d.innerHTML='<div class="card" style="margin:20px"><h2 class="mid">Algo travou ao abrir o app</h2><p class="muted">Toque abaixo para limpar o cache e recarregar. Seus dados salvos não são apagados.</p><button class="btn solid full" onclick="sirReset()">Limpar cache e recarregar</button></div>'}});
 </script>
 <script>
+/* ============ BASE: registro de ações ============ */
+// Cada módulo registra ACT["nome-da-acao"] = (botao, evento) => { ... }.
+// O ÚNICO ouvinte de clique (em app.js) despacha por data-act. Não crie outros ouvintes de clique.
+const ACT = {};
+
 // [nome, kcal/100g, prot/100g, medida caseira, gramas da porção, categoria, fonte T=TACO 4ª ed. R=estimativa/rótulo]
 const FOODS = [
 // Cereais
@@ -1005,13 +1021,6 @@ function fraseHTML() {
     <div class="row between" style="align-items:center"><span class="lbl">${a ? esc(a) : "Frase do dia"}</span><button class="btn sm ghost" data-act="quote-next" aria-label="Outra frase">Outra frase</button></div>
   </section>`;
 }
-function fraseInject() {
-  const v = $("#v-deck"); if (!v || $("#quote-card", v)) return;
-  const tmp = document.createElement("div"); tmp.innerHTML = fraseHTML();
-  const el = tmp.firstElementChild, ref = $("#aura-container", v);
-  ref && ref.nextSibling ? v.insertBefore(el, ref.nextSibling) : v.appendChild(el);
-}
-
 /* --- água --- */
 const WSIZES = [["Gole", 100], ["Copo", 200], ["Copo grande", 300], ["Garrafa", 500], ["Squeeze", 750], ["1 litro", 1000]];
 function waterAdd(ml) {
@@ -1099,18 +1108,12 @@ function dockWater() {
   document.querySelectorAll("#dropg stop").forEach(s => s.setAttribute("offset", String(p)));
   const t = $('.tab[data-tab="agua"]'); if (t) t.classList.toggle("full", p >= 1);
 }
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  const a = b.dataset.act; let done = false;
-  if (a === "w-add") done = waterAdd(num(b.dataset.ml));
-  else if (a === "w-custom") { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); done = waterAdd(v); }
-  else if (a === "w-undo") waterUndo();
-  else if (a === "w-goal") { S.settings.waterGoal = Math.min(8000, Math.max(1000, S.settings.waterGoal + num(b.dataset.d))); const d = DW(today()); d.h.agua = (d.water || 0) >= S.settings.waterGoal; save(); }
-  else if (a === "quote-next") { UI.qOff = (UI.qOff || 0) + 1; const c = $("#quote-card"); if (c) { const t = document.createElement("div"); t.innerHTML = fraseHTML(); c.replaceWith(t.firstElementChild); } return; }
-  else return;
-  render();
-  if (done) toast("Meta de água batida. Sua garrafa está cheia.");
-});
+const afterWater = done => { render(); if (done) toast("Meta de água batida. Sua garrafa está cheia."); };
+ACT["w-add"] = b => afterWater(waterAdd(num(b.dataset.ml)));
+ACT["w-custom"] = () => { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); afterWater(waterAdd(v)); };
+ACT["w-undo"] = () => { waterUndo(); render(); };
+ACT["w-goal"] = b => { S.settings.waterGoal = Math.min(8000, Math.max(1000, S.settings.waterGoal + num(b.dataset.d))); const d = DW(today()); d.h.agua = (d.water || 0) >= S.settings.waterGoal; save(); render(); };
+ACT["quote-next"] = () => { UI.qOff = (UI.qOff || 0) + 1; const c = $("#quote-card"); if (c) { const t = document.createElement("div"); t.innerHTML = fraseHTML(); c.replaceWith(t.firstElementChild); } };
 
 /* ============ COMER: uma seção por refeição, favoritos, sugestões e arrastar para excluir ============ */
 const MEALS = [
@@ -1149,6 +1152,13 @@ function findSheet(m) {
 function mealRow(x, i) {
   return `<div class="swipe" data-i="${i}"><div class="swipe-bg">${ic("trash")}<span>Excluir</span>${ic("trash")}</div><div class="swipe-in li"><div class="grow"><div style="font-weight:600">${esc(x.n)}</div><div class="muted" style="font-size:14px">${x.g ? x.g + " g · " : ""}${Math.round(x.k)} kcal · ${r1(x.p)} g prot</div></div></div></div>`;
 }
+/* repetir a mesma refeição da última vez em que ela foi registrada */
+function lastMealItems(m) {
+  const k = today();
+  for (const dk of Object.keys(S.days).sort().reverse()) { if (dk >= k) continue; const it = (S.days[dk].meals || []).filter(x => x.m === m); if (it.length) return it; }
+  return [];
+}
+function repeatBtn(m) { const it = lastMealItems(m); return it.length ? `<button class="btn sm ghost full" data-act="meal-repeat" data-m="${m}">Repetir a última vez (${it.length} ${it.length === 1 ? "item" : "itens"}, ${Math.round(it.reduce((a, x) => a + x.k, 0))} kcal)</button>` : ""; }
 function mealCard([m, hint, sug], d) {
   const it = d.meals.map((x, i) => [x, i]).filter(([x]) => x.m === m);
   const kk = it.reduce((a, [x]) => a + x.k, 0), pp = it.reduce((a, [x]) => a + x.p, 0);
@@ -1161,11 +1171,12 @@ function mealCard([m, hint, sug], d) {
     ${it.length ? `<div class="list">${it.map(([x, i]) => mealRow(x, i)).join("")}</div>` : ""}
     ${fv.length ? `<div><div class="lbl" style="margin-bottom:4px">Favoritos</div><div class="chips">${fv.map(i => chip(i, true)).join("")}</div></div>` : ""}
     <div><div class="lbl" style="margin-bottom:4px">Sugestões</div><div class="chips">${sg.map(i => chip(i, false)).join("")}</div></div>
+    ${it.length ? "" : repeatBtn(m)}
     <button class="btn sm full" data-act="find" data-m="${m}">${ic("plus")} Buscar outro alimento</button>
   </section>`;
 }
-function orig_rComer() {
-  const k = today(), d = D(k), tg = TG(), tot = dayTotals(k), rem = tg.kcal - tot.k;
+function rComer() {
+  const k = today(), d = D(k), tg = TG(), tot = dayTotals(k), rem = tg.kcal - tot.k, adv = getMetabolicAdvice(k), fib = d.fiber || 0;
   $("#v-comer").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Comer</h2><p class="muted">Meta: ${fmtInt(tg.kcal)} kcal e ${tg.prot} g de proteína. Toque num alimento para registrar; arraste um item para o lado para excluir.</p></section>
   <section class="card">
@@ -1175,6 +1186,12 @@ function orig_rComer() {
     </div>
     <p class="muted" style="text-align:center">${rem >= 0 ? `Restam ${fmtInt(rem)} kcal e ${Math.max(0, Math.round(tg.prot - tot.p))} g de proteína.` : `${fmtInt(-rem)} kcal acima da meta. Um dia acima não desfaz uma semana. A próxima refeição é normal.`}</p>
     ${fotoBtn()}
+  </section>
+  <section class="card tipcard"><div class="lbl" style="color:var(--text)">Dica para o resto do dia</div><div style="font-size:15px;line-height:1.5;color:var(--muted)">${adv.diet}</div></section>
+  <section class="card">
+    <div class="row between"><div class="lbl">Fibras (meta 30 g, registro manual)</div><b class="tabnum">${fib} g</b></div>
+    <div class="bar"><i style="width:${Math.min(100, fib / 30 * 100)}%;background:var(--ok)"></i></div>
+    <div class="grid2"><button class="btn sm" data-act="fiber-add" data-g="5">+5 g</button><button class="btn sm ghost" data-act="fiber-add" data-g="-5">−5 g</button></div>
   </section>
   ${MEALS.map(m => mealCard(m, d)).join("")}
   <button class="btn full" data-act="quick">${ic("plus")} Adicionar por rótulo (kcal e proteína)</button>
@@ -1212,11 +1229,171 @@ function mealRemove(i) {
   };
   document.addEventListener("pointerup", end); document.addEventListener("pointercancel", end);
 })();
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "find") findSheet(b.dataset.m);
-  else if (b.dataset.act === "fav-tog") { favToggle(+b.dataset.i); const n = $("#favbtn"); if (n) n.outerHTML = favBtn(+b.dataset.i); render(); }
-});
+ACT.find = b => findSheet(b.dataset.m);
+ACT["fav-tog"] = b => { favToggle(+b.dataset.i); const n = $("#favbtn"); if (n) n.outerHTML = favBtn(+b.dataset.i); render(); };
+ACT["fiber-add"] = b => { const d = DW(today()); d.fiber = Math.max(0, (d.fiber || 0) + num(b.dataset.g)); save(); render(); };
+ACT["meal-repeat"] = b => { const m = b.dataset.m, d = DW(today()), it = lastMealItems(m); it.forEach(x => d.meals.push({ ...x, t: Date.now() })); save(); render(); toast(`${it.length} ${it.length === 1 ? "item adicionado" : "itens adicionados"}.`); };
+
+/* ============ MOTOR METABÓLICO: dica de proteína e água para o resto do dia ============ */
+const gramsFor = (nome, alvoProt) => { const f = FOODS[foodIdx(nome)]; return f ? Math.round(alvoProt / (f[2] / 100)) : 0; };
+function getMetabolicAdvice(k) {
+  const d = D(k), tg = TG(), tot = dayTotals(k), now = new Date(), h = now.getHours(), endOfDay = 22;
+  if (h >= endOfDay) return { diet: "Dia finalizado. Hora de descansar o sistema digestivo.", water: "Beba água com moderação agora para não prejudicar o sono." };
+  if (h < 5) return { diet: "Madrugada. Se estiver acordado, mantenha-se hidratado.", water: "Beba água se tiver sede." };
+
+  const remainingProt = Math.max(0, tg.prot - tot.p), hoursLeft = endOfDay - h;
+  const mealsLeft = Math.max(1, Math.floor(hoursLeft / 3.5)), protPerMeal = Math.round(remainingProt / mealsLeft);
+  const timed = (d.meals || []).filter(m => m.t);
+  const lastMealTime = timed.length ? new Date(timed[timed.length - 1].t) : null;
+  let dietAdvice;
+  if (remainingProt <= 0) dietAdvice = "Meta de proteína batida. Se comer mais tarde, priorize fibras e vegetais.";
+  else if (lastMealTime) {
+    const diffHrs = (now - lastMealTime) / 36e5;
+    if (diffHrs < 2) {
+      const nx = new Date(lastMealTime.getTime() + 3.5 * 36e5);
+      dietAdvice = `Você comeu há pouco. Próxima refeição sugerida às ${String(nx.getHours()).padStart(2, "0")}:${String(nx.getMinutes()).padStart(2, "0")}. Faltam ${Math.round(remainingProt)} g de proteína no dia.`;
+    } else if (diffHrs >= 3.5) dietAdvice = `Já dá para comer de novo. Faltam ${Math.round(remainingProt)} g no dia: tente ${protPerMeal} g na próxima refeição.`;
+    else dietAdvice = `Faltam ${Math.round(remainingProt)} g no dia. Sugestão para a próxima refeição: ${protPerMeal} g de proteína.`;
+  } else dietAdvice = `Primeira refeição do dia? Faltam ${Math.round(remainingProt)} g. Comece com ${protPerMeal} g de proteína.`;
+
+  if (remainingProt > 0) {
+    const t = protPerMeal > 0 ? protPerMeal : Math.round(remainingProt), ovo = FOODS[foodIdx("Ovo de galinha cozido")];
+    const li = (a, b) => `<div style="color:var(--muted)">${a}</div>`;
+    dietAdvice += `<details class="fold" style="margin-top:12px;background:var(--surface2)"><summary style="font-size:14px;font-weight:600;color:var(--accent-ink)">Como bater ${t} g de proteína?</summary><div class="body" style="font-size:14px;line-height:1.6">
+      ${li("~" + gramsFor("Peito de frango grelhado", t) + " g de frango grelhado")}${li("~" + gramsFor("Patinho grelhado", t) + " g de patinho")}
+      ${li("~" + Math.round(t / (ovo[2] * ovo[4] / 100)) + " ovos cozidos")}${li("~" + gramsFor("Queijo mussarela", t) + " g de queijo mussarela")}${li("~" + gramsFor("Albumina (pó)", t) + " g de albumina em pó")}
+      <div class="muted" style="font-size:13px;margin-top:6px">Valores aproximados pela tabela do app.</div></div></details>`;
+  }
+
+  const remainingWater = Math.max(0, (S.settings.waterGoal || 3000) - (d.water || 0));
+  let waterAdvice;
+  if (remainingWater <= 0) waterAdvice = "Meta de hidratação batida.";
+  else { const mlh = Math.round(remainingWater / hoursLeft); waterAdvice = mlh > 600 ? "Você está atrasado na água para este horário. Beba 500 ml agora." : `Ritmo ideal: cerca de ${mlh} ml por hora até as ${endOfDay}h.`; }
+  return { diet: dietAdvice, water: waterAdvice };
+}
+
+/* ============ DECK, cabeçalho, Aura, cardio e resumo semanal ============ */
+function applyTimeTheme() {
+  const hr = new Date().getHours();
+  document.body.classList.remove("theme-morning", "theme-night");
+  if (hr >= 4 && hr < 10) document.body.classList.add("theme-morning");
+  else if (hr >= 19 || hr < 4) document.body.classList.add("theme-night");
+}
+/* cabeçalho: saudação, relógio e nome. Roda 1x por minuto (não a cada segundo). */
+function updateTopHeader() {
+  const now = new Date(), hr = now.getHours(), set = (id, v) => { const e = document.getElementById(id); if (e && e.textContent !== v) e.textContent = v; };
+  set("topGreeting", hr >= 5 && hr < 12 ? "Bom dia" : hr >= 12 && hr < 18 ? "Boa tarde" : "Boa noite");
+  set("topClock", now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  if (S && S.profile) set("topName", S.profile.name || "Praticante");
+}
+function tickHeader() { updateTopHeader(); setTimeout(tickHeader, 60000 - (Date.now() % 60000) + 50); }
+
+/* Aura: estado visual segundo o dia */
+function auraState(d, tg) {
+  const p = (d.meals || []).reduce((a, m) => a + (m.p || 0), 0), cardio = (d.cardios || []).length > 0;
+  if (p >= tg.prot * 0.9 && cardio) return ["overdrive", "Proteína e cardio do dia em dia. Segue o ritmo.", "var(--accent)"];
+  if (p >= 40 || (d.water || 0) > 1000) return ["fed", "O núcleo absorveu energia. Mantenha proteína e água.", "var(--text)"];
+  return ["", "Sua aura precisa fluir. Tome um copo grande de água agora.", "var(--muted)"];
+}
+
+function deckBanners(k) {
+  const ban = [], abs = daysAbsent(), ab = ABSENCE.find(a => abs >= a.min);
+  if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
+  if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}. Continue de onde parou.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>`));
+  const pa = painAvg(); if (pa !== null && pa >= 4) ban.push(banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`));
+  if (deloadSignal()) ban.push(banner("warn", "info", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie."));
+  const bk = S.settings.lastBackup, bdays = bk ? diffDays(k, bk) : (Object.keys(S.days).length ? diffDays(k, firstDay()) : 0);
+  if (bdays > 21) ban.push(banner("warn", "download", "Backup atrasado", `${bk ? `Último backup há ${bdays} dias.` : "Você nunca exportou um backup."} O arquivo .json é o único que sobrevive à troca de celular.`, `<div style="margin-top:8px"><button class="btn sm" data-act="export">Exportar agora</button></div>`));
+  const wk = mondayOf(k);
+  if (parseKey(k).getDay() === 1 && !S.weights.some(w => w.d >= wk)) ban.push(banner("acc", "scale", "Dia de pesagem", "Segunda: ao acordar, depois do banheiro, antes de comer. Meça a cintura junto.", `<div style="margin-top:8px"><button class="btn sm solid" data-act="weigh">Registrar peso</button></div>`));
+  return ban.join("");
+}
+function deckWorkoutCard(k, d, L) {
+  const done = !!d.wk && !S.cur;
+  if (d.skipWk && !done && !S.cur) {
+    const nl = L || seqNext();
+    return `<div class="sec-t"><span class="dot sage"></span><span class="lbl">Hoje sem treino</span></div><h3 class="mid">Tudo bem, hoje o foco é a dieta.</h3><p class="muted">O treino <b>${nl} · ${PLAN[nl].name}</b> fica guardado para amanhã. Sua sequência não quebra.</p><button class="btn full" data-act="wk-unskip">Desfazer (vou treinar)</button>`;
+  }
+  if (L && done) {
+    const nl = seqNext();
+    return `<div class="sec-t"><span class="dot ok"></span><span class="lbl">Treino de hoje</span></div><h3 class="mid">${L} · ${PLAN[L].name} concluído</h3><p class="muted">As cargas do próximo treino já foram atualizadas. Próximo: <b>${nl} · ${PLAN[nl].name}</b>.</p><button class="btn full" data-act="goto-treino" data-day="${nl}">Ver próximo treino</button>`;
+  }
+  if (L) {
+    const p = PLAN[L];
+    return `<div class="row between"><div><div class="sec-t"><span class="dot"></span><span class="lbl" style="color:var(--accent-ink)">Sessão do amanhecer · ${DOW[parseKey(k).getDay()]}</span></div><h3 class="mid" style="margin-top:4px">${L} · ${p.name}</h3></div><span class="pill">05:00 · ${estMin(L)} min</span></div>
+      <p class="muted">${p.focus}. ${p.cuff ? "Começa com aquecimento de manguito." : "Sem aquecimento de manguito hoje."} ${inAdapt() ? "Semana " + weekNo() + " de adaptação: carga leve." : ""}</p>
+      <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR TREINO" : "INICIAR TREINO DO DIA"}</button>`;
+  }
+  return `<div class="sec-t"><span class="dot sage"></span><span class="lbl">Descanso ativo</span></div><h3 class="mid">Fim de semana</h3><p class="muted">Sem treino de academia. Caminhada livre de 30 minutos conta como hábito. Se quiser treinar, escolha um dia na aba Treino.</p>`;
+}
+const qtile = (act, icon, val, lbl) => `<button class="card qtile" ${act}><span class="qi">${ic(icon)}</span><b class="tabnum">${val}</b><span class="lbl">${lbl}</span></button>`;
+
+function rDeck() {
+  const k = today(), d = D(k), L = planLetter(k), tg = TG(), tot = dayTotals(k), ds = dayStreak(), ws = weekStreak();
+  const week = activeInWeek(mondayOf(k)), advice = getMetabolicAdvice(k), [ac, am, acol] = auraState(d, tg);
+  const cardioMin = (d.cardios || []).reduce((a, c) => a + (c.min || 0), 0);
+  const habits = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}${id === "acucar" ? `<span class="s">Regra nº 1. Se cumprir uma só, que seja esta.</span>` : ""}</span></button>`).join("");
+  const sup = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}<span class="s">${s}</span></span></button>`).join("");
+  const nextM = MILESTONES.find(m => !m.test(S.profile.startWeight, Math.min(...S.weights.map(w => w.kg), S.profile.startWeight)));
+  const ban = deckBanners(k), fold = (dot, t, body) => `<details class="fold card"><summary><span class="row"><span class="dot ${dot}"></span><span class="lbl">${t}</span></span>${ic("down")}</summary><div class="body">${body}</div></details>`;
+  $("#v-deck").innerHTML = `
+  ${ban ? `<section class="stack">${ban}</section>` : ""}
+  <div class="aura-container" id="aura-container"><div class="aura-core ${ac}" id="auraCoreEl"></div><div class="aura-msg" id="auraMsgEl" style="color:${acol}">${am}</div></div>
+  <section class="card tipcard"><div class="lbl" style="color:var(--text)">Dica do núcleo</div><div style="font-size:15px;line-height:1.5;color:var(--muted)">${advice.diet}<br><span style="color:var(--text)">${advice.water}</span></div></section>
+  ${fraseHTML()}
+  <section class="card">${deckWorkoutCard(k, d, L)}</section>
+  <div class="qgrid">
+    ${qtile('data-go="agua"', "drop", (d.water / 1000).toFixed(1).replace(".", ",") + " L", `Água · ${Math.round(Math.min(1, (d.water || 0) / S.settings.waterGoal) * 100)}%`)}
+    ${qtile('data-go="comer"', "fork", Math.round(tot.p) + " g", `Proteína · ${fmtInt(tot.k)} kcal`)}
+    ${qtile('data-act="cardio-open"', "flame", cardioMin ? cardioMin + " min" : "Cardio", cardioMin ? "Cardio hoje" : "Registrar")}
+    ${qtile('data-go="evol"', "trend", ds + (ds === 1 ? " dia" : " dias"), "Sequência")}
+  </div>
+  ${fold("ok", `Hábitos diários (${habitCount(k)}/6)`, `<div class="stack">${habits}</div>`)}
+  ${fold("sage", `Suplementos de hoje (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})`, sup)}
+  ${fold("acc", `Ritmo semanal (${week}/5)`, `<div class="row" style="gap:16px;margin-top:10px">${ring(week / 5, 96, 7, "var(--sage)", `<div><div class="big tabnum">${week}<span class="muted" style="font-size:14px">/5</span></div><div class="lbl">ativos</div></div>`)}
+      <div class="grow stack"><div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div><div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div></div></div>
+      <p class="muted" style="font-size:15px;margin-top:10px">Dia ativo = zero açúcar + 2 outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
+      <button class="btn sm full" data-act="review-open" style="margin-top:8px">Ver resumo da semana</button>`)}
+  ${nextM ? `<section class="card flat"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
+  <section class="card flat row" style="align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>`;
+}
+
+/* --- cardio --- */
+ACT["cardio-open"] = () => $("#cardioSheet").classList.add("on");
+ACT["cardio-close"] = () => $("#cardioSheet").classList.remove("on");
+ACT["cardio-save"] = () => {
+  const min = num($("#cardioMins").value); if (min <= 0) return toast("Informe os minutos.");
+  const d = DW(today()); d.cardios = d.cardios || [];
+  d.cardios.push({ min, spd: num($("#cardioSpd").value), inc: num($("#cardioInc").value) });
+  ["cardioMins", "cardioSpd", "cardioInc"].forEach(i => $("#" + i).value = "");
+  save(); $("#cardioSheet").classList.remove("on"); toast("Cardio registrado."); render();
+};
+
+/* --- resumo semanal (últimos 7 dias, com números reais) --- */
+function weekReview() {
+  const k = today(), prot = [];
+  let cardio = 0, act = 0;
+  for (let i = 1; i <= 7; i++) {
+    const dk = addDays(k, -i), d = D(dk), p = (d.meals || []).reduce((a, m) => a + (m.p || 0), 0);
+    if (p > 0) prot.push(p); cardio += (d.cardios || []).reduce((a, c) => a + (c.min || 0), 0); if (isActive(dk)) act++;
+  }
+  const avg = prot.length ? Math.round(prot.reduce((a, b) => a + b, 0) / prot.length) : 0, tp = TG().prot;
+  const sug = !prot.length ? "Sem comida registrada na semana. Registre ao menos o almoço para o app poder ajudar."
+    : avg < tp * 0.85 ? `Proteína média de ${avg} g, abaixo da meta de ${tp} g. Coloque uma fonte de proteína em cada refeição.`
+    : act >= 5 ? "Semana verde: 5 ou mais dias ativos. Mantenha o ritmo." : `${act} dias ativos. Faltam ${5 - act} para a meta: escolha o hábito mais fácil e repita amanhã.`;
+  return { avg, cardio, act, sug, prot: prot.length };
+}
+function reviewOpen() {
+  const r = weekReview();
+  $("#revP").textContent = r.prot ? r.avg + " g" : "—"; $("#revC").textContent = r.cardio + " min"; $("#revW").textContent = `${r.act} de 7 dias ativos · semana ${weekNo()}`; $("#revSug").textContent = r.sug;
+  $("#reviewSheet").classList.add("on");
+}
+ACT["review-open"] = reviewOpen;
+ACT["review-close"] = () => $("#reviewSheet").classList.remove("on");
+function maybeReview() {
+  const k = today();
+  if (parseKey(k).getDay() === 1 && S.settings.revSeen !== k && Object.values(S.days).some(hasData)) { S.settings.revSeen = k; save(); reviewOpen(); }
+}
 
 /* ============ LEMBRETES: gera um arquivo .ics para o calendário do celular ============ */
 // id, texto, horário padrão, dias (ICS BYDAY) ou null = todo dia, mensagem
@@ -1265,23 +1442,150 @@ function buildICS(sel) {
   });
   return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Still I Rise//PT-BR//", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Still I Rise", ...ev, "END:VCALENDAR"].join("\r\n") + "\r\n";
 }
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "rem-open") remSheet();
-  else if (b.dataset.act === "rem-gen") {
-    const cfg = {}, sel = [];
-    REMS.forEach(([id, , def]) => {
-      const on = $(`[data-rem="${id}"]`).checked, t = $(`[data-remt="${id}"]`).value || def;
-      cfg[id] = { on, t }; if (on) sel.push({ id, t });
-    });
-    S.settings.rem = cfg; save();
-    if (!sel.length) return toast("Marque pelo menos um lembrete.");
-    const blob = new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "still-i-rise-lembretes.ics";
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    closeSheet(); toast(`${sel.length} lembretes gerados. Abra o arquivo para adicionar.`);
+ACT["rem-open"] = remSheet;
+ACT["rem-gen"] = () => {
+  const cfg = {}, sel = [];
+  REMS.forEach(([id, , def]) => {
+    const on = $(`[data-rem="${id}"]`).checked, t = $(`[data-remt="${id}"]`).value || def;
+    cfg[id] = { on, t }; if (on) sel.push({ id, t });
+  });
+  S.settings.rem = cfg; save();
+  if (!sel.length) return toast("Marque pelo menos um lembrete.");
+  const blob = new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "still-i-rise-lembretes.ics";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  closeSheet(); toast(`${sel.length} lembretes gerados. Abra o arquivo para adicionar.`);
+};
+
+/* ============ A.I. (Aura): chat com o Gemini ============ */
+const GEM_MODELS = [
+  ["gemini-2.5-flash-lite", "gemini-2.5-flash-lite (rápido e barato, padrão)"],
+  ["gemini-2.5-flash", "gemini-2.5-flash (equilibrado)"],
+  ["gemini-2.5-pro", "gemini-2.5-pro (avançado, pode exigir plano pago)"]
+];
+function gemSelect() {
+  const cur = S.settings.gemModel || GEM_MODELS[0][0], list = GEM_MODELS.some(m => m[0] === cur) ? GEM_MODELS : [[cur, cur + " (personalizado)"], ...GEM_MODELS];
+  return `<select class="field" id="gemModel" style="margin-bottom:10px">${list.map(([v, t]) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
+}
+function rIA() {
+  const v = $("#v-ia"); if (!v) return;
+  if (!S.settings.gemKey) {
+    v.innerHTML = `<section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">A.I. Pessoal</h2><p class="muted">Conecte uma IA para analisar seus treinos, sua dieta e fotos de comida.</p></section>
+    <section class="card">
+      <div class="lbl">Chave API do Gemini</div>
+      <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui">
+      <label class="lbl">Modelo</label>${gemSelect()}
+      <button class="btn solid full" data-act="gem-save">Conectar IA</button>
+      <p class="muted" style="font-size:14px">A chave fica só neste aparelho e não entra no backup. Ela é enviada ao Google quando você faz uma pergunta, junto com o texto e as fotos que você mandar. Crie uma no Google AI Studio.</p>
+    </section>`;
+    return;
   }
-});
+  const chat = S.chat || [];
+  const msgs = chat.length
+    ? `<div class="chat-container">${chat.map(m => `<div class="chat-msg ${m.role}">${esc(m.text || "").replace(/\n/g, "<br>")}${m.img ? `<div class="chat-msg img"><img alt="Foto enviada" src="data:image/jpeg;base64,${m.img}"></div>` : ""}</div>`).join("")}<div id="ai-typing" style="display:none" class="chat-msg ai typing">Pensando...</div></div>`
+    : `<div style="text-align:center;padding:40px 20px"><div class="ia-spark">${ic("sparkles")}</div><h3 class="mid">Sou a Aura, assistente de IA do app</h3><p class="muted" style="margin-top:10px">Conheço suas metas e o que você registrou hoje. Pergunte sobre comida, treino ou mande a foto de um rótulo. Não substituo médico nem nutricionista.</p></div>`;
+  v.innerHTML = `
+  <section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px">
+    <div class="row between"><h2 class="h1">A.I. Pessoal</h2>
+      <details class="fold" style="background:transparent;box-shadow:none;padding:0"><summary style="min-height:auto;font-size:13px;color:var(--accent-ink)">Modelo</summary>
+        <div class="body" style="padding:10px;margin-top:5px;background:var(--surface2);border-radius:8px"><div class="lbl">Modelo atual</div>${gemSelect()}<button class="btn sm solid full" data-act="gem-save">Salvar modelo</button></div>
+      </details></div>
+  </section>
+  <div id="chat-messages" style="padding-bottom:70px">${msgs}</div>
+  <div class="chat-input-area">
+    <button class="chat-btn" data-act="ia-clear" style="color:var(--bad)" aria-label="Limpar conversa">${ic("trash")}</button>
+    <button class="chat-btn" data-act="ia-cam" aria-label="Enviar foto">${ic("camera")}</button>
+    <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none;padding-top:12px;max-height:120px;overflow-y:auto"></textarea>
+    <button class="chat-btn primary" data-act="ia-send" aria-label="Enviar">${ic("right")}</button>
+    <input type="file" id="ia-foto" accept="image/*" hidden>
+  </div>`;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+function buildAuraContext() {
+  const k = today(), d = D(k), tg = TG(), tot = dayTotals(k), L = planLetter(k) || "descanso";
+  return `Você é a Aura, uma assistente de IA integrada ao app Still I Rise (treino, dieta e hábitos para manter o peso). Seja direta, objetiva e encorajadora, em português do Brasil.
+Dados do usuário hoje:
+- Nome: ${S.profile.name || "Usuário"}
+- Calorias: ${Math.round(tot.k)} de ${tg.kcal} kcal
+- Proteína: ${Math.round(tot.p)} de ${tg.prot} g
+- Água: ${(d.water / 1000).toFixed(1)} de ${(S.settings.waterGoal / 1000).toFixed(1)} L
+- Treino do dia: ${L}
+- Fibras registradas: ${d.fiber || 0} g
+- Horário: ${new Date().toLocaleTimeString("pt-BR")}
+Regras:
+1. Responda em no máximo 2 ou 3 parágrafos curtos.
+2. Em fotos de comida, estime os macros como aproximação e diga como encaixar no que resta do dia.
+3. Se perguntarem se podem comer algo, use os macros restantes para responder.
+4. Você é uma IA e pode errar. Não faça diagnóstico nem ajuste medicação. Para dor, sintomas, glicemia alterada ou dúvida clínica, oriente a procurar um profissional de saúde.`;
+}
+async function askAuraIA(text, file = null) {
+  if (!S.settings.gemKey) return toast("Configure a chave do Gemini na aba A.I. primeiro.");
+  const base64 = file && typeof fotoDownscale === "function" ? await fotoDownscale(file) : null;
+  S.chat = S.chat || []; S.chat.push({ role: "user", text, img: base64 }); rIA();
+  const typing = $("#ai-typing"); if (typing) typing.style.display = "block"; window.scrollTo(0, document.body.scrollHeight);
+  try {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
+    const parts = [{ text: text || "O que acha dessa foto para a minha dieta hoje?" }];
+    if (base64) parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(S.settings.gemModel || GEM_MODELS[0][0])}:generateContent`, {
+      method: "POST", signal: ctl.signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": S.settings.gemKey },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: buildAuraContext() }] }, contents: [{ parts }] })
+    });
+    clearTimeout(t);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error ? j.error.message : "Erro na IA");
+    S.chat.push({ role: "ai", text: j.candidates[0].content.parts[0].text });
+  } catch (e) { S.chat.push({ role: "ai", text: "Não consegui responder agora: " + e.message }); }
+  S.chat.forEach(m => delete m.img);        // fotos não ficam guardadas (pesam no armazenamento e no backup)
+  S.chat = S.chat.slice(-40); save(); rIA();
+}
+ACT["ia-cam"] = () => { const f = $("#ia-foto"); if (f) f.click(); };
+ACT["ia-clear"] = () => openSheet(`<div style="text-align:center;padding:10px 0"><h3 class="mid" style="margin-bottom:10px">Limpar a conversa?</h3><p class="muted" style="margin-bottom:20px">Todo o histórico com a A.I. será apagado.</p>
+  <div class="row" style="gap:10px"><button class="btn grow" data-act="close">Cancelar</button><button class="btn solid grow" style="background:var(--bad);color:#fff" data-act="ia-clear-confirm">Sim, apagar</button></div></div>`);
+ACT["ia-clear-confirm"] = () => { S.chat = []; save(); closeSheet(); render(); toast("Conversa apagada."); };
+ACT["ia-send"] = () => { const i = $("#ia-input"); if (!i) return; const t = i.value.trim(); if (t) { i.value = ""; i.style.height = "auto"; askAuraIA(t); } };
+function iaFoto(e) {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  const i = $("#ia-input"), t = i ? i.value.trim() : ""; if (i) { i.value = ""; i.style.height = "auto"; }
+  askAuraIA(t, f);
+}
+
+/* ============ NUVEM: cópia dos dados em um gist secreto do GitHub + estado sem segredos ============ */
+// Gist "secreto" NÃO é privado: quem tiver o link consegue ler. Os dados de saúde vão para lá.
+const GIST_FILE = "still-i-rise.json", SECRETS = ["gemKey", "ghToken"];
+function safeState() {
+  const c = JSON.parse(JSON.stringify(S)); SECRETS.forEach(k => delete c.settings[k]); delete c.settings.ghGistId; return c;
+}
+const ghHead = () => ({ Authorization: "Bearer " + S.settings.ghToken, Accept: "application/vnd.github+json", "Content-Type": "application/json" });
+let cloudT = null;
+function cloudQueue() { if (!S || !S.settings.ghToken || !S.settings.ghGistId) return; clearTimeout(cloudT); cloudT = setTimeout(() => syncToCloud(false), 8000); }
+async function syncToCloud(manual) {
+  if (!S.settings.ghToken) return manual && toast("Cole o token do GitHub primeiro.");
+  const body = { description: "Still I Rise: cópia dos dados", files: { [GIST_FILE]: { content: JSON.stringify(safeState()) } } };
+  try {
+    let r;
+    if (S.settings.ghGistId) r = await fetch("https://api.github.com/gists/" + encodeURIComponent(S.settings.ghGistId), { method: "PATCH", headers: ghHead(), body: JSON.stringify(body) });
+    else r = await fetch("https://api.github.com/gists", { method: "POST", headers: ghHead(), body: JSON.stringify({ ...body, public: false }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.message || r.status);
+    if (!S.settings.ghGistId) { S.settings.ghGistId = j.id; save(); if (UI.tab === "mais") rMais(); }
+    S.settings.cloudAt = Date.now(); localStorage.setItem(KEY, JSON.stringify(S));
+    if (manual) toast("Dados enviados para a nuvem.");
+  } catch (e) { if (manual) toast("Falha ao enviar: " + e.message); }
+}
+async function syncFromCloud() {
+  if (!S.settings.ghToken || !S.settings.ghGistId) return toast("Informe o token e o Gist ID.");
+  try {
+    const r = await fetch("https://api.github.com/gists/" + encodeURIComponent(S.settings.ghGistId), { headers: ghHead() }), j = await r.json();
+    if (!r.ok) throw new Error(j.message || r.status);
+    const f = j.files && j.files[GIST_FILE]; if (!f) throw new Error("arquivo não encontrado no gist");
+    const o = JSON.parse(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
+    if (!o || !o.profile || !o.days) throw new Error("dados inválidos");
+    if (!confirm("Substituir os dados deste aparelho pela cópia da nuvem?")) return;
+    const keep = {}; SECRETS.concat("ghGistId").forEach(k => keep[k] = S.settings[k]);
+    S = mergeDefaults(o); Object.assign(S.settings, keep); save(); applyTheme(); go("deck"); toast("Dados restaurados da nuvem.");
+  } catch (e) { toast("Falha ao baixar: " + e.message); }
+}
 
 "use strict";
 /* ============ utilidades ============ */
@@ -1324,6 +1628,7 @@ function save() {
   const j = JSON.stringify(S);
   try { localStorage.setItem(KEY, j); } catch (e) { }
   clearTimeout(idbTimer); idbTimer = setTimeout(() => IDB.put(j), 300);
+  cloudQueue();
 }
 async function loadState() {
   let raw = null;
@@ -1443,83 +1748,6 @@ function render() {
 
 /* ============ DECK ============ */
 function tipOfDay() { const n = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); return TIPS[n % TIPS.length]; }
-function orig_rDeck() {
-  const k = today(), d = D(k), L = planLetter(k), tg = TG(), tot = dayTotals(k), h = new Date().getHours();
-  const hi = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
-  const week = activeInWeek(mondayOf(k)), ds = dayStreak(), ws = weekStreak(), abs = daysAbsent();
-  const ban = [];
-  const ab = ABSENCE.find(a => abs >= a.min);
-  if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
-  if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}. Continue de onde parou.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>`));
-  const pa = painAvg(); if (pa !== null && pa >= 4) ban.push(banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`));
-  if (deloadSignal()) ban.push(banner("warn", "info", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie."));
-  const bk = S.settings.lastBackup, bdays = bk ? diffDays(k, bk) : (Object.keys(S.days).length ? diffDays(k, firstDay()) : 0);
-  if (bdays > 21) ban.push(banner("warn", "download", "Backup atrasado", `${bk ? `Último backup há ${bdays} dias.` : "Você nunca exportou um backup."} O arquivo .json é o único que sobrevive à troca de celular.`, `<div style="margin-top:8px"><button class="btn sm" data-act="export">Exportar agora</button></div>`));
-  const isMon = parseKey(k).getDay() === 1, wk = mondayOf(k);
-  if (isMon && !S.weights.some(w => w.d >= wk)) ban.push(banner("acc", "scale", "Dia de pesagem", "Segunda: ao acordar, depois do banheiro, antes de comer. Meça a cintura junto.", `<div style="margin-top:8px"><button class="btn sm solid" data-act="weigh">Registrar peso</button></div>`));
-
-  const bars = Array.from({ length: 7 }, (_, i) => { const kk = addDays(k, i - 6), c = habitCount(kk); const dd = parseKey(kk); return `<div class="d ${kk === k ? "t" : ""}"><i style="height:${Math.max(8, c / 6 * 100)}%;background:${isActive(kk) ? "var(--ok)" : c ? "var(--accent)" : "var(--surface2)"}"></i><span>${DOW[dd.getDay()][0]}</span></div>`; }).join("");
-  const wtxt = week >= 5 ? "Meta da semana cumprida." : week === 4 ? "Semana amarela: um dia a mais e fecha." : `Faltam ${5 - week} dia(s) ativos para a meta.`;
-
-  const habits = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}${id === "acucar" ? `<span class="s">Regra nº 1. Se cumprir uma só, que seja esta.</span>` : ""}</span></button>`).join("");
-
-  const doneToday = !!D(k).wk && !S.cur;
-  let wk2;
-  if (L && doneToday) {
-    const nl = seqNext();
-    wk2 = `<div class="sec-t"><span class="dot ok"></span><span class="lbl">Treino de hoje</span></div><h3 class="mid">${L} · ${PLAN[L].name} concluído</h3><p class="muted">As cargas do próximo treino já foram atualizadas. Próximo: <b>${nl} · ${PLAN[nl].name}</b>.</p><button class="btn full" data-act="goto-treino" data-day="${nl}">Ver próximo treino</button>`;
-  } else if (L) {
-    const p = PLAN[L];
-    wk2 = `<div class="row between"><div><div class="sec-t"><span class="dot"></span><span class="lbl" style="color:var(--accent-ink)">Sessão do amanhecer · ${DOW[parseKey(k).getDay()]}</span></div><h3 class="mid" style="margin-top:4px">${L} · ${p.name}</h3></div><span class="pill">05:00 · ${estMin(L)} min</span></div>
-      <p class="muted">${p.focus}. ${p.cuff ? "Começa com aquecimento de manguito." : "Sem aquecimento de manguito hoje."} ${inAdapt() ? "Semana " + weekNo() + " de adaptação: carga leve." : ""}</p>
-      <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR TREINO" : "INICIAR TREINO DO DIA"}</button>`;
-  } else wk2 = `<div class="sec-t"><span class="dot sage"></span><span class="lbl">Descanso ativo</span></div><h3 class="mid">Fim de semana</h3><p class="muted">Sem treino de academia. Caminhada livre de 30 minutos conta como hábito. Se quiser treinar, escolha um dia na aba Treino.</p>`;
-
-  const pw = Math.min(1, d.water / S.settings.waterGoal);
-  const nextM = MILESTONES.find(m => !m.test(S.profile.startWeight, Math.min(...S.weights.map(w => w.kg), S.profile.startWeight)));
-  const sup = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}<span class="s">${s}</span></span></button>`).join("");
-
-  $("#v-deck").innerHTML = `
-  <section class="card hero" style="gap:8px">
-    <div class="row between"><span class="pill">${DOW[parseKey(k).getDay()]} · ${dispDate(k)}</span><span class="lbl">Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}</span></div>
-    <div class="row" style="gap:14px;margin-top:4px"><img class="avatar lg" src="data:image/jpeg;base64,/9j/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBgwICQcKDgwPDg4MDQ0PERYTDxAVEQ0NExoTFRcYGRkZDxIbHRsYHRYYGRj/2wBDAQQEBAYFBgsGBgsYEA0QGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBj/wAARCABgAGADASIAAhEBAxEB/8QAHAAAAQUBAQEAAAAAAAAAAAAAAQACBQYHCAME/8QAOhAAAQIEAwUFBgQGAwAAAAAAAQIDAAQFEQYSIQcTMUFRFSJhcZEIFjJygaEUQmKxM0NSgpLRg8HC/8QAGgEAAgMBAQAAAAAAAAAAAAAABAUAAQMCBv/EAC0RAAEDAgQDBwUBAAAAAAAAAAEAAgMEERITMVEFIUEUYXGBkbHBMlJioeHw/9oADAMBAAIRAxEAPwDi2ETrCteCBGqzSEGFBA0iKJDjHumUmlyTk4iWeVLNrS2t8IJQlSrlKSrgCbGw52MebQBmGwQLFaQQfOOyfZpptHXScaduMyJpgEm3MtzaUlhTZ33dUk6EeHpANbW9mANro6los+N772tb9rjQix1FoVxH2VYMCuziZVCQz+JcS0lN7Zc5CQPpYCNHomyuqSTFKFRlEOYprastHozo0lWxqudmuiUDUIPO2bhlgl8zWAF3VCtjLjYLNkSDiqO7U3bty6XAw2T/ADXSMxSPlT3ieV0j8wj4rxa8f1OmTWJEUbDzinKJR0GSlHlfFNKzXemV/qdcurwSEDgBFUtHbDcXK5cADZA6woJ0hAXjtUkIMC0ECIqRA5w5CFuOpbbQpa1GyUpBUSegA4mGmLLhSjuzkrU6skrT+FYKWVoJBDls1weVgOP6oymkETS4oimgM8gYF5yWCsTTSEPGiTTbBIup4Bu452B1+0e7c9i6nzExhGluz4XOvISJRlJLzhF8qRbW9lH762vGjYTx12k/K0yrJ3jr5Q2zNp/OpRASFjqSQM3r1ixUWqyeFvaflZuabbUx2SGH1lAKgFulJWDxuNP7QRzhMa2QvIlYOQuPJPZuHRRwY4HnmQCpPAGyKlbOsKTe0DHjaZqpyEuuc3DdlokkpSTZHJbvLNwF9P6oiMTV6ewlswqWNq0tKMZ41aEtItoVfsynkZsiDyshQKjzWtPQxoO3isheyOvytPdCWnGkSSXEmwWp11CCrysT9L9Y5l2oYy988drelVHsuntJp1PTaw3LYy57dVqBV5EDlFUQfVHNk35+AtYevsls5bCMLVShbkLDkOkK8LgIEPktSsYPCABpCiKk4GCIEECIrSJskmNhokkzhzAO6nilsbouzBVyUoXPoLD6RnOFKUqr4qlmMuZttW+cHKydQPqbD1iTxtivtiY7MkV3kWF3U4k/x19flHLrx6QtrGOnkbC3Qcz8JrRSNpoXTH6jyHyvgpMzu5ZLjKjmYV3DwOhuPLlGtybaK/7Q8iSBu5imMu8fyqdzH7Ri9KZm0y786hpS5NpSEPrGuTNexPhfS/iOsbBgF9L20ynzKHUpVL4cOZRVaxQ6pGp9DA1bGGuJGxRcExfT2O4U7t0qSm9l7cpcgzNQaBseSQtf/QjnADWNH2nVmrYoYla80ypOG0TTsjIucA86lIUty3iNAeiSOsZzrBvDosqANOqT1b8clwmqhsPVDRByGSOsCCYHExatOHHWHQ2DaIqUtKVNdLoMyxKKtMz4yOuA6tsg/COhUb3PIecRJ0BgwDwtHDWgEnddueXWB0C1TZpLy7bHZ04wl5qoyrgdbVwWFWNvQR8kphCsy+0aZwpLT6kSb0od7MhXfMiXAop+YqGQ/XlDMAT2RdLeURdl7cHyOn7KEXiXJRt0ccPDsVNx/wA0efdK+OWTz9V6qogjko4njpYeSu2OcIStQ9lScYk5dtlVPvUpZCQAEpZOUpHm3nEcmaXtHX23aspoGwZVKlVbt2eZlpHKOPfAdc+wV6xyCbk+MG8HxGEl268/XWxi2yF9bQ02vpBUNYbDVBpQucEDSBEUTkmHc4EKxvEVIwTYXJOg1hCJChyHaNeYZUm7STvHPlGtvqbCOHvDGlx6LSGJ0rxG3UqdoDT9JnTLTBspbLc2gcLHmPppGlSq99tuCk95L1HbAt+p7T94pNaQGqrTags2SFqlnPJY0+4i04RfMxtlpanBcGktI16pfI/8x5+U5hMu7SvWTMEMBg+1wt4HmrHtzYnsaY993aOpS+zKfM1Vbadc1iENp8ylJt5xzkbEXBuOMdRYAcNSx3jPFpstD04mlyyjqC2wO9bwKiIwnaRhn3W2jVCQaQUyjqvxUr03S7kAfKcyf7YN4dKGns+wH9915yqjuMz/AHcqieEN4Q+GlMNkGgDCIhWtAOsWonDjrDgdYBFuESiPdrdpz9q57DNlyWvztGb34el1pHHmHUDxUaDraLtg+RMvTXJ1xPfmD3b8kDh6m59IrqhhcpNu17+aIn2MXUpmWbZRKzSUISEpFk6AC3WAa0ySx4I2lOeEtgp5s2aQctFK4gllTeHZpDfxoTvkfMg5h+xj6MLVpmTxc7WVqGWToLs0knkQoqSP8lCIb3zpdrGWmrHj3U/7irMT6WkvS5LgYebTLLUPi3IeCyLdbC0DU1LIWlrxb+6onitbC83ide/xp7rpfZrJLouy2kSsxffutGbevxK3TnP2Iiv7a6Aqs4QYxAwi79LVZ0galhZAP+Ksp+piNTtrwwlCUIp9VSlIypSG29ANAPj6Q1/bPhOcpz8hN0urOy8w2pl1G7R3kqFiPj6QJHBUsnzsB1S5z4nR5eJYaSL2hHzi57zZIE2EtjEm3FTjP+o8nlbLTKu/h28Wh/dq3W8UyU57HLewva9r+EPs78T6Jdld4VPNjAI1hyb21487QNTxghZL/9k=" alt="" width="56" height="56"><h2 class="h1 grow">${hi}, ${esc(S.profile.name)}.</h2></div>
-    <p class="quote">"Still I Rise. O crescimento é orgânico, como raízes antigas que se aprofundam calmas na terra morna."</p>
-  </section>
-  ${ban.length ? `<section style="order:1;display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
-  <section class="card" style="order:4">
-    <div class="row between"><div class="sec-t"><span class="dot sage"></span><span class="lbl">Ritmo semanal</span></div><span class="pill ok">Não-punitivo</span></div>
-    <div class="row" style="gap:16px">
-      ${ring(week / 5, 112, 8, "var(--sage)", `<div><div class="big tabnum">${week}<span class="muted" style="font-size:16px">/5</span></div><div class="lbl">dias ativos</div></div>`)}
-      <div class="grow" style="display:flex;flex-direction:column;gap:10px">
-        <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
-        <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
-      </div>
-    </div>
-    <div class="week">${bars}</div>
-    <p class="muted" style="font-size:15px">${wtxt} Dia ativo = zero açúcar + 2 outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
-  </section>
-  <section class="card" style="order:3">
-    <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">Hábitos de hoje</span></div><span class="pill">${habitCount(k)}/6</span></div>
-    <div style="display:flex;flex-direction:column;gap:10px">${habits}</div>
-  </section>
-  <section class="card" style="order:2">${wk2}</section>
-  <section class="card" style="order:5">
-    <div class="row between"><div class="sec-t"><span class="dot" style="background:var(--sage)"></span><span class="lbl">Hidratação</span></div><span class="lbl">Meta ${S.settings.waterGoal / 1000} L</span></div>
-    <div class="row between" style="align-items:baseline"><div><span class="big tabnum">${(d.water / 1000).toFixed(2)}</span><span class="muted"> / ${(S.settings.waterGoal / 1000).toFixed(2)} litros</span></div><span class="lbl">${Math.round(pw * 100)}%</span></div>
-    <div class="bar"><i style="width:${pw * 100}%"></i></div>
-    <div class="grid3"><button class="btn sm" data-act="water" data-ml="250">+250 ml</button><button class="btn sm" data-act="water" data-ml="500">+500 ml</button><button class="btn sm ghost" data-act="water" data-ml="-250">−250</button></div>
-  </section>
-  <section class="card" style="order:6">
-    <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Nutrição de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
-    <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
-      ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">/ ${tg.prot} g prot</div></div>`)}
-    </div>
-  </section>
-  <details class="fold card" style="order:7;padding:0 14px"><summary><span class="row"><span class="dot sage"></span><span class="lbl">Suplementos de hoje · ${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length}</span></span>${ic("down")}</summary><div class="body">${sup}</div></details>
-  ${nextM ? `<section class="card flat" style="order:8"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
-  <section class="card flat row" style="order:9;align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>`;
-}
 
 /* ============ TREINO ============ */
 function rTreino() {
@@ -1527,7 +1755,10 @@ function rTreino() {
   const p = PLAN[L], vol = weekVolume();
   const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div>${nextBadge(e, v[0])}<span class="tag">${e.v.length} variações</span></div>`; }).join("");
   const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:14px">${c.sets} × ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
-  const pa = painAvg();
+  const pa = painAvg(), kd = D(k), skipped = kd.skipWk && !UI.pickDay && !S.cur && !kd.wk;
+  if (skipped) { $("#v-treino").innerHTML = `
+  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E.</p></section>
+  <section class="card" style="text-align:center;padding:36px 20px"><h3 class="mid">Tudo bem, o foco hoje é a dieta.</h3><p class="muted" style="margin-top:10px">O treino <b>${L} · ${p.name}</b> fica guardado para amanhã. Sua sequência não quebra.</p><button class="btn ghost full" style="margin-top:20px" data-act="wk-unskip">Desfazer (vou treinar)</button></section>`; return; }
   $("#v-treino").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E: se você faltar um dia, o treino continua de onde parou. As cargas da próxima vez são recalculadas ao fim de cada treino.</p></section>
   ${S.cur ? banner("acc", "play", "Treino em andamento", `Treino ${S.cur.day} aberto.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar</button></div>`) : ""}
@@ -1538,6 +1769,7 @@ function rTreino() {
     <p class="muted">${p.focus}. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
     <div class="list">${warm}${list}</div>
     <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR" : `INICIAR TREINO ${L}`}</button>
+    ${!S.cur && !UI.pickDay && !kd.wk ? `<button class="btn ghost full" style="color:var(--muted)" data-act="wk-skip">Não consegui ir hoje</button>` : ""}
   </section>
   <section class="card flat">
     <div class="lbl">Balanço semanal de séries</div>
@@ -1816,8 +2048,7 @@ function rMais() {
 
 /* ============ ações ============ */
 function exportData() {
-  const safe = JSON.parse(JSON.stringify(S)); delete safe.settings.gemKey;
-  const blob = new Blob([JSON.stringify(safe, null, 1)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(safeState(), null, 1)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `still-i-rise-backup-${today()}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   S.settings.lastBackup = today(); save(); toast("Backup exportado."); render();
@@ -1851,6 +2082,7 @@ document.addEventListener("click", e => {
   const t = e.target.closest("[data-tab]"); if (t) return go(t.dataset.tab);
   const b = e.target.closest("[data-act]"); if (!b) { if (e.target.id === "sheet") closeSheet(); return; }
   const a = b.dataset.act, k = today(), c = S.cur;
+  if (ACT[a]) return ACT[a](b, e);
   switch (a) {
     case "habit": {
       const d = DW(k), wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5; d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); haptic();
@@ -1859,6 +2091,8 @@ document.addEventListener("click", e => {
     }
     case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); break; }
     case "water": waterAdd(num(b.dataset.ml)); render(); break;
+    case "wk-skip": DW(k).skipWk = true; save(); render(); break;
+    case "wk-unskip": DW(k).skipWk = false; save(); render(); break;
     case "pickday": UI.pickDay = b.dataset.day; render(); break;
     case "tog-rotate": S.settings.rotate = !S.settings.rotate; save(); render(); break;
     case "wk-start": wkStart(b.dataset.day); break;
@@ -1951,19 +2185,24 @@ document.addEventListener("click", e => {
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
   }
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet();
+  if (e.key === "Enter" && !e.shiftKey && e.target.id === "ia-input") { e.preventDefault(); ACT["ia-send"](); }
+});
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.dataset.ia !== undefined) { const f = t.dataset.ia, it = IA.items[+t.dataset.i]; if (it) { it[f] = f === "nome" ? t.value : num(t.value); iaTotal(); } }
+  else if (t.id === "ia-input") { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
   else if (t.id === "q") { UI.q = t.value; $("#foodlist").innerHTML = foodListHTML(); }
   else if (t.id === "g") gSum(+t.dataset.i);
   else if (t.dataset.f && S.cur) { const st = stepsOf(S.cur.day)[S.cur.i], dd = st.t === "ex" ? S.cur.data[st.e.id] : null; if (dd) { dd.sets[+t.dataset.i][t.dataset.f] = num(t.value); save(); } }
 });
 document.addEventListener("change", e => {
+  if (e.target.id === "ia-foto") return iaFoto(e);
   if (e.target.id === "foto") { const f = e.target.files[0]; e.target.value = ""; if (f) fotoAnalisar(f); return; }
   if (e.target.id !== "file") return;
   const f = e.target.files[0]; if (!f) return;
-  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const oldKey = S.settings.gemKey; S = mergeDefaults(o); S.settings.gemKey = oldKey; save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
+  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const keep = {}; ["gemKey", "ghToken", "ghGistId"].forEach(k => keep[k] = S.settings[k]); S = mergeDefaults(o); Object.assign(S.settings, keep); save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
   e.target.value = "";
 });
 $("#themeBtn").addEventListener("click", () => { const dark = document.documentElement.dataset.theme === "dark"; S.settings.theme = dark ? "light" : "dark"; save(); applyTheme(); if (UI.tab === "mais") rMais(); });
@@ -1975,728 +2214,32 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && S)
   await loadState(); applyTheme();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) { navigator.serviceWorker.register("sw.js").catch(() => { }); let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !sessionStorage.getItem("sir_reloaded")) { sessionStorage.setItem("sir_reloaded", "1"); location.reload(); } had = true; }); }
-  go("deck");
+  applyTimeTheme(); tickHeader(); go("deck");
   if (S.cur) toast("Treino em andamento. Abra pelo Deck.");
-})();
-
-
-/* === ANTIGRAVITY INJECTIONS === */
-function applyTimeTheme() {
-    const hr = new Date().getHours();
-    document.body.classList.remove('theme-morning', 'theme-night');
-    if(hr >= 4 && hr < 10) document.body.classList.add('theme-morning');
-    else if(hr >= 19 || hr < 4) document.body.classList.add('theme-night');
-}
-applyTimeTheme();
-
-function rDeck() {
-    orig_rDeck();
-    const vDeck = document.getElementById("v-deck");
-    if(!vDeck || document.getElementById("agy-deck-ext")) return;
-    
-    const ext = document.createElement("div");
-    ext.id = "agy-deck-ext";
-    ext.innerHTML = `
-      <div class="card">
-        <h3 class="h1" style="font-size:20px;">Cardio Detalhado</h3>
-        <button class="btn solid full" onclick="document.getElementById('cardioSheet').classList.add('on')">
-          <svg class="icon"><use href="#i-flame"/></svg> Registrar Cardio
-        </button>
-      </div>
-    `;
-    vDeck.insertBefore(ext, vDeck.firstChild.nextSibling); 
-}
-
-function rComer() {
-    orig_rComer();
-    const vComer = document.getElementById("v-comer");
-    if(!vComer || document.getElementById("agy-comer-ext")) return;
-    
-    const d = DW(today());
-    if(!d.fiber) d.fiber = 0;
-    
-    const ext = document.createElement("div");
-    ext.id = "agy-comer-ext";
-    ext.innerHTML = `
-      <div class="card">
-        <h3 class="h1" style="font-size:20px;">Meta Fibras & Refeição Rápida</h3>
-        <div class="row between"><div class="lbl">Fibras (Meta: 30g)</div><div style="font-weight:700">${d.fiber}g</div></div>
-        <div class="bar"><i style="width:${Math.min((d.fiber/30)*100, 100)}%; background:var(--ok)"></i></div>
-        <div class="alert-glicose" id="agyWalkAlert" style="display:none; background:var(--warn-soft); border-left:4px solid var(--warn); padding:12px; border-radius:8px; margin-top:12px;">
-            <strong>Pico Glicêmico!</strong> Caminhe 10-15 min para regular.
-            <button class="btn sm ghost" style="margin-top:10px" onclick="document.getElementById('agyWalkAlert').style.display='none'">Fiz a caminhada ✅</button>
-        </div>
-        <button class="btn solid full" style="margin-top:10px;" id="btnStdLunch">🍱 Meu Almoço Padrão (40g P / 10g F)</button>
-      </div>
-    `;
-    vComer.appendChild(ext);
-
-    document.getElementById("btnStdLunch").addEventListener("click", () => {
-        d.meals.push({ t: Date.now(), n: "Almoço Padrão (Antigravity)", g: 0, k: 450, p: 40, m: "Almoço" });
-        d.fiber += 10;
-        save();
-        rComer(); 
-        setTimeout(() => {
-           const alert = document.getElementById("agyWalkAlert");
-           if(alert) alert.style.display = "block";
-           if(window.haptic) haptic(50);
-        }, 100);
-    });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const saveCardio = document.getElementById("saveCardioBtn");
-  if(saveCardio) {
-    saveCardio.addEventListener("click", () => {
-        const d = DW(today());
-        if(!d.cardios) d.cardios = [];
-        d.cardios.push({
-           min: num(document.getElementById("cardioMins").value),
-           spd: num(document.getElementById("cardioSpd").value),
-           inc: num(document.getElementById("cardioInc").value)
-        });
-        save();
-        document.getElementById("cardioSheet").classList.remove("on");
-        toast("Cardio Registrado!");
-        rDeck();
-    });
-  }
-
-  setTimeout(() => {
-      if(new Date().getDay() === 1 && !sessionStorage.getItem("revSeen")) {
-          sessionStorage.setItem("revSeen", "1");
-          const rW = document.getElementById("revW");
-          const rS = document.getElementById("revSug");
-          if(rW) rW.innerText = "Semana " + weekNo() + "/8";
-          if(weekNo() >= 8 && rS) rS.innerText = "Semana de Manutenção! Teste cargas máximas.";
-          const sheet = document.getElementById("reviewSheet");
-          if(sheet) sheet.classList.add("on");
-      }
-  }, 1000);
-});
-
-
-// Update Header Clock and Name
-function updateTopHeader() {
-  const now = new Date();
-  const hr = now.getHours();
-  let greet = "Boa noite";
-  if (hr >= 5 && hr < 12) greet = "Bom dia";
-  else if (hr >= 12 && hr < 18) greet = "Boa tarde";
-  
-  const greetingEl = document.getElementById("topGreeting");
-  if(greetingEl) greetingEl.innerText = greet;
-  
-  const clockEl = document.getElementById("topClock");
-  if(clockEl) clockEl.innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-  
-  const nameEl = document.getElementById("topName");
-  if(nameEl && typeof S !== 'undefined' && S.profile) {
-     nameEl.innerText = S.profile.name || "Praticante";
-  }
-}
-setInterval(updateTopHeader, 1000);
-setTimeout(updateTopHeader, 200); // Initial call after state loads
-
-
-// AURA CORE UPDATE LOGIC
-function updateAuraCore() {
-    const vDeck = document.getElementById("v-deck");
-    if(!vDeck) return;
-    
-    let auraContainer = document.getElementById("aura-container");
-    if(!auraContainer) {
-        auraContainer = document.createElement("div");
-        auraContainer.id = "aura-container";
-        vDeck.insertBefore(auraContainer, vDeck.firstChild);
-    }
-    if(!document.getElementById("auraCoreEl")) {
-        auraContainer.className = "aura-container";
-        auraContainer.innerHTML = `
-            <div class="aura-core" id="auraCoreEl"></div>
-            <div class="aura-msg" id="auraMsgEl">O núcleo está ocioso. Vamos alimentar essa máquina?</div>
-        `;
-    }
-    
-    const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
-    if(!d) return;
-
-    // Calculate states
-    const prot = d.meals ? d.meals.reduce((a, m) => a + (m.p || 0), 0) : 0;
-    const water = d.water || 0;
-    const hasCardio = d.cardios && d.cardios.length > 0;
-    
-    const core = document.getElementById("auraCoreEl");
-    const msg = document.getElementById("auraMsgEl");
-    
-    if(prot >= 160 && hasCardio) {
-        core.className = "aura-core overdrive";
-        msg.innerText = "Overdrive ativado. Suas fibras e proteínas estão otimizadas.";
-        msg.style.color = "var(--accent)";
-    } else if (prot >= 40 || water > 1000) {
-        core.className = "aura-core fed";
-        msg.innerText = "O núcleo absorveu energia. Mantenha o fluxo de proteína e hidratação.";
-        msg.style.color = "var(--text)";
-    } else {
-        core.className = "aura-core";
-        msg.innerText = "Sua aura precisa fluir. Tome um copo grande de água agora.";
-        msg.style.color = "var(--muted)";
-    }
-}
-
-// Hook into rDeck
-const agy_orig_rDeck = typeof orig_rDeck === 'function' ? orig_rDeck : rDeck;
-rDeck = function() {
-    if(typeof orig_rDeck === 'function' && orig_rDeck !== rDeck) {
-       orig_rDeck();
-    } else {
-       agy_orig_rDeck();
-    }
-    
-    // Inject Cardio Button if not exists
-    const vDeck = document.getElementById("v-deck");
-    if(vDeck && !document.getElementById("agy-deck-ext")) {
-        const ext = document.createElement("div");
-        ext.id = "agy-deck-ext";
-        ext.innerHTML = `
-          <div class="card" style="margin-top:10px;">
-            <h3 class="h1" style="font-size:20px;">Cardio Detalhado</h3>
-            <button class="btn solid full" onclick="document.getElementById('cardioSheet').classList.add('on')">
-              <svg class="icon"><use href="#i-flame"/></svg> Registrar Cardio
-            </button>
-          </div>
-        `;
-        // Insert after aura
-        vDeck.insertBefore(ext, vDeck.children[1] || vDeck.firstChild); 
-    }
-    
-    updateAuraCore();
-}
-
-
-/* --- AURA CORE & NEXUS REST DAY PATCH --- */
-const agy_orig_rTreino = typeof orig_rTreino === 'function' ? orig_rTreino : (typeof rTreino !== 'undefined' ? rTreino : function(){});
-if (typeof rTreino !== 'undefined') {
-    window.orig_rTreino = agy_orig_rTreino; // Keep a reference
-    rTreino = function() {
-        const k = today();
-        const d = typeof DW === 'function' ? DW(k) : (S.days && S.days[k] ? S.days[k] : null);
-        
-        if (d && d.skipWk && !UI.pickDay) {
-            const L = (typeof planLetter === 'function' ? planLetter(k) : null) || (typeof seqNext === 'function' ? seqNext() : "A");
-            const pName = typeof PLAN !== 'undefined' && PLAN[L] ? PLAN[L].name : "";
-            
-            const vTreino = document.getElementById("v-treino");
-            if (vTreino) {
-                vTreino.innerHTML = `
-                <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E.</p></section>
-                <section class="card" style="text-align:center; padding: 40px 20px;">
-                    <div style="font-size:50px; margin-bottom:15px; animation: aura-levitate 3s infinite;">🛡️</div>
-                    <h3 class="mid" style="font-size: 22px; color: var(--text);">Tudo bem, o foco hoje é na dieta.</h3>
-                    <p class="muted" style="margin-top: 10px; line-height: 1.5;">Você marcou que não conseguiu ir hoje. O seu treino <b style="color:var(--text);">${L} - ${pName}</b> está guardado para amanhã. A sua sequência não foi quebrada.</p>
-                    <button class="btn ghost full" style="margin-top:25px; border: 1px solid var(--line);" data-act="wk-unskip">Desfazer (Vou treinar sim!)</button>
-                </section>`;
-            }
-            return;
-        }
-
-        // Call original rendering
-        orig_rTreino();
-        
-        // Inject the skip button if not already started and not picking a day
-        if (!S.cur && !UI.pickDay) {
-            const vTreino = document.getElementById("v-treino");
-            if (vTreino) {
-                const cards = vTreino.querySelectorAll("section.card");
-                if (cards.length >= 2) {
-                    const btnContainer = cards[1];
-                    if (!btnContainer.querySelector('[data-act="wk-skip"]')) {
-                       const skipBtn = document.createElement("button");
-                       skipBtn.className = "btn ghost full";
-                       skipBtn.style.marginTop = "12px";
-                       skipBtn.style.color = "var(--muted)";
-                       skipBtn.dataset.act = "wk-skip";
-                       skipBtn.innerText = "Não consegui ir hoje";
-                       btnContainer.appendChild(skipBtn);
-                    }
-                }
-            }
-        }
-    }
-}
-
-document.addEventListener("click", e => {
-    const b = e.target.closest("[data-act]");
-    if (!b) return;
-    const a = b.dataset.act;
-    if (a === "wk-skip") {
-        const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
-        if(d) {
-            d.skipWk = true;
-            if(typeof save === 'function') save();
-            rTreino();
-        }
-    } else if (a === "wk-unskip") {
-        const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
-        if(d) {
-            d.skipWk = false;
-            if(typeof save === 'function') save();
-            rTreino();
-        }
-    }
-});
-
-
-/* === PROGRESSIVE DISCLOSURE DECK REDESIGN === */
-function orig_rDeck() {
-    const k = today(), d = typeof DW === 'function' ? DW(k) : D(k), L = typeof planLetter === 'function' ? planLetter(k) : null;
-    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    const week = activeInWeek(mondayOf(k)), ds = dayStreak(), ws = weekStreak(), abs = daysAbsent();
-    const ban = [];
-    const ab = ABSENCE.find(a => abs >= a.min);
-    if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
-    if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}.`, '<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>'));
-    
-    const waterL = (d.water / 1000).toFixed(1);
-    const habitsList = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}</span></button>`).join("");
-    const supList = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}</span></button>`).join("");
-
-    $("#v-deck").innerHTML = `
-    ${ban.length ? '<section style="display:flex;flex-direction:column;gap:10px;margin-bottom:15px;">' + ban.join("") + '</section>' : ""}
-    
-    <!-- Aura Core Anchor -->
-    <div id="aura-container"></div>
-    
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="agua">
-          <div style="font-size:24px; margin-bottom:5px;">💧</div>
-          <div style="font-weight:700; font-size:16px;">${waterL} L</div>
-          <div class="lbl">Água · ${Math.round(Math.min(1, d.water / S.settings.waterGoal) * 100)}%</div>
-       </div>
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="comer">
-          <div style="font-size:24px; margin-bottom:5px;">🍱</div>
-          <div style="font-weight:700; font-size:16px;">${Math.round(tot.p)}g</div>
-          <div class="lbl">+ Dieta</div>
-       </div>
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="treino">
-          <div style="font-size:24px; margin-bottom:5px;">🏋️‍♂️</div>
-          <div style="font-weight:700; font-size:16px;">${L || "Descanso"}</div>
-          <div class="lbl">Treino Hoje</div>
-       </div>
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" onclick="document.getElementById('cardioSheet').classList.add('on')">
-          <div style="font-size:24px; margin-bottom:5px;">🔥</div>
-          <div style="font-weight:700; font-size:16px;">Cardio</div>
-          <div class="lbl">Registrar</div>
-       </div>
-    </div>
-    
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot ok"></span><span class="lbl" style="font-size:15px; font-weight:600;">Hábitos Diários (${habitCount(k)}/6)</span></span>${ic("down")}</summary><div class="body" style="display:flex;flex-direction:column;gap:10px">${habitsList}</div></details>
-    
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot sage"></span><span class="lbl" style="font-size:15px; font-weight:600;">Suplementação (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})</span></span>${ic("down")}</summary><div class="body">${supList}</div></details>
-    
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot" style="background:var(--accent)"></span><span class="lbl" style="font-size:15px; font-weight:600;">Ritmo Semanal (${week}/5)</span></span>${ic("down")}</summary><div class="body">
-       <div class="row" style="gap:16px; margin-top:10px;">
-          ${ring(week / 5, 80, 6, "var(--sage)", '<div><div class="big tabnum">' + week + '<span class="muted" style="font-size:12px">/5</span></div></div>')}
-          <div class="grow" style="display:flex;flex-direction:column;gap:10px">
-            <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
-            <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
-          </div>
-        </div>
-    </div></details>
-    `;
-}
-
-rDeck = function() {
-    orig_rDeck();
-    if(typeof updateAuraCore === 'function') updateAuraCore();
-    fraseInject();
-}
-
-
-/* === METABOLIC ENGINE === */
-function getMetabolicAdvice(k) {
-    const d = typeof DW === 'function' ? DW(k) : D(k);
-    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    
-    const now = new Date();
-    const h = now.getHours();
-    const endOfDay = 22; // 22:00
-    
-    if (h >= endOfDay) return { diet: "Dia finalizado. Hora de descansar o sistema digestivo.", water: "Beba água com moderação agora para não prejudicar o sono." };
-    if (h < 5) return { diet: "Madrugada. Se estiver acordado, mantenha-se hidratado.", water: "Beba água se tiver sede." };
-    
-    // 1. Diet Advice
-    let dietAdvice = "";
-    const remainingProt = Math.max(0, tg.prot - tot.p);
-    let lastMealTime = null;
-    
-    if (d.meals && d.meals.length > 0) {
-        for (let i = d.meals.length - 1; i >= 0; i--) {
-            if (d.meals[i].t) {
-                lastMealTime = new Date(d.meals[i].t);
-                break;
-            }
-        }
-    }
-    
-    const hoursLeft = endOfDay - h;
-    const mealsLeft = Math.max(1, Math.floor(hoursLeft / 3.5)); // estimate 1 meal every 3.5 hours
-    const protPerMeal = Math.round(remainingProt / mealsLeft);
-    
-    if (remainingProt <= 0) {
-        dietAdvice = "✅ Meta de proteína batida! Se for comer mais tarde, priorize fibras e vegetais.";
-    } else if (lastMealTime) {
-        const diffHrs = (now - lastMealTime) / (1000 * 60 * 60);
-        if (diffHrs < 2) {
-            let nextH = Math.floor(lastMealTime.getHours() + 3.5);
-            let nextM = Math.floor((lastMealTime.getHours() + 3.5 - nextH) * 60);
-            let nextTimeStr = String(nextH).padStart(2, '0') + ":" + String(nextM).padStart(2, '0');
-            dietAdvice = "⏳ Você comeu há pouco tempo. Próxima janela anabólica sugerida: " + nextTimeStr + ". Faltam " + Math.round(remainingProt) + "g no dia.";
-        } else if (diffHrs >= 3.5) {
-            dietAdvice = "🔥 Janela anabólica aberta! Faltam " + Math.round(remainingProt) + "g no dia. Tente bater " + protPerMeal + "g na próxima refeição.";
-        } else {
-            dietAdvice = "⏳ Faltam " + Math.round(remainingProt) + "g no dia. Sugestão para a próxima refeição: " + protPerMeal + "g de proteína.";
-        }
-    } else {
-        dietAdvice = "🌅 Primeira refeição do dia? Faltam " + Math.round(remainingProt) + "g. Comece forte com " + protPerMeal + "g de proteína!";
-    }
-    
-    if (remainingProt > 0 && h < endOfDay) {
-        const target = protPerMeal > 0 ? protPerMeal : Math.round(remainingProt);
-        const chicken = Math.round((target / 30) * 100);
-        const beef = Math.round((target / 26) * 100);
-        const eggs = Math.round(target / 6);
-        const cheese = Math.round((target / 25) * 100);
-        const whey = Math.round((target / 24) * 30);
-        dietAdvice += `
-        <details class="fold" style="margin-top:12px; background:var(--surface2);">
-          <summary style="font-size:13px; font-weight:600; color:var(--accent);">💡 Como bater ${target}g de proteína?</summary>
-          <div class="body" style="font-size:13px; line-height:1.5;">
-            <div style="font-weight:600; margin-top:5px; color:var(--text);">🥩 Carnes</div>
-            <div style="color:var(--muted);">~${chicken}g de Frango desfiado</div>
-            <div style="color:var(--muted);">~${beef}g de Patinho (moído)</div>
-            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥚 Laticínios e Ovos</div>
-            <div style="color:var(--muted);">~${eggs} Ovos inteiros</div>
-            <div style="color:var(--muted);">~${cheese}g de Queijo Muçarela</div>
-            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥤 Suplementos</div>
-            <div style="color:var(--muted);">~${whey}g de Whey Protein</div>
-          </div>
-        </details>`;
-    }
-    
-    // 2. Water Advice
-    let waterAdvice = "";
-    const goalWater = (S.settings.waterGoal || 3000);
-    const remainingWater = Math.max(0, goalWater - d.water);
-    if (remainingWater <= 0) {
-        waterAdvice = "✅ Meta de hidratação batida!";
-    } else {
-        const mlPerHour = Math.round(remainingWater / hoursLeft);
-        if (mlPerHour > 600) {
-            waterAdvice = "⚠️ Você está desidratado para esse horário. Tome 500ml de água agora.";
-        } else {
-            waterAdvice = "💧 Ritmo ideal: tome aprox. " + mlPerHour + "ml de água por hora até as " + endOfDay + "h.";
-        }
-    }
-    
-    return { diet: dietAdvice, water: waterAdvice };
-}
-
-/* === OVERRIDE ORIG_RDECK TO INJECT METABOLIC ADVICE === */
-const old_orig_rDeck_meta = orig_rDeck;
-orig_rDeck = function() {
-    old_orig_rDeck_meta();
-    
-    const k = today();
-    const advice = getMetabolicAdvice(k);
-    
-    const vDeck = document.getElementById("v-deck");
-    const auraContainer = document.getElementById("aura-container");
-    if(vDeck && auraContainer) {
-        const metaBanner = document.createElement("div");
-        metaBanner.id = "meta-deck-banner";
-        metaBanner.style.marginTop = "10px";
-        metaBanner.style.marginBottom = "20px";
-        metaBanner.style.padding = "12px 16px";
-        metaBanner.style.borderRadius = "12px";
-        metaBanner.style.background = "var(--surface2)";
-        metaBanner.style.borderLeft = "4px solid var(--accent)";
-        metaBanner.innerHTML = '<div style="font-size:14px; font-weight:600; margin-bottom:4px;">🧠 Dica do Núcleo</div><div style="font-size:14px; color:var(--muted); line-height:1.4;">' + advice.diet + ' <br><span style="color:var(--text);">' + advice.water + '</span></div>';
-        
-        // Insert right after aura container
-        vDeck.insertBefore(metaBanner, auraContainer.nextSibling);
-    }
-}
-
-/* === OVERRIDE ORIG_RCOMER TO INJECT METABOLIC ADVICE === */
-const agy_orig_rComer_meta = orig_rComer;
-orig_rComer = function() {
-    agy_orig_rComer_meta();
-    
-    const k = today();
-    const advice = getMetabolicAdvice(k);
-    const vComer = document.getElementById("v-comer");
-    if(vComer) {
-        // Insert right after the header section
-        const metaBanner = document.createElement("section");
-        metaBanner.className = "card";
-        metaBanner.style.background = "var(--surface2)";
-        metaBanner.style.borderTop = "4px solid var(--ok)";
-        metaBanner.innerHTML = '<h3 class="h1" style="font-size:18px; display:flex; align-items:center; gap:8px;">🧠 Inteligência Metabólica</h3><p class="muted" style="margin-top:8px;">' + advice.diet + '</p>';
-        
-        vComer.insertBefore(metaBanner, vComer.children[1]);
-    }
-}
-
-
-/* === AURA IA CHAT === */
-function rIA() {
-    const vIA = document.getElementById("v-ia");
-    if (!vIA) return;
-    
-    if (!S.settings.gemKey) {
-        vIA.innerHTML = `<section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
-           <h2 class="h1">A.I. Pessoal</h2>
-           <p class="muted">Conecte o cérebro da sua IA para ela analisar seus treinos, dieta e pratos de comida.</p>
-        </section>
-        <section class="card">
-            <div class="lbl">Chave API do Gemini (fica só neste aparelho)</div>
-            <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui">
-            <label class="lbl">Modelo</label>
-            
-            <select class="field" id="gemModel" style="margin-bottom:10px;">
-                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
-                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
-                <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
-            </select>
-
-            <div style="margin-top:10px;"><button class="btn solid full" data-act="gem-save">Conectar IA</button></div>
-            <p class="muted" style="font-size:14px; margin-top:15px;">A chave nunca entra no backup nem vai para a internet. Crie gratuitamente no Google AI Studio.</p>
-        </section>`;
-        return;
-    }
-    
-    let msgsHTML = "";
-    if (!S.chat || S.chat.length === 0) {
-        msgsHTML = `<div style="text-align:center; padding:40px 20px;">
-           <div style="font-size:48px; margin-bottom:15px; animation:aura-levitate 3s infinite;">✨</div>
-           <h3 class="mid">Sou o seu assistente Aura</h3>
-           <p class="muted" style="margin-top:10px;">Eu conheço a sua dieta, seus treinos e seu histórico. Me pergunte qualquer coisa, peça para eu montar seu prato ou tire foto de um rótulo.</p>
-        </div>`;
-    } else {
-        msgsHTML = '<div class="chat-container">' + S.chat.map(m => `<div class="chat-msg ${m.role}">${esc(m.text || "").replace(/\n/g, "<br>")}${m.img ? `<div class="chat-msg img"><img src="data:image/jpeg;base64,${m.img}"></div>` : ""}</div>`).join("") + '<div id="ai-typing" style="display:none;" class="chat-msg ai typing">Pensando...</div></div>';
-    }
-    
-    vIA.innerHTML = `
-    <section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
-       <div class="row between">
-           <h2 class="h1">A.I. Pessoal</h2>
-           <div style="display:flex; gap:10px; align-items:center;">
-             
-             <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">🔧 Modelo</summary>
-             <div class="body" style="padding:10px; margin-top:5px; background:var(--surface2); border-radius:8px;">
-               <div class="lbl">Modelo Atual</div>
-               
-            <select class="field" id="gemModel" style="margin-bottom:10px;">
-                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
-                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
-                <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
-            </select>
-
-               <button class="btn sm solid full" data-act="gem-save">Salvar Modelo</button>
-             </div>
-           </details>
-           </div>
-       </div>
-    </section>
-    <div id="chat-messages" style="padding-bottom: 70px;">${msgsHTML}</div>
-    
-    <div class="chat-input-area">
-       <button class="chat-btn" data-act="ia-clear" style="color:var(--bad);" aria-label="Limpar Conversa"><svg class="icon"><use href="#i-trash"/></svg></button>
-       <button class="chat-btn" data-act="ia-cam"><svg class="icon"><use href="#i-camera"/></svg></button>
-       <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none; padding-top:12px; max-height:120px; overflow-y:auto;"></textarea>
-       <button class="chat-btn primary" data-act="ia-send"><svg class="icon"><use href="#i-right"/></svg></button>
-       <input type="file" id="ia-foto" accept="image/*" hidden>
-    </div>
-    `;
-    
-    // Auto-resize textarea
-    setTimeout(() => {
-        const inp = document.getElementById("ia-input");
-        if(inp) {
-            inp.addEventListener("input", function() {
-                this.style.height = "auto";
-                this.style.height = (this.scrollHeight) + "px";
-            });
-            inp.addEventListener("keypress", function(e) {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.querySelector('[data-act="ia-send"]').click(); }
-            });
-        }
-        window.scrollTo(0, document.body.scrollHeight);
-    }, 50);
-}
-
-// IA Context Builder
-function buildAuraContext() {
-    const k = today();
-    const d = typeof DW === 'function' ? DW(k) : D(k);
-    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    const L = typeof planLetter === 'function' ? planLetter(k) : "Descanso";
-    
-    return `Você é a Aura, um assistente de saúde premium, direto, objetivo e amigável, integrado ao aplicativo Still I Rise.
-DADOS DO USUÁRIO HOJE:
-- Nome: ${S.profile.name || "Usuário"}
-- Meta de Calorias: ${Math.round(tot.k)} / ${tg.kcal} kcal
-- Meta de Proteína: ${Math.round(tot.p)} / ${tg.prot} g
-- Água: ${(d.water/1000).toFixed(1)} / ${(S.settings.waterGoal/1000).toFixed(1)} L
-- Treino do Dia: ${L}
-- Fibras Consumidas: ${d.fiber || 0}g
-- Horário Atual: ${new Date().toLocaleTimeString()}
-
-Regras:
-1. Responda de forma extremamente concisa, sem enrolação. Use no máximo 2-3 parágrafos curtos.
-2. Analise fotos de comida e sugira como encaixar na dieta restante do dia.
-3. Se perguntarem se podem comer algo, avalie se os macros restantes permitem.
-4. NUNCA diga que é uma IA. Aja como o núcleo inteligente do aplicativo. Mantenha um tom encorajador e prático.`;
-}
-
-// Ask Gemini
-async function askAuraIA(text, file = null) {
-    if (!S.settings.gemKey) {
-        toast("Configure a sua chave do Gemini na aba Mais primeiro!");
-        return;
-    }
-    
-    let base64 = null;
-    if (file) {
-        if (typeof fotoDownscale === 'function') {
-            base64 = await fotoDownscale(file);
-        }
-    }
-    
-    if (!S.chat) S.chat = [];
-    S.chat.push({ role: 'user', text: text, img: base64 });
-    rIA();
-    
-    const typing = document.getElementById("ai-typing");
-    if(typing) typing.style.display = "block";
-    window.scrollTo(0, document.body.scrollHeight);
-    
-    try {
-        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
-        const parts = [{ text: text || "O que acha dessa foto para a minha dieta hoje?" }];
-        if (base64) {
-            parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
-        }
-        
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.settings.gemModel || "gemini-2.5-flash-lite"}:generateContent`, {
-            method: "POST", signal: ctl.signal,
-            headers: { "Content-Type": "application/json", "x-goog-api-key": S.settings.gemKey },
-            body: JSON.stringify({ 
-                systemInstruction: { parts: [{ text: buildAuraContext() }] },
-                contents: [{ parts: parts }]
-            })
-        });
-        clearTimeout(t);
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error ? j.error.message : "Erro na IA");
-        
-        const reply = j.candidates[0].content.parts[0].text;
-        S.chat.push({ role: 'ai', text: reply });
-        save();
-        rIA();
-    } catch(e) {
-        S.chat.push({ role: 'ai', text: "Desculpe, ocorreu um erro na conexão: " + e.message });
-        save();
-        rIA();
-    }
-}
-
-// Inject Event Listeners globally via an IIFE
-(function() {
-    document.addEventListener("click", e => {
-        const b = e.target.closest("[data-act]");
-        if (!b) return;
-        const act = b.dataset.act;
-        
-        if (act === "ia-cam") {
-            const f = document.getElementById("ia-foto");
-            if (f) f.click();
-        } else if (act === "ia-clear") {
-            const html = `
-                <div style="text-align:center; padding: 10px 0;">
-                    <div style="font-size:40px; margin-bottom:10px;">🧹</div>
-                    <h3 style="margin-bottom:10px; color:var(--text);">Limpar Conversa?</h3>
-                    <p class="muted" style="margin-bottom:20px;">Todo o histórico com a sua A.I. será apagado. Tem certeza?</p>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn" style="flex:1;" onclick="closeSheet()">Cancelar</button>
-                        <button class="btn solid" style="flex:1; background:var(--bad); color:#fff;" data-act="ia-clear-confirm">Sim, apagar</button>
-                    </div>
-                </div>`;
-            openSheet(html);
-        } else if (act === "ia-clear-confirm") {
-            S.chat = [];
-            save();
-            closeSheet();
-            render();
-            toast("Conversa apagada");
-        } else if (act === "ia-send") {
-            const inp = document.getElementById("ia-input");
-            const text = inp.value.trim();
-            if (text) {
-                inp.value = "";
-                inp.style.height = "auto";
-                askAuraIA(text);
-            }
-        }
-    });
-    
-    document.addEventListener("change", e => {
-        if (e.target.id === "ia-foto") {
-            const file = e.target.files[0];
-            e.target.value = ""; // reset
-            if (file) {
-                const inp = document.getElementById("ia-input");
-                const text = inp ? inp.value.trim() : "";
-                if(inp) { inp.value = ""; inp.style.height = "auto"; }
-                askAuraIA(text, file);
-            }
-        }
-    });
+  setTimeout(maybeReview, 1000);
 })();
 
 </script>
 
 
-<!-- Modais Antigravity -->
-<div class="overlay center" id="cardioSheet" role="dialog">
-  <div class="card" style="width:90%;max-width:350px;">
-    <h3>Registrar Cardio</h3>
-    <input type="number" id="cardioMins" placeholder="Minutos" class="btn ghost" style="width:100%;margin-top:10px;">
-    <input type="number" id="cardioSpd" placeholder="Velocidade (km/h)" class="btn ghost" style="width:100%;margin-top:10px;">
-    <input type="number" id="cardioInc" placeholder="Inclinação" class="btn ghost" style="width:100%;margin-top:10px;">
-    <div style="display:flex;gap:10px;margin-top:15px;">
-      <button class="btn ghost grow" onclick="document.getElementById('cardioSheet').classList.remove('on')">Cancelar</button>
-      <button class="btn solid grow" id="saveCardioBtn">Salvar</button>
-    </div>
+<!-- Modais: cardio e resumo semanal (ações via data-act, sem onclick inline) -->
+<div class="overlay center" id="cardioSheet" role="dialog" aria-modal="true" aria-label="Registrar cardio">
+  <div class="card" style="width:90%;max-width:350px">
+    <h3 class="mid">Registrar cardio</h3>
+    <input type="number" inputmode="decimal" id="cardioMins" placeholder="Minutos" class="field" aria-label="Minutos">
+    <input type="number" inputmode="decimal" id="cardioSpd" placeholder="Velocidade (km/h)" class="field" aria-label="Velocidade em km/h">
+    <input type="number" inputmode="decimal" id="cardioInc" placeholder="Inclinação (%)" class="field" aria-label="Inclinação em porcentagem">
+    <div class="row" style="gap:10px"><button class="btn ghost grow" data-act="cardio-close">Cancelar</button><button class="btn solid grow" data-act="cardio-save">Salvar</button></div>
   </div>
 </div>
 
-<div class="overlay center" id="reviewSheet" role="dialog">
-  <div class="card" style="width:90%;max-width:350px;text-align:center;">
-    <h2 class="h1">Resumo Semanal</h2>
-    <div class="grid2" style="margin:20px 0;">
-      <div class="tile"><div class="big" id="revP">0g</div><div class="lbl">Prot/Dia</div></div>
-      <div class="tile"><div class="big" id="revC">0</div><div class="lbl">Min Cardio</div></div>
-    </div>
-    <div class="tile in" style="margin-bottom:20px;">
-      <div class="mid" id="revW">Semana 1/8</div>
-      <div class="lbl" id="revSug">Continue focado!</div>
-    </div>
-    <button class="btn solid full" onclick="document.getElementById('reviewSheet').classList.remove('on')">Entendido</button>
+<div class="overlay center" id="reviewSheet" role="dialog" aria-modal="true" aria-label="Resumo da semana">
+  <div class="card" style="width:90%;max-width:350px;text-align:center">
+    <h2 class="h1">Resumo da semana</h2>
+    <p class="muted">Últimos 7 dias</p>
+    <div class="grid2"><div class="tile"><div class="big" id="revP">0 g</div><div class="lbl">Proteína/dia</div></div><div class="tile"><div class="big" id="revC">0 min</div><div class="lbl">Cardio</div></div></div>
+    <div class="tile in"><div class="mid" id="revW"></div><div class="muted" id="revSug" style="margin-top:6px"></div></div>
+    <button class="btn solid full" data-act="review-close">Entendido</button>
   </div>
 </div>
 

@@ -327,3 +327,14 @@ nav.dock{width:min(480px,calc(100% - 16px));padding:5px}
 .swipe-in{position:relative;background:var(--surface);touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab;padding:12px 6px}
 .list>.swipe+.swipe{border-top:1px solid var(--line)}
 .meal .chips{margin:0 -2px}
+
+/* --- DECK e utilidades --- */
+.stack{display:flex;flex-direction:column;gap:10px}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qtile{padding:16px;align-items:center;text-align:center;gap:4px;background:var(--surface2);cursor:pointer}
+.qtile b{font:700 20px var(--f-display)}
+.qi{color:var(--accent-ink);display:grid;place-items:center}
+.qi .icon{width:26px;height:26px}
+.tipcard{background:var(--surface2);border-left:4px solid var(--accent);gap:6px}
+.ia-spark{color:var(--accent);animation:aura-levitate 3s infinite}
+.ia-spark .icon{width:48px;height:48px}

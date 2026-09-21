@@ -1,0 +1,21 @@
+const { boot, baseState } = require("./helpers");
+module.exports = async T => {
+  const st = baseState(); st.settings.gemKey = "chave"; st.settings.gemModel = "gemini-2.5-flash";
+  const calls = [];
+  const a = await boot({ state: st, fetch: async (url, o) => { calls.push({ url, o }); return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: "Resposta de teste" }] } }] }) }; } });
+  a.ev('go("ia")');
+  const opt = a.q("#gemModel option[selected]"); T.ok(opt && opt.value === "gemini-2.5-flash", "seletor marca o modelo salvo");
+  a.ev('S.settings.gemModel = "modelo-estranho"; render()'); T.ok(a.q("#gemModel").value === "modelo-estranho", "modelo fora da lista continua selecionado");
+  a.ev('S.settings.gemModel = "gemini-2.5-flash-lite"; render()');
+  a.q("#ia-input").value = "posso comer pizza?"; a.q("[data-act=ia-send]").click(); await a.wait(60);
+  T.ok(calls.length === 1 && /gemini-2.5-flash-lite:generateContent/.test(calls[0].url), "chama o modelo escolhido");
+  const sys = JSON.parse(calls[0].o.body).systemInstruction.parts[0].text;
+  T.ok(/você é a aura, uma assistente de ia/i.test(sys) && !/NUNCA diga que é uma IA/i.test(sys) && /profissional de saúde/.test(sys), "a Aura se apresenta como IA e recomenda profissional de saúde");
+  T.ok(a.ev("S.chat.length") === 2 && a.ev("S.chat[1].text") === "Resposta de teste", "guarda pergunta e resposta");
+  a.ev("S.chat.push({role:'user',text:'x',img:'AAAA'}); save(); render()");
+  a.q("#ia-input").value = "oi"; a.q("[data-act=ia-send]").click(); await a.wait(60);
+  T.ok(a.ev("S.chat.every(m => !m.img)"), "fotos não ficam guardadas no histórico");
+  a.ev('S.settings.gemKey = ""; render()');
+  T.ok(/enviada ao Google/.test(a.q("#v-ia").textContent) && !/nunca vai para a internet/.test(a.q("#v-ia").textContent), "sem chave, o texto explica que chave e mensagens vão ao Google");
+  T.ok(!a.errors.length, "sem erros de script"); a.close();
+};
