@@ -152,7 +152,8 @@ function go(tab) {
   render(); window.scrollTo({ top: 0 });
 }
 function render() {
-  ({ deck: rDeck, treino: rTreino, comer: rComer, evol: rEvol, mais: rMais })[UI.tab]();
+  ({ deck: rDeck, treino: rTreino, agua: rAgua, comer: rComer, evol: rEvol, mais: rMais })[UI.tab]();
+  dockWater();
 }
 
 /* ============ DECK ============ */
@@ -572,7 +573,7 @@ document.addEventListener("click", e => {
       break;
     }
     case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); break; }
-    case "water": { const d = DW(k); d.water = Math.max(0, d.water + num(b.dataset.ml)); d.h.agua = d.water >= S.settings.waterGoal; save(); render(); haptic(); break; }
+    case "water": waterAdd(num(b.dataset.ml)); render(); break;
     case "pickday": UI.pickDay = b.dataset.day; render(); break;
     case "tog-rotate": S.settings.rotate = !S.settings.rotate; save(); render(); break;
     case "wk-start": wkStart(b.dataset.day); break;
@@ -603,10 +604,10 @@ document.addEventListener("click", e => {
     case "meal-sel": UI.meal = b.dataset.m; $$("[data-act=meal-sel]").forEach(x => x.classList.toggle("on", x.dataset.m === UI.meal)); break;
     case "g-adj": { const inp = $("#g"); inp.value = Math.max(0, num(inp.value) + num(b.dataset.s)); gSum(+inp.dataset.i); break; }
     case "g-set": { const inp = $("#g"); inp.value = b.dataset.g; gSum(+inp.dataset.i); break; }
-    case "food-add": { const f = FOODS[+b.dataset.i], gm = num($("#g").value); if (gm <= 0) return; const d = DW(k); d.meals.push({ n: f[0], g: gm, k: f[1] * gm / 100, p: f[2] * gm / 100, m: UI.meal }); if (f[5] === "Bebidas" && /COM açúcar/.test(f[0])) d.h.acucar = false; save(); closeSheet(); render(); toast("Adicionado."); break; }
+    case "food-add": { const f = FOODS[+b.dataset.i], gm = num($("#g").value); if (gm <= 0) return; const d = DW(k); d.meals.push({ t: Date.now(), n: f[0], g: gm, k: f[1] * gm / 100, p: f[2] * gm / 100, m: UI.meal }); if (f[5] === "Bebidas" && /COM açúcar/.test(f[0])) d.h.acucar = false; save(); closeSheet(); render(); toast("Adicionado."); break; }
     case "meal-del": { DW(k).meals.splice(+b.dataset.i, 1); save(); render(); break; }
     case "quick": quickSheet(); break;
-    case "quick-add": { const kc = num($("#qk").value), pr = num($("#qp").value), nm = $("#qn").value.trim() || "Item de rótulo"; if (kc <= 0) return toast("Informe as kcal."); DW(k).meals.push({ n: nm, g: 0, k: kc, p: pr, m: UI.meal }); save(); closeSheet(); render(); break; }
+    case "quick-add": { const kc = num($("#qk").value), pr = num($("#qp").value), nm = $("#qn").value.trim() || "Item de rótulo"; if (kc <= 0) return toast("Informe as kcal."); DW(k).meals.push({ t: Date.now(), n: nm, g: 0, k: kc, p: pr, m: UI.meal }); save(); closeSheet(); render(); break; }
     case "weigh": weighSheet(); break;
     case "weigh-save": {
       const kg = num($("#wkg").value), waist = num($("#wwaist").value); if (kg < 40 || kg > 300) return toast("Peso inválido.");
@@ -632,9 +633,9 @@ document.addEventListener("click", e => {
     case "gem-save": { const kv = $("#gemKey").value.trim(), mv = $("#gemModel").value.trim(); if (kv) S.settings.gemKey = kv; S.settings.gemModel = mv || GEM_DEFAULT_MODEL; save(); rMais(); toast(kv ? "Chave salva neste aparelho." : "Modelo salvo."); break; }
     case "gem-clear": S.settings.gemKey = ""; S.settings.gemAck = false; save(); rMais(); toast("Chave removida."); break;
     case "ia-del": IA.items.splice(+b.dataset.i, 1); if (!IA.items.length) closeSheet(); else iaSheet(); break;
-    case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: é estimativa."); haptic(); break; }
+    case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ t: Date.now(), n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: é estimativa."); haptic(); break; }
     case "recent": recenteSheet(+b.dataset.i); break;
-    case "recent-add": { const m = IA.rec; if (!m) break; DW(k).meals.push({ n: m.n, g: m.g, k: m.k, p: m.p, m: UI.meal }); save(); closeSheet(); render(); toast("Adicionado."); haptic(); break; }
+    case "recent-add": { const m = IA.rec; if (!m) break; DW(k).meals.push({ t: Date.now(), n: m.n, g: m.g, k: m.k, p: m.p, m: UI.meal }); save(); closeSheet(); render(); toast("Adicionado."); haptic(); break; }
     case "export": exportData(); break;
     case "import": $("#file").click(); break;
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
@@ -721,7 +722,7 @@ function rComer() {
     vComer.appendChild(ext);
 
     document.getElementById("btnStdLunch").addEventListener("click", () => {
-        d.meals.push({ n: "Almoço Padrão (Antigravity)", g: 0, k: 450, p: 40, m: "Almoço" });
+        d.meals.push({ t: Date.now(), n: "Almoço Padrão (Antigravity)", g: 0, k: 450, p: 40, m: "Almoço" });
         d.fiber += 10;
         save();
         rComer(); 
@@ -797,12 +798,14 @@ function updateAuraCore() {
     if(!auraContainer) {
         auraContainer = document.createElement("div");
         auraContainer.id = "aura-container";
+        vDeck.insertBefore(auraContainer, vDeck.firstChild);
+    }
+    if(!document.getElementById("auraCoreEl")) {
         auraContainer.className = "aura-container";
         auraContainer.innerHTML = `
             <div class="aura-core" id="auraCoreEl"></div>
             <div class="aura-msg" id="auraMsgEl">O núcleo está ocioso. Vamos alimentar essa máquina?</div>
         `;
-        vDeck.insertBefore(auraContainer, vDeck.firstChild);
     }
     
     const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
@@ -956,10 +959,10 @@ function orig_rDeck() {
     <div id="aura-container"></div>
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
-       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-act="water" data-ml="250">
+       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="agua">
           <div style="font-size:24px; margin-bottom:5px;">💧</div>
           <div style="font-weight:700; font-size:16px;">${waterL} L</div>
-          <div class="lbl">+ 250ml Água</div>
+          <div class="lbl">Água · ${Math.round(Math.min(1, d.water / S.settings.waterGoal) * 100)}%</div>
        </div>
        <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="comer">
           <div style="font-size:24px; margin-bottom:5px;">🍱</div>
@@ -997,4 +1000,119 @@ function orig_rDeck() {
 rDeck = function() {
     orig_rDeck();
     if(typeof updateAuraCore === 'function') updateAuraCore();
+    fraseInject();
+}
+
+
+/* === METABOLIC ENGINE === */
+function getMetabolicAdvice(k) {
+    const d = typeof DW === 'function' ? DW(k) : D(k);
+    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
+    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
+    
+    const now = new Date();
+    const h = now.getHours();
+    const endOfDay = 22; // 22:00
+    
+    if (h >= endOfDay) return { diet: "Dia finalizado. Hora de descansar o sistema digestivo.", water: "Beba água com moderação agora para não prejudicar o sono." };
+    if (h < 5) return { diet: "Madrugada. Se estiver acordado, mantenha-se hidratado.", water: "Beba água se tiver sede." };
+    
+    // 1. Diet Advice
+    let dietAdvice = "";
+    const remainingProt = Math.max(0, tg.prot - tot.p);
+    let lastMealTime = null;
+    
+    if (d.meals && d.meals.length > 0) {
+        for (let i = d.meals.length - 1; i >= 0; i--) {
+            if (d.meals[i].t) {
+                lastMealTime = new Date(d.meals[i].t);
+                break;
+            }
+        }
+    }
+    
+    const hoursLeft = endOfDay - h;
+    const mealsLeft = Math.max(1, Math.floor(hoursLeft / 3.5)); // estimate 1 meal every 3.5 hours
+    const protPerMeal = Math.round(remainingProt / mealsLeft);
+    
+    if (remainingProt <= 0) {
+        dietAdvice = "✅ Meta de proteína batida! Se for comer mais tarde, priorize fibras e vegetais.";
+    } else if (lastMealTime) {
+        const diffHrs = (now - lastMealTime) / (1000 * 60 * 60);
+        if (diffHrs < 2) {
+            let nextH = Math.floor(lastMealTime.getHours() + 3.5);
+            let nextM = Math.floor((lastMealTime.getHours() + 3.5 - nextH) * 60);
+            let nextTimeStr = String(nextH).padStart(2, '0') + ":" + String(nextM).padStart(2, '0');
+            dietAdvice = "⏳ Você comeu há pouco tempo. Próxima janela anabólica sugerida: " + nextTimeStr + ". Faltam " + Math.round(remainingProt) + "g no dia.";
+        } else if (diffHrs >= 3.5) {
+            dietAdvice = "🔥 Janela anabólica aberta! Faltam " + Math.round(remainingProt) + "g no dia. Tente bater " + protPerMeal + "g na próxima refeição.";
+        } else {
+            dietAdvice = "⏳ Faltam " + Math.round(remainingProt) + "g no dia. Sugestão para a próxima refeição: " + protPerMeal + "g de proteína.";
+        }
+    } else {
+        dietAdvice = "🌅 Primeira refeição do dia? Faltam " + Math.round(remainingProt) + "g. Comece forte com " + protPerMeal + "g de proteína!";
+    }
+    
+    // 2. Water Advice
+    let waterAdvice = "";
+    const goalWater = (S.settings.waterGoal || 3000);
+    const remainingWater = Math.max(0, goalWater - d.water);
+    if (remainingWater <= 0) {
+        waterAdvice = "✅ Meta de hidratação batida!";
+    } else {
+        const mlPerHour = Math.round(remainingWater / hoursLeft);
+        if (mlPerHour > 600) {
+            waterAdvice = "⚠️ Você está desidratado para esse horário. Tome 500ml de água agora.";
+        } else {
+            waterAdvice = "💧 Ritmo ideal: tome aprox. " + mlPerHour + "ml de água por hora até as " + endOfDay + "h.";
+        }
+    }
+    
+    return { diet: dietAdvice, water: waterAdvice };
+}
+
+/* === OVERRIDE ORIG_RDECK TO INJECT METABOLIC ADVICE === */
+const old_orig_rDeck_meta = orig_rDeck;
+orig_rDeck = function() {
+    old_orig_rDeck_meta();
+    
+    const k = today();
+    const advice = getMetabolicAdvice(k);
+    
+    const vDeck = document.getElementById("v-deck");
+    const auraContainer = document.getElementById("aura-container");
+    if(vDeck && auraContainer) {
+        const metaBanner = document.createElement("div");
+        metaBanner.id = "meta-deck-banner";
+        metaBanner.style.marginTop = "10px";
+        metaBanner.style.marginBottom = "20px";
+        metaBanner.style.padding = "12px 16px";
+        metaBanner.style.borderRadius = "12px";
+        metaBanner.style.background = "var(--surface2)";
+        metaBanner.style.borderLeft = "4px solid var(--accent)";
+        metaBanner.innerHTML = '<div style="font-size:14px; font-weight:600; margin-bottom:4px;">🧠 Dica do Núcleo</div><div style="font-size:14px; color:var(--muted); line-height:1.4;">' + advice.diet + ' <br><span style="color:var(--text);">' + advice.water + '</span></div>';
+        
+        // Insert right after aura container
+        vDeck.insertBefore(metaBanner, auraContainer.nextSibling);
+    }
+}
+
+/* === OVERRIDE ORIG_RCOMER TO INJECT METABOLIC ADVICE === */
+const agy_orig_rComer_meta = orig_rComer;
+orig_rComer = function() {
+    agy_orig_rComer_meta();
+    
+    const k = today();
+    const advice = getMetabolicAdvice(k);
+    const vComer = document.getElementById("v-comer");
+    if(vComer) {
+        // Insert right after the header section
+        const metaBanner = document.createElement("section");
+        metaBanner.className = "card";
+        metaBanner.style.background = "var(--surface2)";
+        metaBanner.style.borderTop = "4px solid var(--ok)";
+        metaBanner.innerHTML = '<h3 class="h1" style="font-size:18px; display:flex; align-items:center; gap:8px;">🧠 Inteligência Metabólica</h3><p class="muted" style="margin-top:8px;">' + advice.diet + '</p>';
+        
+        vComer.insertBefore(metaBanner, vComer.children[1]);
+    }
 }
