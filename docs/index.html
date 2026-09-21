@@ -2626,11 +2626,23 @@ async function askAuraIA(text, file = null) {
             const f = document.getElementById("ia-foto");
             if (f) f.click();
         } else if (act === "ia-clear") {
-            if (confirm("Apagar o histórico e iniciar nova conversa?")) {
-                S.chat = [];
-                save();
-                render();
-            }
+            const html = `
+                <div style="text-align:center; padding: 10px 0;">
+                    <div style="font-size:40px; margin-bottom:10px;">🧹</div>
+                    <h3 style="margin-bottom:10px; color:var(--text);">Limpar Conversa?</h3>
+                    <p class="muted" style="margin-bottom:20px;">Todo o histórico com a sua A.I. será apagado. Tem certeza?</p>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" style="flex:1;" onclick="closeSheet()">Cancelar</button>
+                        <button class="btn solid" style="flex:1; background:var(--bad); color:#fff;" data-act="ia-clear-confirm">Sim, apagar</button>
+                    </div>
+                </div>`;
+            openSheet(html);
+        } else if (act === "ia-clear-confirm") {
+            S.chat = [];
+            save();
+            closeSheet();
+            render();
+            toast("Conversa apagada");
         } else if (act === "ia-send") {
             const inp = document.getElementById("ia-input");
             const text = inp.value.trim();
