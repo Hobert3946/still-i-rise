@@ -103,10 +103,9 @@ function prefill(slot, vid) {
   const hist = S.logs[vid] || [], last = hist[hist.length - 1];
   const out = []; let hint = "Sem histórico: escolha uma carga leve.";
   if (last) {
-    const top = last.sets.every(s => s.reps >= slot.reps[1]);
-    const inc = top && !inAdapt() && slot.inc ? slot.inc : 0;
-    for (let i = 0; i < slot.sets; i++) { const ls = last.sets[i] || last.sets[last.sets.length - 1]; out.push({ kg: r1(ls.kg + inc), reps: inc ? slot.reps[0] : ls.reps, done: false }); }
-    hint = `Última vez (${dispDate(last.date)}): ${last.sets.map(s => `${s.kg}×${s.reps}`).join(" · ")}` + (inc ? ` → hoje +${inc} kg` : (inAdapt() ? " · adaptação: mantenha leve" : ""));
+    const nx = nextLoad(slot, last.sets), delta = nx.kg - (last.sets[0] ? last.sets[0].kg : 0);
+    for (let i = 0; i < slot.sets; i++) { const ls = last.sets[i] || last.sets[last.sets.length - 1]; out.push({ kg: r1(Math.max(0, ls.kg + delta)), reps: nx.dir === "up" ? slot.reps[0] : nx.dir === "down" ? slot.reps[0] : ls.reps, done: false }); }
+    hint = `Última vez (${dispDate(last.date)}): ${last.sets.map(s => `${s.kg}×${s.reps}`).join(" · ")} → ${nx.dir === "up" ? `hoje +${nx.inc} kg` : nx.dir === "down" ? `hoje −${nx.inc} kg` : "mantenha a carga"}. ${nx.why}`;
   } else for (let i = 0; i < slot.sets; i++) out.push({ kg: 0, reps: slot.reps[0], done: false });
   return { sets: out, hint };
 }
@@ -159,7 +158,7 @@ function render() {
 /* ============ DECK ============ */
 function tipOfDay() { const n = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); return TIPS[n % TIPS.length]; }
 function orig_rDeck() {
-  const k = today(), d = D(k), L = dayLetter(k), tg = TG(), tot = dayTotals(k), h = new Date().getHours();
+  const k = today(), d = D(k), L = planLetter(k), tg = TG(), tot = dayTotals(k), h = new Date().getHours();
   const hi = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
   const week = activeInWeek(mondayOf(k)), ds = dayStreak(), ws = weekStreak(), abs = daysAbsent();
   const ban = [];
@@ -178,8 +177,12 @@ function orig_rDeck() {
 
   const habits = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}${id === "acucar" ? `<span class="s">Regra nº 1. Se cumprir uma só, que seja esta.</span>` : ""}</span></button>`).join("");
 
+  const doneToday = !!D(k).wk && !S.cur;
   let wk2;
-  if (L) {
+  if (L && doneToday) {
+    const nl = seqNext();
+    wk2 = `<div class="sec-t"><span class="dot ok"></span><span class="lbl">Treino de hoje</span></div><h3 class="mid">${L} · ${PLAN[L].name} concluído</h3><p class="muted">As cargas do próximo treino já foram atualizadas. Próximo: <b>${nl} · ${PLAN[nl].name}</b>.</p><button class="btn full" data-act="goto-treino" data-day="${nl}">Ver próximo treino</button>`;
+  } else if (L) {
     const p = PLAN[L];
     wk2 = `<div class="row between"><div><div class="sec-t"><span class="dot"></span><span class="lbl" style="color:var(--accent-ink)">Sessão do amanhecer · ${DOW[parseKey(k).getDay()]}</span></div><h3 class="mid" style="margin-top:4px">${L} · ${p.name}</h3></div><span class="pill">05:00 · ${estMin(L)} min</span></div>
       <p class="muted">${p.focus}. ${p.cuff ? "Começa com aquecimento de manguito." : "Sem aquecimento de manguito hoje."} ${inAdapt() ? "Semana " + weekNo() + " de adaptação: carga leve." : ""}</p>
@@ -234,13 +237,13 @@ function orig_rDeck() {
 
 /* ============ TREINO ============ */
 function rTreino() {
-  const k = today(), L = UI.pickDay || dayLetter(k) || "A";
+  const k = today(), L = UI.pickDay || (D(k).wk ? seqNext() : (planLetter(k) || seqNext()));
   const p = PLAN[L], vol = weekVolume();
-  const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div><span class="tag">${e.v.length} variações</span></div>`; }).join("");
+  const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div>${nextBadge(e, v[0])}<span class="tag">${e.v.length} variações</span></div>`; }).join("");
   const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:14px">${c.sets} × ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
   const pa = painAvg();
   $("#v-treino").innerHTML = `
-  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h. Sábado e domingo: descanso ativo e caminhada.</p></section>
+  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E: se você faltar um dia, o treino continua de onde parou. As cargas da próxima vez são recalculadas ao fim de cada treino.</p></section>
   ${S.cur ? banner("acc", "play", "Treino em andamento", `Treino ${S.cur.day} aberto.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar</button></div>`) : ""}
   ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta.`) : ""}
   <div class="chips">${DAY_ORDER.map(x => `<button class="chip ${x === L ? "on" : ""}" data-act="pickday" data-day="${x}">${x} · ${PLAN[x].name}</button>`).join("")}</div>
@@ -257,7 +260,7 @@ function rTreino() {
   </section>
   <section class="card flat">
     <div class="lbl">Regras de carga</div>
-    <p class="muted" style="font-size:16px"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois:</b> fechou todas as repetições, sobe a carga. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
+    <p class="muted" style="font-size:16px"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois, ao fim de cada treino:</b> fechou todas as repetições em todas as séries, sobe a carga; falhou na 1ª série ou em 2 ou mais séries, desce um degrau; senão mantém. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
     <div class="row between"><span class="grow">Rodízio automático de variações (a cada 4 semanas)</span><button class="tog ${S.settings.rotate ? "on" : ""}" data-act="tog-rotate" aria-label="alternar"><i></i></button></div>
   </section>`;
 }
@@ -334,12 +337,17 @@ function wkNext() {
   c.i++; save(); wkRender(); $("#screen-wk").scrollTo({ top: 0 });
 }
 function wkFinish() {
-  const c = S.cur; let n = 0;
-  PLAN[c.day].ex.forEach(slot => { const d = c.data[slot.id]; if (!d) return; const sets = d.sets.filter(s => s.done).map(s => ({ kg: num(s.kg), reps: num(s.reps) })); if (!sets.length) return; (S.logs[d.vid] = S.logs[d.vid] || []).push({ date: c.date, day: c.day, sets }); n++; });
+  const c = S.cur, rows = [];
+  PLAN[c.day].ex.forEach(slot => {
+    const d = c.data[slot.id]; if (!d) return;
+    const sets = d.sets.filter(s => s.done).map(s => ({ kg: num(s.kg), reps: num(s.reps) })); if (!sets.length) return;
+    const nx = nextLoad(slot, sets);
+    (S.logs[d.vid] = S.logs[d.vid] || []).push({ date: c.date, day: c.day, sets });
+    rows.push({ slot, vid: d.vid, nx, stag: stagnant(slot, d.vid) });
+  });
   DW(c.date).h.treino = true; DW(c.date).wk = c.day;
-  const L = c.day; S.cur = null; save(); wkClose();
-  toast(`Treino ${L} registrado (${n} exercícios). Agora 10 min de esteira inclinada.`);
-  if (["A", "D", "E"].includes(L)) painSheet(L);
+  const L = c.day; S.cur = null; save(); wkClose(); haptic(30);
+  summarySheet(L, rows);
 }
 function painSheet(L) {
   openSheet(`<h3 class="mid">Dor no ombro esquerdo</h3><p class="muted">De 0 (nenhuma) a 10 (muito forte), agora, ao final do treino ${L}.</p>
@@ -580,6 +588,8 @@ document.addEventListener("click", e => {
       else if (s.done) { const st2 = stepsOf(c.day); const nx = st2[c.i + 1]; if (nx) startRest(60, `Próximo: ${nx.t === "warm" ? nx.c.name : findV(nx.e, varId(nx.e))[1]}`); }
       break;
     }
+    case "goto-treino": UI.pickDay = b.dataset.day; go("treino"); break;
+    case "sum-next": if (["A", "D", "E"].includes(b.dataset.day)) painSheet(b.dataset.day); else closeSheet(); render(); break;
     case "wk-adj": { const st = stepsOf(c.day)[c.i], dd = wkData(st), f = b.dataset.f, d = num(b.dataset.d), p = dd.sets.findIndex(x => !x.done); if (p < 0) break; for (let i = p; i < dd.sets.length; i++) if (!dd.sets[i].done) dd.sets[i][f] = Math.max(0, r1(num(dd.sets[i][f]) + d)); save(); wkRender(); haptic(); break; }
     case "wk-allset": { const st = stepsOf(c.day)[c.i], dd = wkData(st); dd.sets.forEach(s => s.done = true); save(); notify("Exercício registrado", "Próximo exercício."); wkNext(); break; }
     case "wk-var": { const st = stepsOf(c.day)[c.i]; S.sel[st.e.id] = b.dataset.v; delete c.data[st.e.id]; save(); wkRender(); break; }
