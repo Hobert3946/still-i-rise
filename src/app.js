@@ -130,12 +130,16 @@ function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("o
 function applyTheme() {
   const t = S.settings.theme; const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
-  $("meta[name=theme-color]").content = dark ? "#121212" : "#f7f5f2";
+  $("meta[name=theme-color]").content = dark ? "#121316" : "#f7f5f2";
   $("#themeBtn").innerHTML = ic(dark ? "sun" : "moon");
 }
+let RID = 0;
+const haptic = (ms = 10) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { } };
 function ring(p, size, stroke, color, inner) {
   const r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(1, p)));
-  return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}"><circle class="trk" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="arc" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="c">${inner}</div></div>`;
+  let defs = "";
+  if (color === "grad") { const id = "rg" + (++RID); defs = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--terra)"/><stop offset="1" stop-color="var(--accent)"/></linearGradient></defs>`; color = `url(#${id})`; }
+  return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" aria-hidden="true">${defs}<circle class="trk" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="arc" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="c">${inner}</div></div>`;
 }
 const banner = (cls, icon, title, txt, extra = "") => `<div class="banner ${cls}">${ic(icon)}<div class="grow"><b>${title}</b>${txt}${extra}</div></div>`;
 function openSheet(html) { const o = $("#sheet"); $(".sheet", o).innerHTML = html; o.classList.add("on"); }
@@ -187,9 +191,9 @@ function rDeck() {
   const sup = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}<span class="s">${s}</span></span></button>`).join("");
 
   $("#v-deck").innerHTML = `
-  <section class="card" style="gap:6px;box-shadow:none;background:transparent;padding:0">
+  <section class="card hero" style="gap:8px">
     <div class="row between"><span class="pill">${DOW[parseKey(k).getDay()]} · ${dispDate(k)}</span><span class="lbl">Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}</span></div>
-    <h2 class="h1" style="margin-top:6px">${hi}, ${esc(S.profile.name)}.</h2>
+    <div class="row" style="gap:14px;margin-top:4px"><img class="avatar lg" src="%%AVATAR%%" alt="" width="56" height="56"><h2 class="h1 grow">${hi}, ${esc(S.profile.name)}.</h2></div>
     <p class="quote">"Still I Rise. O crescimento é orgânico, como raízes antigas que se aprofundam calmas na terra morna."</p>
   </section>
   ${ban.length ? `<section style="display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
@@ -219,7 +223,7 @@ function rDeck() {
   <section class="card">
     <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Nutrição de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
     <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "var(--accent)", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
+      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
       ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">/ ${tg.prot} g prot</div></div>`)}
     </div>
   </section>
@@ -385,7 +389,7 @@ function rComer() {
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Comer</h2><p class="muted">Meta: ${fmtInt(tg.kcal)} kcal e ${tg.prot} g de proteína. Proteína de comida, ovos e albumina.</p></section>
   <section class="card">
     <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "var(--accent)", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">kcal</div></div>`)}
+      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">kcal</div></div>`)}
       ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">g prot</div></div>`)}
     </div>
     <p class="muted" style="text-align:center">${rem >= 0 ? `Restam ${fmtInt(rem)} kcal e ${Math.max(0, Math.round(tg.prot - tot.p))} g de proteína.` : `${fmtInt(-rem)} kcal acima da meta. Um dia acima não desfaz uma semana. A próxima refeição é normal.`}</p>
@@ -542,9 +546,13 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) { if (e.target.id === "sheet") closeSheet(); return; }
   const a = b.dataset.act, k = today(), c = S.cur;
   switch (a) {
-    case "habit": { const d = DW(k); d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); break; }
-    case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); break; }
-    case "water": { const d = DW(k); d.water = Math.max(0, d.water + num(b.dataset.ml)); d.h.agua = d.water >= S.settings.waterGoal; save(); render(); break; }
+    case "habit": {
+      const d = DW(k), wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5; d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); haptic();
+      if (!wasA && isActive(k)) toast(activeInWeek(mondayOf(k)) >= 5 && !wasW ? "Meta da semana cumprida. Isso é ritmo." : "Dia ativo. Este dia conta.");
+      break;
+    }
+    case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); break; }
+    case "water": { const d = DW(k); d.water = Math.max(0, d.water + num(b.dataset.ml)); d.h.agua = d.water >= S.settings.waterGoal; save(); render(); haptic(); break; }
     case "pickday": UI.pickDay = b.dataset.day; render(); break;
     case "tog-rotate": S.settings.rotate = !S.settings.rotate; save(); render(); break;
     case "wk-start": wkStart(b.dataset.day); break;
@@ -555,7 +563,7 @@ document.addEventListener("click", e => {
     case "wk-mode": c.mode = c.mode === "set" ? "end" : "set"; S.settings.logMode = c.mode; save(); wkRender(); break;
     case "wk-warmset": { const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i; dd.sets[i].done = !dd.sets[i].done; save(); wkRender(); break; }
     case "wk-set": {
-      const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i, s = dd.sets[i]; s.done = !s.done; save(); wkRender();
+      const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i, s = dd.sets[i]; s.done = !s.done; save(); wkRender(); haptic(15);
       if (s.done && i < dd.sets.length - 1) startRest(st.e.rest, `Próxima: série ${i + 2} de ${dd.sets.length}`);
       else if (s.done) { const st2 = stepsOf(c.day); const nx = st2[c.i + 1]; if (nx) startRest(60, `Próximo: ${nx.t === "warm" ? nx.c.name : findV(nx.e, varId(nx.e))[1]}`); }
       break;
@@ -602,6 +610,7 @@ document.addEventListener("click", e => {
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
   }
 });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet(); });
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "q") { UI.q = t.value; $("#foodlist").innerHTML = foodListHTML(); }

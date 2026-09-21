@@ -1,2 +1,4 @@
 node_modules/
 ref/
+.claude/
+design-system/

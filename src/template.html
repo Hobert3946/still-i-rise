@@ -48,6 +48,7 @@
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
 </defs></svg>
 
+<a class="skip" href="#v-deck">Pular para o conteúdo</a>
 <header class="top"><div class="top-in">
   <div class="who"><img class="avatar" src="%%AVATAR%%" alt="Logo Still I Rise" width="40" height="40"><div><div class="lbl">Praticante</div><div style="font-weight:700;font-size:13px">Still I Rise</div></div></div>
   <h1 class="brand">STILL I RISE</h1>
@@ -71,8 +72,8 @@
 </nav>
 
 <div class="screen" id="screen-wk"><div class="in" id="wk-body"></div></div>
-<div class="overlay" id="sheet"><div class="sheet"></div></div>
-<div class="overlay center" id="rest"><div class="rest" id="rest-in"></div></div>
+<div class="overlay" id="sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="Detalhes"></div></div>
+<div class="overlay center" id="rest" role="dialog" aria-modal="true" aria-label="Cronômetro de descanso"><div class="rest" id="rest-in"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>

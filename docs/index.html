@@ -19,7 +19,7 @@
 <style>
 :root{
   --bg:#f7f5f2;--surface:#f7f5f2;--surface2:#efece6;--text:#242a2e;--muted:#5a656b;
-  --accent:#c69c6d;--accent-ink:#8a5f2b;--accent-soft:#f1e3d0;
+  --accent:#c69c6d;--accent-ink:#8a5f2b;--accent-soft:#f1e3d0;--terra:#b45233;--terra-soft:#f6e1d9;
   --ok:#16a34a;--ok-soft:#e1f2e6;--sage:#506350;--sage-soft:#e5ebe3;--bad:#ef4444;--bad-soft:#fde4e2;--warn:#b7791f;--warn-soft:#faefd2;
   --sh-d:rgba(164,149,137,.26);--sh-l:rgba(255,255,255,.9);
   --raise:8px 8px 18px var(--sh-d),-8px -8px 18px var(--sh-l);
@@ -32,8 +32,8 @@
   color-scheme:light;
 }
 :root[data-theme=dark]{
-  --bg:#121212;--surface:#1a1a1a;--surface2:#222;--text:#ece8e1;--muted:#a39d94;
-  --accent:#d4af37;--accent-ink:#e6c25a;--accent-soft:#2c2614;
+  --bg:#121316;--surface:#1a1c20;--surface2:#24272c;--text:#ece8e1;--muted:#a8a29a;
+  --accent:#d4af37;--accent-ink:#e6c25a;--accent-soft:#2c2614;--terra:#d0704f;--terra-soft:#2e1a14;
   --ok:#22c55e;--ok-soft:#12261a;--sage:#8fb08f;--sage-soft:#1c261c;--bad:#f87171;--bad-soft:#2d1717;--warn:#e0b24a;--warn-soft:#2c2412;
   --sh-d:rgba(0,0,0,.6);--sh-l:rgba(255,255,255,.04);--line:rgba(255,255,255,.08);
   color-scheme:dark;
@@ -92,7 +92,7 @@ main{max-width:480px;margin:0 auto;padding:18px 20px calc(120px + var(--safe-b))
 .btn{min-height:52px;padding:0 22px;border-radius:16px;font-weight:700;letter-spacing:.03em;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--surface);color:var(--accent-ink);box-shadow:6px 6px 14px var(--sh-d),-6px -6px 14px var(--sh-l);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s}
 .btn:active{transform:scale(.96);box-shadow:var(--inset)}
 .btn.full{width:100%}
-.btn.solid{background:var(--accent);color:#1d1710;box-shadow:0 6px 16px rgba(198,156,109,.4)}
+.btn.solid{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent));color:#1d1710;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.35)}
 .btn.solid:active{box-shadow:none}
 .btn.sm{min-height:44px;padding:0 14px;font-size:13px;border-radius:14px}
 .btn.ghost{box-shadow:none;background:transparent;border:1px solid var(--line);color:var(--muted)}
@@ -190,6 +190,16 @@ details.fold .body{padding:12px 0 14px;display:flex;flex-direction:column;gap:10
 .tag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:var(--surface2);color:var(--muted)}
 .svg-chart{width:100%;height:auto;display:block}
 .svg-chart text{fill:var(--muted);font-size:10px;font-family:var(--f-ui)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:12px}
+.field:focus-visible,.setrow input:focus-visible,.stepper input:focus-visible{outline-offset:1px}
+.skip{position:absolute;left:-999px;top:8px;z-index:100;background:var(--accent);color:#1d1710;padding:10px 16px;border-radius:12px;font-weight:700}
+.skip:focus{left:12px}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.chk.on .box{animation:pop .35s cubic-bezier(.2,.9,.3,1.4)}
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--terra) 14%,var(--surface)),var(--surface) 55%,color-mix(in srgb,var(--accent) 12%,var(--surface)))}
+.hero::after{content:"";position:absolute;right:-30px;top:-30px;width:150px;height:150px;background:linear-gradient(135deg,var(--terra),var(--accent));opacity:.10;clip-path:polygon(50% 0,100% 40%,78% 100%,22% 100%,0 40%);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.avatar.lg{width:56px;height:56px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.card{opacity:1;transform:none}}
 
 </style>
@@ -222,6 +232,7 @@ details.fold .body{padding:12px 0 14px;display:flex;flex-direction:column;gap:10
 <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
 </defs></svg>
 
+<a class="skip" href="#v-deck">Pular para o conteúdo</a>
 <header class="top"><div class="top-in">
   <div class="who"><img class="avatar" src="data:image/jpeg;base64,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" alt="Logo Still I Rise" width="40" height="40"><div><div class="lbl">Praticante</div><div style="font-weight:700;font-size:13px">Still I Rise</div></div></div>
   <h1 class="brand">STILL I RISE</h1>
@@ -245,8 +256,8 @@ details.fold .body{padding:12px 0 14px;display:flex;flex-direction:column;gap:10
 </nav>
 
 <div class="screen" id="screen-wk"><div class="in" id="wk-body"></div></div>
-<div class="overlay" id="sheet"><div class="sheet"></div></div>
-<div class="overlay center" id="rest"><div class="rest" id="rest-in"></div></div>
+<div class="overlay" id="sheet"><div class="sheet" role="dialog" aria-modal="true" aria-label="Detalhes"></div></div>
+<div class="overlay center" id="rest" role="dialog" aria-modal="true" aria-label="Cronômetro de descanso"><div class="rest" id="rest-in"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -767,12 +778,16 @@ function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("o
 function applyTheme() {
   const t = S.settings.theme; const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
-  $("meta[name=theme-color]").content = dark ? "#121212" : "#f7f5f2";
+  $("meta[name=theme-color]").content = dark ? "#121316" : "#f7f5f2";
   $("#themeBtn").innerHTML = ic(dark ? "sun" : "moon");
 }
+let RID = 0;
+const haptic = (ms = 10) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { } };
 function ring(p, size, stroke, color, inner) {
   const r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(1, p)));
-  return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}"><circle class="trk" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="arc" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="c">${inner}</div></div>`;
+  let defs = "";
+  if (color === "grad") { const id = "rg" + (++RID); defs = `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--terra)"/><stop offset="1" stop-color="var(--accent)"/></linearGradient></defs>`; color = `url(#${id})`; }
+  return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" aria-hidden="true">${defs}<circle class="trk" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="arc" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="c">${inner}</div></div>`;
 }
 const banner = (cls, icon, title, txt, extra = "") => `<div class="banner ${cls}">${ic(icon)}<div class="grow"><b>${title}</b>${txt}${extra}</div></div>`;
 function openSheet(html) { const o = $("#sheet"); $(".sheet", o).innerHTML = html; o.classList.add("on"); }
@@ -824,9 +839,9 @@ function rDeck() {
   const sup = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}<span class="s">${s}</span></span></button>`).join("");
 
   $("#v-deck").innerHTML = `
-  <section class="card" style="gap:6px;box-shadow:none;background:transparent;padding:0">
+  <section class="card hero" style="gap:8px">
     <div class="row between"><span class="pill">${DOW[parseKey(k).getDay()]} · ${dispDate(k)}</span><span class="lbl">Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}</span></div>
-    <h2 class="h1" style="margin-top:6px">${hi}, ${esc(S.profile.name)}.</h2>
+    <div class="row" style="gap:14px;margin-top:4px"><img class="avatar lg" src="data:image/jpeg;base64,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" alt="" width="56" height="56"><h2 class="h1 grow">${hi}, ${esc(S.profile.name)}.</h2></div>
     <p class="quote">"Still I Rise. O crescimento é orgânico, como raízes antigas que se aprofundam calmas na terra morna."</p>
   </section>
   ${ban.length ? `<section style="display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
@@ -856,7 +871,7 @@ function rDeck() {
   <section class="card">
     <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Nutrição de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
     <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "var(--accent)", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
+      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
       ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">/ ${tg.prot} g prot</div></div>`)}
     </div>
   </section>
@@ -1022,7 +1037,7 @@ function rComer() {
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Comer</h2><p class="muted">Meta: ${fmtInt(tg.kcal)} kcal e ${tg.prot} g de proteína. Proteína de comida, ovos e albumina.</p></section>
   <section class="card">
     <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "var(--accent)", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">kcal</div></div>`)}
+      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">kcal</div></div>`)}
       ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">g prot</div></div>`)}
     </div>
     <p class="muted" style="text-align:center">${rem >= 0 ? `Restam ${fmtInt(rem)} kcal e ${Math.max(0, Math.round(tg.prot - tot.p))} g de proteína.` : `${fmtInt(-rem)} kcal acima da meta. Um dia acima não desfaz uma semana. A próxima refeição é normal.`}</p>
@@ -1179,9 +1194,13 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) { if (e.target.id === "sheet") closeSheet(); return; }
   const a = b.dataset.act, k = today(), c = S.cur;
   switch (a) {
-    case "habit": { const d = DW(k); d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); break; }
-    case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); break; }
-    case "water": { const d = DW(k); d.water = Math.max(0, d.water + num(b.dataset.ml)); d.h.agua = d.water >= S.settings.waterGoal; save(); render(); break; }
+    case "habit": {
+      const d = DW(k), wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5; d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); haptic();
+      if (!wasA && isActive(k)) toast(activeInWeek(mondayOf(k)) >= 5 && !wasW ? "Meta da semana cumprida. Isso é ritmo." : "Dia ativo. Este dia conta.");
+      break;
+    }
+    case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); break; }
+    case "water": { const d = DW(k); d.water = Math.max(0, d.water + num(b.dataset.ml)); d.h.agua = d.water >= S.settings.waterGoal; save(); render(); haptic(); break; }
     case "pickday": UI.pickDay = b.dataset.day; render(); break;
     case "tog-rotate": S.settings.rotate = !S.settings.rotate; save(); render(); break;
     case "wk-start": wkStart(b.dataset.day); break;
@@ -1192,7 +1211,7 @@ document.addEventListener("click", e => {
     case "wk-mode": c.mode = c.mode === "set" ? "end" : "set"; S.settings.logMode = c.mode; save(); wkRender(); break;
     case "wk-warmset": { const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i; dd.sets[i].done = !dd.sets[i].done; save(); wkRender(); break; }
     case "wk-set": {
-      const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i, s = dd.sets[i]; s.done = !s.done; save(); wkRender();
+      const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i, s = dd.sets[i]; s.done = !s.done; save(); wkRender(); haptic(15);
       if (s.done && i < dd.sets.length - 1) startRest(st.e.rest, `Próxima: série ${i + 2} de ${dd.sets.length}`);
       else if (s.done) { const st2 = stepsOf(c.day); const nx = st2[c.i + 1]; if (nx) startRest(60, `Próximo: ${nx.t === "warm" ? nx.c.name : findV(nx.e, varId(nx.e))[1]}`); }
       break;
@@ -1239,6 +1258,7 @@ document.addEventListener("click", e => {
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
   }
 });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet(); });
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "q") { UI.q = t.value; $("#foodlist").innerHTML = foodListHTML(); }
