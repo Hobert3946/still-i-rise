@@ -1819,6 +1819,31 @@ document.addEventListener("click", e => {
     case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ t: Date.now(), n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: é estimativa."); haptic(); break; }
     case "recent": recenteSheet(+b.dataset.i); break;
     case "recent-add": { const m = IA.rec; if (!m) break; DW(k).meals.push({ t: Date.now(), n: m.n, g: m.g, k: m.k, p: m.p, m: UI.meal }); save(); closeSheet(); render(); toast("Adicionado."); haptic(); break; }
+    
+    case "gh-save": {
+        const tEl = document.getElementById("ghToken"), gEl = document.getElementById("ghGistId");
+        const tVal = tEl ? tEl.value.trim() : "";
+        if (tVal && tVal !== "********") S.settings.ghToken = tVal;
+        else if (!tVal) S.settings.ghToken = "";
+        
+        const gVal = gEl ? gEl.value.trim() : "";
+        S.settings.ghGistId = gVal;
+        
+        save();
+        toast("Nuvem configurada!");
+        render();
+        if (S.settings.ghToken && !S.settings.ghGistId) {
+            syncToCloud(true);
+        } else if (S.settings.ghToken && S.settings.ghGistId) {
+            syncToCloud(true);
+        }
+        break;
+    }
+    case "gh-sync": {
+        syncFromCloud();
+        break;
+    }
+
     case "export": exportData(); break;
     case "import": $("#file").click(); break;
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
