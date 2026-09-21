@@ -1209,7 +1209,7 @@ function rIA() {
        <div class="row between">
            <h2 class="h1">A.I. Pessoal</h2>
            <div style="display:flex; gap:10px; align-items:center;">
-             <button class="btn sm" data-act="ia-clear" style="padding:0 10px; font-size:12px; height:28px; background:var(--surface2);">🗑️ Nova</button>
+             
              <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">🔧 Modelo</summary>
              <div class="body" style="padding:10px; margin-top:5px; background:var(--surface2); border-radius:8px;">
                <div class="lbl">Modelo Atual</div>
@@ -1229,6 +1229,7 @@ function rIA() {
     <div id="chat-messages" style="padding-bottom: 70px;">${msgsHTML}</div>
     
     <div class="chat-input-area">
+       <button class="chat-btn" data-act="ia-clear" style="color:var(--bad);" aria-label="Limpar Conversa"><svg class="icon"><use href="#i-trash"/></svg></button>
        <button class="chat-btn" data-act="ia-cam"><svg class="icon"><use href="#i-camera"/></svg></button>
        <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none; padding-top:12px; max-height:120px; overflow-y:auto;"></textarea>
        <button class="chat-btn primary" data-act="ia-send"><svg class="icon"><use href="#i-right"/></svg></button>
