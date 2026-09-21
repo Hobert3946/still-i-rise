@@ -1774,7 +1774,10 @@ function rMais() {
     <div class="lbl">Protocolo de recaída</div>
     <p class="muted" style="font-size:16px"><b>Furou uma refeição:</b> a próxima é normal. Não compensa pulando nem treina dobrado.<br><b>Furou um dia:</b> entra como dia ruim e amanhã segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda é déficit.<br><b>Furou uma semana:</b> volte pelo menor degrau: só não beber açúcar. Os outros hábitos voltam depois.<br><b>Nunca se pese após furar.</b></p>
   </section>
-  <section class="card"><button class="btn danger full" data-act="reset">Apagar todos os dados</button></section>`;
+  <section class="card"><button class="btn danger full" data-act="reset">Apagar todos os dados</button></section>
+    <div style="text-align:center; padding:30px 0 20px; color:var(--muted); font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase;">
+      ⚡ Powered by Hobert Silva
+    </div>`;
   if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const e = $("#persist"); if (e) e.textContent = p ? "Armazenamento persistente ativo." : "Armazenamento persistente não concedido: exporte backups."; });
 }
 
