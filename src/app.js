@@ -196,8 +196,8 @@ function rDeck() {
     <div class="row" style="gap:14px;margin-top:4px"><img class="avatar lg" src="%%AVATAR%%" alt="" width="56" height="56"><h2 class="h1 grow">${hi}, ${esc(S.profile.name)}.</h2></div>
     <p class="quote">"Still I Rise. O crescimento é orgânico, como raízes antigas que se aprofundam calmas na terra morna."</p>
   </section>
-  ${ban.length ? `<section style="display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
-  <section class="card">
+  ${ban.length ? `<section style="order:1;display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
+  <section class="card" style="order:4">
     <div class="row between"><div class="sec-t"><span class="dot sage"></span><span class="lbl">Ritmo semanal</span></div><span class="pill ok">Não-punitivo</span></div>
     <div class="row" style="gap:16px">
       ${ring(week / 5, 112, 8, "var(--sage)", `<div><div class="big tabnum">${week}<span class="muted" style="font-size:16px">/5</span></div><div class="lbl">dias ativos</div></div>`)}
@@ -207,37 +207,37 @@ function rDeck() {
       </div>
     </div>
     <div class="week">${bars}</div>
-    <p class="muted" style="font-size:13px">${wtxt} Dia ativo = zero açúcar + 2 outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
+    <p class="muted" style="font-size:15px">${wtxt} Dia ativo = zero açúcar + 2 outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
   </section>
-  <section class="card">
+  <section class="card" style="order:3">
     <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">Hábitos de hoje</span></div><span class="pill">${habitCount(k)}/6</span></div>
     <div style="display:flex;flex-direction:column;gap:10px">${habits}</div>
   </section>
-  <section class="card">${wk2}</section>
-  <section class="card">
+  <section class="card" style="order:2">${wk2}</section>
+  <section class="card" style="order:5">
     <div class="row between"><div class="sec-t"><span class="dot" style="background:var(--sage)"></span><span class="lbl">Hidratação</span></div><span class="lbl">Meta ${S.settings.waterGoal / 1000} L</span></div>
     <div class="row between" style="align-items:baseline"><div><span class="big tabnum">${(d.water / 1000).toFixed(2)}</span><span class="muted"> / ${(S.settings.waterGoal / 1000).toFixed(2)} litros</span></div><span class="lbl">${Math.round(pw * 100)}%</span></div>
     <div class="bar"><i style="width:${pw * 100}%"></i></div>
     <div class="grid3"><button class="btn sm" data-act="water" data-ml="250">+250 ml</button><button class="btn sm" data-act="water" data-ml="500">+500 ml</button><button class="btn sm ghost" data-act="water" data-ml="-250">−250</button></div>
   </section>
-  <section class="card">
+  <section class="card" style="order:6">
     <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Nutrição de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
     <div class="row" style="justify-content:space-around">
       ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
       ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">/ ${tg.prot} g prot</div></div>`)}
     </div>
   </section>
-  <details class="fold card" style="padding:0 14px"><summary><span class="row"><span class="dot sage"></span><span class="lbl">Suplementos de hoje · ${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length}</span></span>${ic("down")}</summary><div class="body">${sup}</div></details>
-  ${nextM ? `<section class="card flat"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
-  <section class="card flat row" style="align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>`;
+  <details class="fold card" style="order:7;padding:0 14px"><summary><span class="row"><span class="dot sage"></span><span class="lbl">Suplementos de hoje · ${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length}</span></span>${ic("down")}</summary><div class="body">${sup}</div></details>
+  ${nextM ? `<section class="card flat" style="order:8"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
+  <section class="card flat row" style="order:9;align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>`;
 }
 
 /* ============ TREINO ============ */
 function rTreino() {
   const k = today(), L = UI.pickDay || dayLetter(k) || "A";
   const p = PLAN[L], vol = weekVolume();
-  const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:12px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div><span class="tag">${e.v.length} variações</span></div>`; }).join("");
-  const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:12px">${c.sets} × ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
+  const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div><span class="tag">${e.v.length} variações</span></div>`; }).join("");
+  const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:14px">${c.sets} × ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
   const pa = painAvg();
   $("#v-treino").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h. Sábado e domingo: descanso ativo e caminhada.</p></section>
@@ -253,11 +253,11 @@ function rTreino() {
   <section class="card flat">
     <div class="lbl">Balanço semanal de séries</div>
     <div class="grid2"><div class="tile in"><div class="lbl">Empurrar</div><div class="big tabnum">${vol.push}</div></div><div class="tile in"><div class="lbl">Puxar</div><div class="big tabnum">${vol.pull}</div></div></div>
-    <p class="muted" style="font-size:13px">Puxar ≥ empurrar protege o ombro. Aquecimento de manguito antes de peito, ombro e braço.</p>
+    <p class="muted" style="font-size:15px">Puxar ≥ empurrar protege o ombro. Aquecimento de manguito antes de peito, ombro e braço.</p>
   </section>
   <section class="card flat">
     <div class="lbl">Regras de carga</div>
-    <p class="muted" style="font-size:14px"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois:</b> fechou todas as repetições, sobe a carga. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
+    <p class="muted" style="font-size:16px"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois:</b> fechou todas as repetições, sobe a carga. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
     <div class="row between"><span class="grow">Rodízio automático de variações (a cada 4 semanas)</span><button class="tog ${S.settings.rotate ? "on" : ""}" data-act="tog-rotate" aria-label="alternar"><i></i></button></div>
   </section>`;
 }
@@ -295,29 +295,37 @@ function wkRender() {
   } else {
     const slot = step.e, v = findV(slot, dd.vid), unit = slot.unit ? "seg" : "reps";
     const done = dd.sets.filter(s => s.done).length;
-    const rows = dd.sets.map((s, i) => `<div class="setrow ${s.done ? "done" : ""}"><span class="n">${i + 1}</span>
+    const pend = dd.sets.findIndex(s => !s.done);
+    const rows = dd.sets.map((s, i) => `<div class="setrow ${s.done ? "done" : ""} ${i === pend && c.mode === "set" ? "cur" : ""}"><span class="n">${i + 1}</span>
       <input inputmode="decimal" data-f="kg" data-i="${i}" value="${s.kg || ""}" placeholder="kg" aria-label="carga série ${i + 1}">
       <input inputmode="numeric" data-f="reps" data-i="${i}" value="${s.reps}" aria-label="${unit} série ${i + 1}">
       ${c.mode === "set" ? `<button class="ok" data-act="wk-set" data-i="${i}" aria-label="feito">${ic("check")}</button>` : `<span></span>`}</div>`).join("");
+    const kstep = slot.inc ? Math.min(slot.inc, 5) : 0, rstep = slot.unit ? 5 : 1; const ru = slot.unit ? "s" : "rep";
+    const adj = c.mode === "set" && pend >= 0 ? `<div class="chips" style="justify-content:center" aria-label="ajuste rápido da próxima série">${kstep ? `<button class="chip" data-act="wk-adj" data-f="kg" data-d="${-kstep}">− ${kstep} kg</button><button class="chip" data-act="wk-adj" data-f="kg" data-d="${kstep}">+ ${kstep} kg</button>` : ""}<button class="chip" data-act="wk-adj" data-f="reps" data-d="${-rstep}">− ${rstep} ${ru}</button><button class="chip" data-act="wk-adj" data-f="reps" data-d="${rstep}">+ ${rstep} ${ru}</button></div>` : "";
     body = `<div class="row between"><span class="pill">${slot.sets} × ${slot.reps[0] === slot.reps[1] ? slot.reps[0] : slot.reps[0] + "–" + slot.reps[1]}${slot.unit ? " s" : ""} · descanso ${slot.rest}s</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por série" : "Registrar ao final"}</button></div>
       <h2 class="mid">${v[1]}</h2>
-      <p class="muted" style="font-size:13px">${dd.hint}</p>
-      <div class="grid3" style="grid-template-columns:34px 1fr 1fr 64px;gap:8px;margin-bottom:-6px"><span></span><span class="mini">kg</span><span class="mini">${unit}</span><span class="mini">${c.mode === "set" ? "feito" : ""}</span></div>
+      <p class="muted" style="font-size:15px">${dd.hint}</p>
+      <div class="grid3" style="grid-template-columns:30px 1fr 1fr 76px;gap:8px;margin-bottom:-6px"><span></span><span class="mini">kg</span><span class="mini">${unit}</span><span class="mini">${c.mode === "set" ? "feito" : ""}</span></div>
       ${rows}
+      ${adj}
       ${c.mode === "end" ? `<button class="btn solid full" data-act="wk-allset">${ic("check")} REGISTRAR EXERCÍCIO (${dd.sets.length} séries)</button>` : ""}
       <details class="fold" open><summary>Como fazer ${ic("down")}</summary><div class="body"><p class="how">${v[2]}</p></div></details>
       <div><div class="lbl" style="margin-bottom:6px">Variações (para não enjoar)</div><div class="chips">${slot.v.map(x => `<button class="chip ${x[0] === dd.vid ? "on" : ""}" data-act="wk-var" data-v="${x[0]}">${x[1].replace(/ \(.*\)/, "")}</button>`).join("")}</div></div>
       ${slot.id === "a2" && dd.vid === "a2_incl_barra" && painAvg() !== null && painAvg() >= 2 ? banner("warn", "shield", "Atenção ao ombro", "Sua dor recente está acima de 2. Prefira halteres hoje.") : ""}
-      <p class="muted" style="font-size:12px">${done}/${dd.sets.length} séries. Termine sentindo que faria mais 3 repetições.</p>`;
+      <p class="muted" style="font-size:14px">${done}/${dd.sets.length} séries. Termine sentindo que faria mais 3 repetições.</p>`;
   }
+  const pIdx = step.t === "ex" ? dd.sets.findIndex(s => !s.done) : -1;
+  const cta = step.t === "ex" && c.mode === "set" && pIdx >= 0
+    ? `<button class="btn solid big-cta grow" data-act="wk-set" data-i="${pIdx}">${ic("check")} SÉRIE ${pIdx + 1} FEITA</button><button class="btn" data-act="wk-next" aria-label="${last ? "finalizar treino" : "próximo exercício"}">${ic(last ? "check" : "right")}</button>`
+    : `<button class="btn solid big-cta grow" data-act="wk-next">${last ? "FINALIZAR TREINO" : "PRÓXIMO"} ${ic(last ? "check" : "right")}</button>`;
   const pct = (c.i + 1) / st.length * 100;
   $("#wk-body").innerHTML = `
-    <div class="row between"><button class="circ-btn" data-act="wk-back" aria-label="voltar">${ic("left")}</button><div class="grow" style="text-align:center"><div class="lbl">Treino ${c.day} · ${PLAN[c.day].name}</div><div class="muted" style="font-size:12px">${c.i + 1} de ${st.length}</div></div><button class="circ-btn" data-act="wk-exit" aria-label="sair">${ic("x")}</button></div>
+    <div class="row between"><button class="circ-btn" data-act="wk-back" aria-label="voltar">${ic("left")}</button><div class="grow" style="text-align:center"><div class="lbl">Treino ${c.day} · ${PLAN[c.day].name}</div><div class="muted" style="font-size:14px">${c.i + 1} de ${st.length}</div></div><button class="circ-btn" data-act="wk-exit" aria-label="sair">${ic("x")}</button></div>
     <div class="prog"><i style="width:${pct}%"></i></div>
     ${body}
     <div class="stickybar">
       <button class="btn" data-act="wk-prev" ${c.i === 0 ? "disabled" : ""} aria-label="anterior">${ic("left")}</button>
-      <button class="btn solid grow" data-act="wk-next">${last ? "FINALIZAR TREINO" : "PRÓXIMO"} ${ic(last ? "check" : "right")}</button>
+      ${cta}
     </div>`;
 }
 function wkNext() {
@@ -378,12 +386,12 @@ function foodListHTML() {
   const nq = norm(q);
   const items = FOODS.map((f, i) => [f, i]).filter(([f]) => (UI.cat === "Todos" || f[5] === UI.cat) && (!nq || norm(f[0]).includes(nq)));
   if (!items.length) return `<p class="muted" style="padding:12px 0">Nada encontrado. Use "Adicionar por rótulo" abaixo.</p>`;
-  return items.slice(0, 60).map(([f, i]) => `<button class="food" data-act="food" data-i="${i}"><div class="grow"><div style="font-weight:600">${esc(f[0])}</div><div class="muted" style="font-size:12px">${f[3]} (${f[4]} g) · ${Math.round(f[1] * f[4] / 100)} kcal · ${r1(f[2] * f[4] / 100)} g prot</div></div><span class="tag">${f[6]}</span>${ic("plus")}</button>`).join("") + (items.length > 60 ? `<p class="muted" style="font-size:12px;padding:8px 0">Mostrando 60 de ${items.length}. Refine a busca.</p>` : "");
+  return items.slice(0, 60).map(([f, i]) => `<button class="food" data-act="food" data-i="${i}"><div class="grow"><div style="font-weight:600">${esc(f[0])}</div><div class="muted" style="font-size:14px">${f[3]} (${f[4]} g) · ${Math.round(f[1] * f[4] / 100)} kcal · ${r1(f[2] * f[4] / 100)} g prot</div></div><span class="tag">${f[6]}</span>${ic("plus")}</button>`).join("") + (items.length > 60 ? `<p class="muted" style="font-size:14px;padding:8px 0">Mostrando 60 de ${items.length}. Refine a busca.</p>` : "");
 }
 function rComer() {
   const k = today(), d = D(k), tg = TG(), tot = dayTotals(k);
   const meals = ["Café da manhã", "Almoço", "Lanche", "Jantar", "Ceia"];
-  const groups = meals.map(m => { const it = d.meals.map((x, i) => [x, i]).filter(([x]) => x.m === m); if (!it.length) return ""; const kk = it.reduce((a, [x]) => a + x.k, 0), pp = it.reduce((a, [x]) => a + x.p, 0); return `<div><div class="row between"><span class="lbl">${m}</span><span class="lbl tabnum">${Math.round(kk)} kcal · ${Math.round(pp)} g</span></div><div class="list">${it.map(([x, i]) => `<div class="li"><div class="grow"><div style="font-weight:600">${esc(x.n)}</div><div class="muted" style="font-size:12px">${x.g} g · ${Math.round(x.k)} kcal · ${r1(x.p)} g prot</div></div><button class="circ-btn" style="width:40px;height:40px;color:var(--bad)" data-act="meal-del" data-i="${i}" aria-label="remover">${ic("trash")}</button></div>`).join("")}</div></div>`; }).join("");
+  const groups = meals.map(m => { const it = d.meals.map((x, i) => [x, i]).filter(([x]) => x.m === m); if (!it.length) return ""; const kk = it.reduce((a, [x]) => a + x.k, 0), pp = it.reduce((a, [x]) => a + x.p, 0); return `<div><div class="row between"><span class="lbl">${m}</span><span class="lbl tabnum">${Math.round(kk)} kcal · ${Math.round(pp)} g</span></div><div class="list">${it.map(([x, i]) => `<div class="li"><div class="grow"><div style="font-weight:600">${esc(x.n)}</div><div class="muted" style="font-size:14px">${x.g} g · ${Math.round(x.k)} kcal · ${r1(x.p)} g prot</div></div><button class="circ-btn" style="width:40px;height:40px;color:var(--bad)" data-act="meal-del" data-i="${i}" aria-label="remover">${ic("trash")}</button></div>`).join("")}</div></div>`; }).join("");
   const rem = tg.kcal - tot.k;
   $("#v-comer").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Comer</h2><p class="muted">Meta: ${fmtInt(tg.kcal)} kcal e ${tg.prot} g de proteína. Proteína de comida, ovos e albumina.</p></section>
@@ -396,7 +404,7 @@ function rComer() {
     ${groups || `<p class="muted" style="text-align:center">Nada registrado hoje.</p>`}
   </section>
   <section class="card">
-    <div class="row between"><span class="lbl">Tabela de alimentos (${FOODS.length})</span><span class="muted" style="font-size:11px">T = TACO · R = estimativa</span></div>
+    <div class="row between"><span class="lbl">Tabela de alimentos (${FOODS.length})</span><span class="muted" style="font-size:13px">T = TACO · R = estimativa</span></div>
     <input class="field" id="q" type="search" placeholder="Buscar alimento" value="${esc(UI.q)}" autocomplete="off">
     <div class="chips">${CATS.map(c => `<button class="chip ${UI.cat === c ? "on" : ""}" data-act="cat" data-c="${c}">${c}</button>`).join("")}</div>
     <div class="list" id="foodlist">${foodListHTML()}</div>
@@ -433,7 +441,7 @@ function chartSVG() {
 function rEvol() {
   const w = curWeight(), s = S.profile.startWeight, g = S.profile.goal, minW = Math.min(s, ...S.weights.map(x => x.kg));
   const prog = Math.max(0, Math.min(1, (s - w) / (s - g)));
-  const ms = MILESTONES.map(m => { const ok = m.test(s, minW); return `<div class="li"><span class="box" style="width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;${ok ? "background:var(--ok);color:#fff" : "box-shadow:var(--inset);color:transparent"}">${ic("check")}</span><div class="grow"><div style="font-weight:700">${m.nm} · ${m.lbl(s)}</div><div class="muted" style="font-size:12px">${m.txt}</div></div></div>`; }).join("");
+  const ms = MILESTONES.map(m => { const ok = m.test(s, minW); return `<div class="li"><span class="box" style="width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;${ok ? "background:var(--ok);color:#fff" : "box-shadow:var(--inset);color:transparent"}">${ic("check")}</span><div class="grow"><div style="font-weight:700">${m.nm} · ${m.lbl(s)}</div><div class="muted" style="font-size:14px">${m.txt}</div></div></div>`; }).join("");
   const wkSq = Array.from({ length: 8 }, (_, i) => { const mk = addDays(mondayOf(today()), (i - 7) * 7), a = activeInWeek(mk); return `<div style="flex:1;text-align:center"><div style="height:34px;border-radius:10px;background:${a >= 5 ? "var(--ok)" : a === 4 ? "var(--warn)" : a ? "var(--bad)" : "var(--surface2)"};opacity:${a ? 1 : .6}"></div><div class="lbl" style="margin-top:4px">${a}</div></div>`; }).join("");
   const recs = Object.entries(S.logs).map(([vid, a]) => { let best = 0; a.forEach(l => l.sets.forEach(x => best = Math.max(best, x.kg))); let nm = vid; PLAN && DAY_ORDER.forEach(L => PLAN[L].ex.forEach(e => e.v.forEach(v => { if (v[0] === vid) nm = v[1]; }))); return [nm, best, a.length]; }).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const lastNeck = S.neck[S.neck.length - 1];
@@ -444,7 +452,7 @@ function rEvol() {
     <div class="bar acc"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${s} kg</span><span class="lbl">Meta ${g} kg · faltam ${r1(Math.max(0, w - g))}</span></div>
     ${chartSVG()}
     <button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
-    <p class="muted" style="font-size:13px">Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
+    <p class="muted" style="font-size:15px">Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
     ${S.weights.length ? `<div class="list">${S.weights.slice(-6).reverse().map(x => `<div class="li"><div class="grow"><b class="tabnum">${x.kg} kg</b>${x.waist ? `<span class="muted"> · cintura ${x.waist} cm</span>` : ""}</div><span class="muted">${dispDate(x.d)}</span></div>`).join("")}</div>` : ""}
   </section>
   <section class="card"><div class="lbl">Marcos</div><div class="list">${ms}</div></section>
@@ -452,9 +460,9 @@ function rEvol() {
     <div class="lbl">Termômetro do pescoço (acantose)</div>
     <p class="muted">Compare a mancha com o espelho, a cada 2 semanas. 1 = bem escura, 5 = quase sumiu.</p>
     <div class="seg">${[1, 2, 3, 4, 5].map(v => `<button class="${lastNeck && lastNeck.v === v && lastNeck.d === today() ? "on" : ""}" data-act="neck" data-v="${v}">${v}</button>`).join("")}</div>
-    ${S.neck.length ? `<div class="muted" style="font-size:13px">${S.neck.slice(-6).map(n => `${dispDate(n.d)}: ${n.v}`).join(" · ")}</div>` : ""}
+    ${S.neck.length ? `<div class="muted" style="font-size:15px">${S.neck.slice(-6).map(n => `${dispDate(n.d)}: ${n.v}`).join(" · ")}</div>` : ""}
   </section>
-  <section class="card"><div class="lbl">Ritmo das últimas 8 semanas</div><div class="row" style="gap:6px;align-items:flex-start">${wkSq}</div><p class="muted" style="font-size:12px">Verde = 5+ dias ativos · amarelo = 4 · vermelho = menos.</p></section>
+  <section class="card"><div class="lbl">Ritmo das últimas 8 semanas</div><div class="row" style="gap:6px;align-items:flex-start">${wkSq}</div><p class="muted" style="font-size:14px">Verde = 5+ dias ativos · amarelo = 4 · vermelho = menos.</p></section>
   ${recs.length ? `<section class="card"><div class="lbl">Maiores cargas registradas</div><div class="list">${recs.map(r => `<div class="li"><div class="grow">${esc(r[0])}</div><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div></section>` : ""}`;
 }
 
@@ -464,7 +472,7 @@ function suppCatalogHTML() {
   a = a.slice().sort((p, q) => UI.supSort === "price" ? (p.price - q.price || q.help - p.help) : (q.help - p.help || p.price - q.price));
   return a.map(x => `<div class="tile" style="display:flex;flex-direction:column;gap:6px"><div class="row between"><b>${x.n}</b><span class="tag">${x.t === "M" ? "LEVAR AO MÉDICO" : "SUPLEMENTO"}</span></div>
     <div class="row wrap gap6"><span class="pill acc">Custo ${"$".repeat(x.price)}</span><span class="pill ok">Ajuda ${x.help}/5</span></div>
-    <div style="font-size:14px">${x.why}</div><div class="muted" style="font-size:13px"><b>Risco:</b> ${x.risk}</div></div>`).join("");
+    <div style="font-size:16px">${x.why}</div><div class="muted" style="font-size:15px"><b>Risco:</b> ${x.risk}</div></div>`).join("");
 }
 function rMais() {
   const tg = TG(), s = S.settings, k = today(), bk = s.lastBackup;
@@ -474,12 +482,12 @@ function rMais() {
   <section class="card">
     <div class="lbl">Metas nutricionais (Mifflin-St Jeor)</div>
     <div class="grid2"><div class="tile in"><div class="lbl">TMB</div><div class="mid tabnum">${fmtInt(tg.tmb)}</div></div><div class="tile in"><div class="lbl">Gasto total</div><div class="mid tabnum">${fmtInt(tg.tdee)}</div></div><div class="tile in"><div class="lbl">Meta diária</div><div class="mid tabnum">${fmtInt(tg.kcal)} kcal</div></div><div class="tile in"><div class="lbl">Proteína</div><div class="mid tabnum">${tg.prot} g</div></div></div>
-    <p class="muted" style="font-size:13px">Calculado para ${r1(s.calcWeight)} kg, déficit de 1.000 kcal, piso de 1.800. Recalcula sozinho a cada 4 kg de variação.</p>
+    <p class="muted" style="font-size:15px">Calculado para ${r1(s.calcWeight)} kg, déficit de 1.000 kcal, piso de 1.800. Recalcula sozinho a cada 4 kg de variação.</p>
     <div class="row between"><span class="grow">${esc(S.profile.name)} · ${S.profile.height} cm · ${S.profile.age} anos</span><button class="btn sm" data-act="profile">${ic("edit")} Editar</button></div>
   </section>
   <section class="card">
     <div class="lbl">Suplementos e remédios</div>
-    <p class="muted" style="font-size:13px">Informativo, sem doses de remédio. Tudo que é prescrição deve ser decidido com seu médico. GLP-1 ficou de fora por decisão sua.</p>
+    <p class="muted" style="font-size:15px">Informativo, sem doses de remédio. Tudo que é prescrição deve ser decidido com seu médico. GLP-1 ficou de fora por decisão sua.</p>
     <div class="seg"><button class="${UI.supSort === "price" ? "on" : ""}" data-act="sup-sort" data-v="price">Menor custo</button><button class="${UI.supSort === "help" ? "on" : ""}" data-act="sup-sort" data-v="help">Mais ajuda</button></div>
     <div class="seg"><button class="${UI.supType === "all" ? "on" : ""}" data-act="sup-type" data-v="all">Todos</button><button class="${UI.supType === "S" ? "on" : ""}" data-act="sup-type" data-v="S">Suplementos</button><button class="${UI.supType === "M" ? "on" : ""}" data-act="sup-type" data-v="M">Levar ao médico</button></div>
     <div style="display:flex;flex-direction:column;gap:10px" id="supcat">${suppCatalogHTML()}</div>
@@ -497,13 +505,13 @@ function rMais() {
   </section>
   <section class="card">
     <div class="lbl">Dados e backup</div>
-    <p class="muted" style="font-size:13px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
+    <p class="muted" style="font-size:15px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
     <div class="grid2"><button class="btn" data-act="export">${ic("download")} Exportar</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
     <input type="file" id="file" accept="application/json,.json" hidden>
   </section>
   <section class="card">
     <div class="lbl">Protocolo de recaída</div>
-    <p class="muted" style="font-size:14px"><b>Furou uma refeição:</b> a próxima é normal. Não compensa pulando nem treina dobrado.<br><b>Furou um dia:</b> entra como dia ruim e amanhã segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda é déficit.<br><b>Furou uma semana:</b> volte pelo menor degrau: só não beber açúcar. Os outros hábitos voltam depois.<br><b>Nunca se pese após furar.</b></p>
+    <p class="muted" style="font-size:16px"><b>Furou uma refeição:</b> a próxima é normal. Não compensa pulando nem treina dobrado.<br><b>Furou um dia:</b> entra como dia ruim e amanhã segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda é déficit.<br><b>Furou uma semana:</b> volte pelo menor degrau: só não beber açúcar. Os outros hábitos voltam depois.<br><b>Nunca se pese após furar.</b></p>
   </section>
   <section class="card"><button class="btn danger full" data-act="reset">Apagar todos os dados</button></section>`;
   if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const e = $("#persist"); if (e) e.textContent = p ? "Armazenamento persistente ativo." : "Armazenamento persistente não concedido: exporte backups."; });
@@ -568,6 +576,7 @@ document.addEventListener("click", e => {
       else if (s.done) { const st2 = stepsOf(c.day); const nx = st2[c.i + 1]; if (nx) startRest(60, `Próximo: ${nx.t === "warm" ? nx.c.name : findV(nx.e, varId(nx.e))[1]}`); }
       break;
     }
+    case "wk-adj": { const st = stepsOf(c.day)[c.i], dd = wkData(st), f = b.dataset.f, d = num(b.dataset.d), p = dd.sets.findIndex(x => !x.done); if (p < 0) break; for (let i = p; i < dd.sets.length; i++) if (!dd.sets[i].done) dd.sets[i][f] = Math.max(0, r1(num(dd.sets[i][f]) + d)); save(); wkRender(); haptic(); break; }
     case "wk-allset": { const st = stepsOf(c.day)[c.i], dd = wkData(st); dd.sets.forEach(s => s.done = true); save(); notify("Exercício registrado", "Próximo exercício."); wkNext(); break; }
     case "wk-var": { const st = stepsOf(c.day)[c.i]; S.sel[st.e.id] = b.dataset.v; delete c.data[st.e.id]; save(); wkRender(); break; }
     case "rest-adj": { const s = num(b.dataset.s); if (RT.paused !== null) RT.paused = Math.max(1, RT.paused + s); else RT.end += s * 1000; RT.total = Math.max(1, RT.total + s); restDraw(); break; }
