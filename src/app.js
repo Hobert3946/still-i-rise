@@ -23,7 +23,7 @@ const KEY = "sir_v1";
 const defaults = () => ({
   v: 1,
   profile: { name: "Hobert", startWeight: 140, goal: 105, height: 179, age: 24 },
-  weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null,
+  weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [],
   settings: { theme: "auto", start: today(), logMode: "set", rotate: true, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000, gemKey: "", gemModel: "gemini-2.5-flash-lite", gemAck: false }
 });
 let S = null;
@@ -152,7 +152,7 @@ function go(tab) {
   render(); window.scrollTo({ top: 0 });
 }
 function render() {
-  ({ deck: rDeck, treino: rTreino, agua: rAgua, comer: rComer, evol: rEvol, mais: rMais })[UI.tab]();
+  ({ deck: rDeck, treino: rTreino, agua: rAgua, comer: rComer, evol: rEvol, mais: rMais, ia: rIA })[UI.tab]();
   dockWater();
 }
 
@@ -1116,3 +1116,162 @@ orig_rComer = function() {
         vComer.insertBefore(metaBanner, vComer.children[1]);
     }
 }
+
+
+/* === AURA IA CHAT === */
+function rIA() {
+    const vIA = document.getElementById("v-ia");
+    if (!vIA) return;
+    
+    let msgsHTML = "";
+    if (!S.chat || S.chat.length === 0) {
+        msgsHTML = `<div style="text-align:center; padding:40px 20px;">
+           <div style="font-size:48px; margin-bottom:15px; animation:aura-levitate 3s infinite;">✨</div>
+           <h3 class="mid">Sou o seu assistente Aura</h3>
+           <p class="muted" style="margin-top:10px;">Eu conheço a sua dieta, seus treinos e seu histórico. Me pergunte qualquer coisa, peça para eu montar seu prato ou tire foto de um rótulo.</p>
+        </div>`;
+    } else {
+        msgsHTML = '<div class="chat-container">' + S.chat.map(m => `<div class="chat-msg ${m.role}">${esc(m.text || "").replace(/\n/g, "<br>")}${m.img ? `<div class="chat-msg img"><img src="data:image/jpeg;base64,${m.img}"></div>` : ""}</div>`).join("") + '<div id="ai-typing" style="display:none;" class="chat-msg ai typing">Pensando...</div></div>';
+    }
+    
+    vIA.innerHTML = `
+    <section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
+       <h2 class="h1">A.I. Pessoal</h2>
+    </section>
+    <div id="chat-messages" style="padding-bottom: 70px;">${msgsHTML}</div>
+    
+    <div class="chat-input-area">
+       <button class="chat-btn" data-act="ia-cam"><svg class="icon"><use href="#i-camera"/></svg></button>
+       <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none; padding-top:12px;"></textarea>
+       <button class="chat-btn primary" data-act="ia-send"><svg class="icon"><use href="#i-right"/></svg></button>
+       <input type="file" id="ia-foto" accept="image/*" hidden>
+    </div>
+    `;
+    
+    // Auto-resize textarea
+    setTimeout(() => {
+        const inp = document.getElementById("ia-input");
+        if(inp) {
+            inp.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = (this.scrollHeight) + "px";
+            });
+            inp.addEventListener("keypress", function(e) {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.querySelector('[data-act="ia-send"]').click(); }
+            });
+        }
+        window.scrollTo(0, document.body.scrollHeight);
+    }, 50);
+}
+
+// IA Context Builder
+function buildAuraContext() {
+    const k = today();
+    const d = typeof DW === 'function' ? DW(k) : D(k);
+    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
+    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
+    const L = typeof planLetter === 'function' ? planLetter(k) : "Descanso";
+    
+    return `Você é a Aura, um assistente de saúde premium, direto, objetivo e amigável, integrado ao aplicativo Still I Rise.
+DADOS DO USUÁRIO HOJE:
+- Nome: ${S.profile.name || "Usuário"}
+- Meta de Calorias: ${Math.round(tot.k)} / ${tg.kcal} kcal
+- Meta de Proteína: ${Math.round(tot.p)} / ${tg.prot} g
+- Água: ${(d.water/1000).toFixed(1)} / ${(S.settings.waterGoal/1000).toFixed(1)} L
+- Treino do Dia: ${L}
+- Fibras Consumidas: ${d.fiber || 0}g
+- Horário Atual: ${new Date().toLocaleTimeString()}
+
+Regras:
+1. Responda de forma extremamente concisa, sem enrolação. Use no máximo 2-3 parágrafos curtos.
+2. Analise fotos de comida e sugira como encaixar na dieta restante do dia.
+3. Se perguntarem se podem comer algo, avalie se os macros restantes permitem.
+4. NUNCA diga que é uma IA. Aja como o núcleo inteligente do aplicativo. Mantenha um tom encorajador e prático.`;
+}
+
+// Ask Gemini
+async function askAuraIA(text, file = null) {
+    if (!S.settings.gemKey) {
+        toast("Configure a sua chave do Gemini na aba Mais primeiro!");
+        return;
+    }
+    
+    let base64 = null;
+    if (file) {
+        if (typeof fotoDownscale === 'function') {
+            base64 = await fotoDownscale(file);
+        }
+    }
+    
+    if (!S.chat) S.chat = [];
+    S.chat.push({ role: 'user', text: text, img: base64 });
+    rIA();
+    
+    const typing = document.getElementById("ai-typing");
+    if(typing) typing.style.display = "block";
+    window.scrollTo(0, document.body.scrollHeight);
+    
+    try {
+        const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
+        const parts = [{ text: text || "O que acha dessa foto para a minha dieta hoje?" }];
+        if (base64) {
+            parts.push({ inlineData: { mimeType: "image/jpeg", data: base64 } });
+        }
+        
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.settings.gemModel || "gemini-2.5-flash-lite"}:generateContent`, {
+            method: "POST", signal: ctl.signal,
+            headers: { "Content-Type": "application/json", "x-goog-api-key": S.settings.gemKey },
+            body: JSON.stringify({ 
+                systemInstruction: { parts: [{ text: buildAuraContext() }] },
+                contents: [{ parts: parts }]
+            })
+        });
+        clearTimeout(t);
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error ? j.error.message : "Erro na IA");
+        
+        const reply = j.candidates[0].content.parts[0].text;
+        S.chat.push({ role: 'ai', text: reply });
+        save();
+        rIA();
+    } catch(e) {
+        S.chat.push({ role: 'ai', text: "Desculpe, ocorreu um erro na conexão: " + e.message });
+        save();
+        rIA();
+    }
+}
+
+// Inject Event Listeners globally via an IIFE
+(function() {
+    document.addEventListener("click", e => {
+        const b = e.target.closest("[data-act]");
+        if (!b) return;
+        const act = b.dataset.act;
+        
+        if (act === "ia-cam") {
+            const f = document.getElementById("ia-foto");
+            if (f) f.click();
+        } else if (act === "ia-send") {
+            const inp = document.getElementById("ia-input");
+            const text = inp.value.trim();
+            if (text) {
+                inp.value = "";
+                inp.style.height = "auto";
+                askAuraIA(text);
+            }
+        }
+    });
+    
+    document.addEventListener("change", e => {
+        if (e.target.id === "ia-foto") {
+            const file = e.target.files[0];
+            e.target.value = ""; // reset
+            if (file) {
+                const inp = document.getElementById("ia-input");
+                const text = inp ? inp.value.trim() : "";
+                if(inp) { inp.value = ""; inp.style.height = "auto"; }
+                askAuraIA(text, file);
+            }
+        }
+    });
+})();
