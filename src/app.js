@@ -932,3 +932,69 @@ document.addEventListener("click", e => {
         }
     }
 });
+
+
+/* === PROGRESSIVE DISCLOSURE DECK REDESIGN === */
+function orig_rDeck() {
+    const k = today(), d = typeof DW === 'function' ? DW(k) : D(k), L = typeof planLetter === 'function' ? planLetter(k) : null;
+    const tg = typeof TG === 'function' ? TG() : {kcal:2000, prot:160};
+    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
+    const week = activeInWeek(mondayOf(k)), ds = dayStreak(), ws = weekStreak(), abs = daysAbsent();
+    const ban = [];
+    const ab = ABSENCE.find(a => abs >= a.min);
+    if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
+    if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}.`, '<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>'));
+    
+    const waterL = (d.water / 1000).toFixed(1);
+    const habitsList = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}</span></button>`).join("");
+    const supList = SUPP_BASE.map(([id, n, s]) => `<button class="chk ${d.s[id] ? "on" : ""}" data-act="supp" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${n}</span></button>`).join("");
+
+    $("#v-deck").innerHTML = `
+    ${ban.length ? '<section style="display:flex;flex-direction:column;gap:10px;margin-bottom:15px;">' + ban.join("") + '</section>' : ""}
+    
+    <!-- Aura Core Anchor -->
+    <div id="aura-container"></div>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
+       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-act="water" data-ml="250">
+          <div style="font-size:24px; margin-bottom:5px;">💧</div>
+          <div style="font-weight:700; font-size:16px;">${waterL} L</div>
+          <div class="lbl">+ 250ml Água</div>
+       </div>
+       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="comer">
+          <div style="font-size:24px; margin-bottom:5px;">🍱</div>
+          <div style="font-weight:700; font-size:16px;">${Math.round(tot.p)}g</div>
+          <div class="lbl">+ Dieta</div>
+       </div>
+       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="treino">
+          <div style="font-size:24px; margin-bottom:5px;">🏋️‍♂️</div>
+          <div style="font-weight:700; font-size:16px;">${L || "Descanso"}</div>
+          <div class="lbl">Treino Hoje</div>
+       </div>
+       <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" onclick="document.getElementById('cardioSheet').classList.add('on')">
+          <div style="font-size:24px; margin-bottom:5px;">🔥</div>
+          <div style="font-weight:700; font-size:16px;">Cardio</div>
+          <div class="lbl">Registrar</div>
+       </div>
+    </div>
+    
+    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot ok"></span><span class="lbl" style="font-size:15px; font-weight:600;">Hábitos Diários (${habitCount(k)}/6)</span></span>${ic("down")}</summary><div class="body" style="display:flex;flex-direction:column;gap:10px">${habitsList}</div></details>
+    
+    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot sage"></span><span class="lbl" style="font-size:15px; font-weight:600;">Suplementação (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})</span></span>${ic("down")}</summary><div class="body">${supList}</div></details>
+    
+    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot" style="background:var(--accent)"></span><span class="lbl" style="font-size:15px; font-weight:600;">Ritmo Semanal (${week}/5)</span></span>${ic("down")}</summary><div class="body">
+       <div class="row" style="gap:16px; margin-top:10px;">
+          ${ring(week / 5, 80, 6, "var(--sage)", '<div><div class="big tabnum">' + week + '<span class="muted" style="font-size:12px">/5</span></div></div>')}
+          <div class="grow" style="display:flex;flex-direction:column;gap:10px">
+            <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
+            <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
+          </div>
+        </div>
+    </div></details>
+    `;
+}
+
+rDeck = function() {
+    orig_rDeck();
+    if(typeof updateAuraCore === 'function') updateAuraCore();
+}
