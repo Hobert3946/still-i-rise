@@ -269,6 +269,10 @@ body.theme-night { background: linear-gradient(135deg, #0f2027, #203a43) !import
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+function sirReset(){var p=navigator.serviceWorker?navigator.serviceWorker.getRegistrations():Promise.resolve([]);p.then(function(rs){rs.forEach(function(r){r.unregister()});return window.caches?caches.keys():[]}).then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}).then(function(){location.reload()})}
+window.addEventListener("error",function(){var d=document.getElementById("v-deck");if(d&&!d.innerHTML.trim()){d.innerHTML='<div class="card" style="margin:20px"><h2 class="mid">Algo travou ao abrir o app</h2><p class="muted">Toque abaixo para limpar o cache e recarregar. Seus dados salvos não são apagados.</p><button class="btn solid full" onclick="sirReset()">Limpar cache e recarregar</button></div>'}});
+</script>
+<script>
 // [nome, kcal/100g, prot/100g, medida caseira, gramas da porção, categoria, fonte T=TACO 4ª ed. R=estimativa/rótulo]
 const FOODS = [
 // Cereais
@@ -1296,7 +1300,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && S)
 (async function init() {
   await loadState(); applyTheme();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => { });
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) { navigator.serviceWorker.register("sw.js").catch(() => { }); let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !sessionStorage.getItem("sir_reloaded")) { sessionStorage.setItem("sir_reloaded", "1"); location.reload(); } had = true; }); }
   go("deck");
   if (S.cur) toast("Treino em andamento. Abra pelo Deck.");
 })();

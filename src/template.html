@@ -77,6 +77,10 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+function sirReset(){var p=navigator.serviceWorker?navigator.serviceWorker.getRegistrations():Promise.resolve([]);p.then(function(rs){rs.forEach(function(r){r.unregister()});return window.caches?caches.keys():[]}).then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}).then(function(){location.reload()})}
+window.addEventListener("error",function(){var d=document.getElementById("v-deck");if(d&&!d.innerHTML.trim()){d.innerHTML='<div class="card" style="margin:20px"><h2 class="mid">Algo travou ao abrir o app</h2><p class="muted">Toque abaixo para limpar o cache e recarregar. Seus dados salvos não são apagados.</p><button class="btn solid full" onclick="sirReset()">Limpar cache e recarregar</button></div>'}});
+</script>
+<script>
 /*JS*/
 </script>
 

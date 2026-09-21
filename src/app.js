@@ -640,7 +640,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && S)
 (async function init() {
   await loadState(); applyTheme();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => { });
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) { navigator.serviceWorker.register("sw.js").catch(() => { }); let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !sessionStorage.getItem("sir_reloaded")) { sessionStorage.setItem("sir_reloaded", "1"); location.reload(); } had = true; }); }
   go("deck");
   if (S.cur) toast("Treino em andamento. Abra pelo Deck.");
 })();
