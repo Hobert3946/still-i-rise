@@ -475,7 +475,8 @@ function rMais() {
   <section class="card">
     <div class="lbl">Notificações</div>
     <div class="row between"><span class="grow">Avisar fim do descanso e próximo exercício</span><button class="tog ${s.notif ? "on" : ""}" data-act="notif" aria-label="notificações"><i></i></button></div>
-    ${banner("warn", "info", "Limite honesto", "Sem servidor de Web Push, o app não consegue disparar alarme com ele fechado (05:00, lembrete de água). Para isso use o despertador do celular. As notificações funcionam com o app aberto ou em segundo plano recente.")}
+    ${banner("warn", "info", "Com o app fechado", "Um app web não consegue disparar alarme sozinho (05:00, água). Por isso o app gera lembretes para o calendário do seu celular, que tocam mesmo com ele fechado. O aviso de fim de descanso acima só funciona com o app aberto.")}
+    <button class="btn full" data-act="rem-open">${ic("download")} Criar lembretes no calendário</button>
   </section>
   
   <section class="card">
