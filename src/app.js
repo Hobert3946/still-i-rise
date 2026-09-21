@@ -24,7 +24,7 @@ const defaults = () => ({
   v: 1,
   profile: { name: "Hobert", startWeight: 140, goal: 105, height: 179, age: 24 },
   weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null,
-  settings: { theme: "auto", start: today(), logMode: "set", rotate: true, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000 }
+  settings: { theme: "auto", start: today(), logMode: "set", rotate: true, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000, gemKey: "", gemModel: "gemini-2.5-flash-lite", gemAck: false }
 });
 let S = null;
 const mergeDefaults = o => { const d = defaults(); const s = Object.assign(d, o || {}); s.profile = Object.assign(d.profile, (o || {}).profile); s.settings = Object.assign(defaults().settings, (o || {}).settings); return s; };
@@ -405,6 +405,8 @@ function orig_rComer() {
   </section>
   <section class="card">
     <div class="row between"><span class="lbl">Tabela de alimentos (${FOODS.length})</span><span class="muted" style="font-size:13px">T = TACO · R = estimativa</span></div>
+    <button class="btn solid full" data-act="foto"><svg class="icon"><use href="#i-camera"/></svg> FOTO DO PRATO</button><input type="file" id="foto" accept="image/*" hidden>
+    ${recentesHTML()}
     <input class="field" id="q" type="search" placeholder="Buscar alimento" value="${esc(UI.q)}" autocomplete="off">
     <div class="chips">${CATS.map(c => `<button class="chip ${UI.cat === c ? "on" : ""}" data-act="cat" data-c="${c}">${c}</button>`).join("")}</div>
     <div class="list" id="foodlist">${foodListHTML()}</div>
@@ -503,6 +505,7 @@ function rMais() {
     <div class="row between"><span class="grow">Avisar fim do descanso e próximo exercício</span><button class="tog ${s.notif ? "on" : ""}" data-act="notif" aria-label="notificações"><i></i></button></div>
     ${banner("warn", "info", "Limite honesto", "Sem servidor de Web Push, o app não consegue disparar alarme com ele fechado (05:00, lembrete de água). Para isso use o despertador do celular. As notificações funcionam com o app aberto ou em segundo plano recente.")}
   </section>
+  ${gemCard()}
   <section class="card">
     <div class="lbl">Dados e backup</div>
     <p class="muted" style="font-size:15px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
@@ -519,7 +522,8 @@ function rMais() {
 
 /* ============ ações ============ */
 function exportData() {
-  const blob = new Blob([JSON.stringify(S, null, 1)], { type: "application/json" });
+  const safe = JSON.parse(JSON.stringify(S)); delete safe.settings.gemKey;
+  const blob = new Blob([JSON.stringify(safe, null, 1)], { type: "application/json" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `still-i-rise-backup-${today()}.json`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   S.settings.lastBackup = today(); save(); toast("Backup exportado."); render();
@@ -614,6 +618,13 @@ document.addEventListener("click", e => {
       Notification.requestPermission().then(p => { S.settings.notif = p === "granted"; save(); rMais(); toast(p === "granted" ? "Notificações ativadas." : "Permissão negada."); });
       break;
     }
+    case "foto": fotoIniciar(); break;
+    case "gem-save": { const kv = $("#gemKey").value.trim(), mv = $("#gemModel").value.trim(); if (kv) S.settings.gemKey = kv; S.settings.gemModel = mv || GEM_DEFAULT_MODEL; save(); rMais(); toast(kv ? "Chave salva neste aparelho." : "Modelo salvo."); break; }
+    case "gem-clear": S.settings.gemKey = ""; S.settings.gemAck = false; save(); rMais(); toast("Chave removida."); break;
+    case "ia-del": IA.items.splice(+b.dataset.i, 1); if (!IA.items.length) closeSheet(); else iaSheet(); break;
+    case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: é estimativa."); haptic(); break; }
+    case "recent": recenteSheet(+b.dataset.i); break;
+    case "recent-add": { const m = IA.rec; if (!m) break; DW(k).meals.push({ n: m.n, g: m.g, k: m.k, p: m.p, m: UI.meal }); save(); closeSheet(); render(); toast("Adicionado."); haptic(); break; }
     case "export": exportData(); break;
     case "import": $("#file").click(); break;
     case "reset": if (confirm("Apagar TODOS os dados deste aparelho? Exporte um backup antes.")) { S = defaults(); save(); go("deck"); toast("Dados apagados."); } break;
@@ -622,14 +633,16 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => { if (e.key === "Escape" && $("#sheet").classList.contains("on")) closeSheet(); });
 document.addEventListener("input", e => {
   const t = e.target;
-  if (t.id === "q") { UI.q = t.value; $("#foodlist").innerHTML = foodListHTML(); }
+  if (t.dataset.ia !== undefined) { const f = t.dataset.ia, it = IA.items[+t.dataset.i]; if (it) { it[f] = f === "nome" ? t.value : num(t.value); iaTotal(); } }
+  else if (t.id === "q") { UI.q = t.value; $("#foodlist").innerHTML = foodListHTML(); }
   else if (t.id === "g") gSum(+t.dataset.i);
   else if (t.dataset.f && S.cur) { const st = stepsOf(S.cur.day)[S.cur.i], dd = st.t === "ex" ? S.cur.data[st.e.id] : null; if (dd) { dd.sets[+t.dataset.i][t.dataset.f] = num(t.value); save(); } }
 });
 document.addEventListener("change", e => {
+  if (e.target.id === "foto") { const f = e.target.files[0]; e.target.value = ""; if (f) fotoAnalisar(f); return; }
   if (e.target.id !== "file") return;
   const f = e.target.files[0]; if (!f) return;
-  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; S = mergeDefaults(o); save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
+  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const oldKey = S.settings.gemKey; S = mergeDefaults(o); S.settings.gemKey = oldKey; save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
   e.target.value = "";
 });
 $("#themeBtn").addEventListener("click", () => { const dark = document.documentElement.dataset.theme === "dark"; S.settings.theme = dark ? "light" : "dark"; save(); applyTheme(); if (UI.tab === "mais") rMais(); });

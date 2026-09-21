@@ -6,7 +6,7 @@ const b64 = f => "data:image/jpeg;base64," + fs.readFileSync(asset(f)).toString(
 
 let html = src("template.html")
   .replace("/*CSS*/", () => src("styles.css"))
-  .replace("/*JS*/", () => [src("foods.js"), src("plan.js"), src("app.js")].join("\n"));
+  .replace("/*JS*/", () => [src("foods.js"), src("plan.js"), src("foto.js"), src("app.js")].join("\n"));
 html = html.split("%%AVATAR%%").join(b64("avatar.jpg")).split("%%LOGO%%").join(b64("logo-256.jpg"));
 fs.writeFileSync(path.join(out, "index.html"), html, "utf8");
 ["sw.js", "manifest.json"].forEach(f => fs.copyFileSync(path.join(__dirname, "src", f), path.join(out, f)));
