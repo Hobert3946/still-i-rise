@@ -1,4 +1,6 @@
 /* ============ FOTO DO PRATO (Gemini, opcional) e RECENTES ============ */
+// Interruptor: mude para true para religar a foto do prato com Gemini (botao em Comer e cartao da chave em Mais).
+const FOTO_IA = false;
 const GEM_DEFAULT_MODEL = "gemini-2.5-flash-lite";
 const GEM_PROMPT = "Você é um nutricionista brasileiro. Analise a foto de uma refeição e liste cada alimento visível separadamente. Para cada um estime o peso já preparado (gramas), kcal e proteína (g) desse peso, usando valores típicos da TACO/comida brasileira. Seja conservador e realista com óleo, molhos e porções. Se houver bebida, inclua. Se a imagem não mostrar comida, devolva a lista vazia. Responda somente em JSON.";
 const GEM_SCHEMA = {
@@ -81,7 +83,9 @@ function fotoIniciar() {
   }
   $("#foto").click();
 }
+function fotoBtn() { return FOTO_IA ? `<button class="btn solid full" data-act="foto"><svg class="icon"><use href="#i-camera"/></svg> FOTO DO PRATO</button><input type="file" id="foto" accept="image/*" hidden>` : ""; }
 function gemCard() {
+  if (!FOTO_IA) return "";
   const s = S.settings;
   return `<section class="card">
     <div class="lbl">Foto do prato (IA opcional)</div>

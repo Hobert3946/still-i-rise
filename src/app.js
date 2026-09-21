@@ -405,7 +405,7 @@ function orig_rComer() {
   </section>
   <section class="card">
     <div class="row between"><span class="lbl">Tabela de alimentos (${FOODS.length})</span><span class="muted" style="font-size:13px">T = TACO · R = estimativa</span></div>
-    <button class="btn solid full" data-act="foto"><svg class="icon"><use href="#i-camera"/></svg> FOTO DO PRATO</button><input type="file" id="foto" accept="image/*" hidden>
+    ${fotoBtn()}
     ${recentesHTML()}
     <input class="field" id="q" type="search" placeholder="Buscar alimento" value="${esc(UI.q)}" autocomplete="off">
     <div class="chips">${CATS.map(c => `<button class="chip ${UI.cat === c ? "on" : ""}" data-act="cat" data-c="${c}">${c}</button>`).join("")}</div>
