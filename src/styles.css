@@ -318,3 +318,12 @@ nav.dock{width:min(480px,calc(100% - 16px));padding:5px}
 .chat-input-area .field { margin:0; padding:10px 15px; border-radius:20px; background:var(--surface); flex:1; max-height:100px; }
 .chat-btn { width:40px; height:40px; border-radius:50%; background:var(--surface2); color:var(--text); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
 .chat-btn.primary { background:var(--accent); color:var(--accent-ink); }
+
+/* --- COMER: refeicoes e arrastar para excluir --- */
+.toast.act{pointer-events:auto;cursor:pointer;text-decoration:underline}
+.swipe{position:relative;overflow:hidden;border-radius:12px}
+.swipe-bg{position:absolute;inset:0;background:var(--bad-soft);color:var(--bad);display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-weight:700}
+.swipe.armed .swipe-bg{background:var(--bad);color:#fff}
+.swipe-in{position:relative;background:var(--surface);touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab;padding:12px 6px}
+.list>.swipe+.swipe{border-top:1px solid var(--line)}
+.meal .chips{margin:0 -2px}

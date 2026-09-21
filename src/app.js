@@ -23,7 +23,7 @@ const KEY = "sir_v1";
 const defaults = () => ({
   v: 1,
   profile: { name: "Hobert", startWeight: 140, goal: 105, height: 179, age: 24 },
-  weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [],
+  weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [], favs: {},
   settings: { theme: "auto", start: today(), logMode: "set", rotate: true, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000, gemKey: "", gemModel: "gemini-2.5-flash-lite", gemAck: false }
 });
 let S = null;
@@ -125,7 +125,7 @@ const weekVolume = () => { let push = 0, pull = 0; DAY_ORDER.forEach(L => PLAN[L
 /* ============ UI base ============ */
 const UI = { tab: "deck", cat: "Todos", q: "", meal: "Café da manhã", supSort: "price", supType: "all", pickDay: null };
 let toastT = null;
-function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove("on"), 2600); }
+function toast(t, fn) { const e = $("#toast"); e.textContent = t; e.onclick = fn ? () => { clearTimeout(toastT); e.classList.remove("on", "act"); fn(); } : null; e.classList.toggle("act", !!fn); e.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove("on", "act"), fn ? 5000 : 2600); }
 function applyTheme() {
   const t = S.settings.theme; const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
@@ -389,43 +389,6 @@ function notify(title, body) {
 }
 
 /* ============ COMER ============ */
-const CATS = ["Todos", ...Array.from(new Set(FOODS.map(f => f[5])))];
-function foodListHTML() {
-  const q = UI.q.trim().toLowerCase(), norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  const nq = norm(q);
-  const items = FOODS.map((f, i) => [f, i]).filter(([f]) => (UI.cat === "Todos" || f[5] === UI.cat) && (!nq || norm(f[0]).includes(nq)));
-  if (!items.length) return `<p class="muted" style="padding:12px 0">Nada encontrado. Use "Adicionar por rótulo" abaixo.</p>`;
-  return items.slice(0, 60).map(([f, i]) => `<button class="food" data-act="food" data-i="${i}"><div class="grow"><div style="font-weight:600">${esc(f[0])}</div><div class="muted" style="font-size:14px">${f[3]} (${f[4]} g) · ${Math.round(f[1] * f[4] / 100)} kcal · ${r1(f[2] * f[4] / 100)} g prot</div></div><span class="tag">${f[6]}</span>${ic("plus")}</button>`).join("") + (items.length > 60 ? `<p class="muted" style="font-size:14px;padding:8px 0">Mostrando 60 de ${items.length}. Refine a busca.</p>` : "");
-}
-function orig_rComer() {
-  const k = today(), d = D(k), tg = TG(), tot = dayTotals(k);
-  const meals = ["Café da manhã", "Almoço", "Lanche", "Jantar", "Ceia"];
-  const groups = meals.map(m => { const it = d.meals.map((x, i) => [x, i]).filter(([x]) => x.m === m); if (!it.length) return ""; const kk = it.reduce((a, [x]) => a + x.k, 0), pp = it.reduce((a, [x]) => a + x.p, 0); return `<div><div class="row between"><span class="lbl">${m}</span><span class="lbl tabnum">${Math.round(kk)} kcal · ${Math.round(pp)} g</span></div><div class="list">${it.map(([x, i]) => `<div class="li"><div class="grow"><div style="font-weight:600">${esc(x.n)}</div><div class="muted" style="font-size:14px">${x.g} g · ${Math.round(x.k)} kcal · ${r1(x.p)} g prot</div></div><button class="circ-btn" style="width:40px;height:40px;color:var(--bad)" data-act="meal-del" data-i="${i}" aria-label="remover">${ic("trash")}</button></div>`).join("")}</div></div>`; }).join("");
-  const rem = tg.kcal - tot.k;
-  $("#v-comer").innerHTML = `
-  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Comer</h2><p class="muted">Meta: ${fmtInt(tg.kcal)} kcal e ${tg.prot} g de proteína. Proteína de comida, ovos e albumina.</p></section>
-  <section class="card">
-    <div class="row" style="justify-content:space-around">
-      ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">kcal</div></div>`)}
-      ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">g prot</div></div>`)}
-    </div>
-    <p class="muted" style="text-align:center">${rem >= 0 ? `Restam ${fmtInt(rem)} kcal e ${Math.max(0, Math.round(tg.prot - tot.p))} g de proteína.` : `${fmtInt(-rem)} kcal acima da meta. Um dia acima não desfaz uma semana. A próxima refeição é normal.`}</p>
-    ${groups || `<p class="muted" style="text-align:center">Nada registrado hoje.</p>`}
-  </section>
-  <section class="card">
-    <div class="row between"><span class="lbl">Tabela de alimentos (${FOODS.length})</span><span class="muted" style="font-size:13px">T = TACO · R = estimativa</span></div>
-    ${fotoBtn()}
-    ${recentesHTML()}
-    <input class="field" id="q" type="search" placeholder="Buscar alimento" value="${esc(UI.q)}" autocomplete="off">
-    <div class="chips">${CATS.map(c => `<button class="chip ${UI.cat === c ? "on" : ""}" data-act="cat" data-c="${c}">${c}</button>`).join("")}</div>
-    <div class="list" id="foodlist">${foodListHTML()}</div>
-    <button class="btn full" data-act="quick">${ic("plus")} Adicionar por rótulo (kcal e proteína)</button>
-  </section>
-  <section class="card">
-    <div class="lbl">Comer na rua</div>
-    ${STREET.map(s => `<details class="fold"><summary>${s.t}${ic("down")}</summary><div class="body">${banner("ok", "check", "Escolha certa", s.ok.d)}${banner("bad", "x", "Armadilha", s.bad.d)}</div></details>`).join("")}
-  </section>`;
-}
 function foodSheet(i) {
   const f = FOODS[i], sug = f[5] === "Bebidas" && /COM açúcar/.test(f[0]);
   const chips = ["Café da manhã", "Almoço", "Lanche", "Jantar", "Ceia"].map(m => `<button class="chip ${UI.meal === m ? "on" : ""}" data-act="meal-sel" data-m="${m}">${m}</button>`).join("");
@@ -433,7 +396,7 @@ function foodSheet(i) {
   ${sug ? banner("warn", "info", "Bebida com açúcar", "Quebra a Regra nº 1 de hoje. Pode registrar: o app não julga, amanhã continua normal.") : ""}
   <div class="row"><div class="stepper grow"><button data-act="g-adj" data-s="-10">−</button><input id="g" inputmode="numeric" value="${f[4]}" data-i="${i}"><button data-act="g-adj" data-s="10">+</button><span class="muted">g</span></div></div>
   <div class="grid3"><button class="chip" data-act="g-set" data-g="${f[4]}">1 porção</button><button class="chip" data-act="g-set" data-g="${f[4] * 2}">2 porções</button><button class="chip" data-act="g-set" data-g="100">100 g</button></div>
-  <div class="muted">${f[3]} = ${f[4]} g</div><div class="chips">${chips}</div>
+  <div class="muted">${f[3]} = ${f[4]} g</div><div class="chips">${chips}</div>${favBtn(i)}
   <div class="tile in row between"><span id="g-sum" class="mid tabnum"></span></div>
   <button class="btn solid full" data-act="food-add" data-i="${i}">ADICIONAR</button>`);
   gSum(i);
@@ -600,8 +563,8 @@ document.addEventListener("click", e => {
     case "pain": S.pain.push({ d: today(), day: S.days[today()]?.wk || "", v: +b.dataset.v }); save(); closeSheet(); toast(`Dor ${b.dataset.v}/10 registrada.`); if (painAvg() >= 4) toast("Média de dor ≥ 4: procure um fisioterapeuta."); break;
     case "close": closeSheet(); break;
     case "cat": UI.cat = b.dataset.c; rComer(); break;
-    case "food": foodSheet(+b.dataset.i); break;
-    case "meal-sel": UI.meal = b.dataset.m; $$("[data-act=meal-sel]").forEach(x => x.classList.toggle("on", x.dataset.m === UI.meal)); break;
+    case "food": if (b.dataset.m) UI.meal = b.dataset.m; foodSheet(+b.dataset.i); break;
+    case "meal-sel": UI.meal = b.dataset.m; $$("[data-act=meal-sel]").forEach(x => x.classList.toggle("on", x.dataset.m === UI.meal)); { const fb = $("#favbtn"); if (fb) fb.outerHTML = favBtn(+fb.dataset.i); } break;
     case "g-adj": { const inp = $("#g"); inp.value = Math.max(0, num(inp.value) + num(b.dataset.s)); gSum(+inp.dataset.i); break; }
     case "g-set": { const inp = $("#g"); inp.value = b.dataset.g; gSum(+inp.dataset.i); break; }
     case "food-add": { const f = FOODS[+b.dataset.i], gm = num($("#g").value); if (gm <= 0) return; const d = DW(k); d.meals.push({ t: Date.now(), n: f[0], g: gm, k: f[1] * gm / 100, p: f[2] * gm / 100, m: UI.meal }); if (f[5] === "Bebidas" && /COM açúcar/.test(f[0])) d.h.acucar = false; save(); closeSheet(); render(); toast("Adicionado."); break; }
