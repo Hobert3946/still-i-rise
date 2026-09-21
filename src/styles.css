@@ -205,3 +205,76 @@ body.theme-night { background: linear-gradient(135deg, #0f2027, #203a43) !import
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
   transition: background 0.3s, border 0.3s;
 }
+
+
+/* --- AURA CORE (Tamagotchi) --- */
+.aura-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0 10px 0;
+  position: relative;
+}
+.aura-core {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #5a7d9a, #1a365d);
+  box-shadow: 0 0 15px rgba(90, 125, 154, 0.4), inset -5px -5px 15px rgba(0,0,0,0.5);
+  animation: aura-levitate 4s ease-in-out infinite, aura-idle 4s ease-in-out infinite;
+  transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 2;
+}
+.aura-core::after {
+  content: '';
+  position: absolute;
+  top: 10%; left: 15%;
+  width: 25%; height: 25%;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.aura-core.fed {
+  width: 90px; height: 90px;
+  background: radial-gradient(circle at 35% 35%, #ffd194, #d35400);
+  box-shadow: 0 0 30px rgba(211, 84, 0, 0.6), inset -5px -5px 20px rgba(0,0,0,0.4);
+  animation: aura-levitate 3s ease-in-out infinite, aura-fed 3s ease-in-out infinite;
+}
+.aura-core.overdrive {
+  width: 110px; height: 110px;
+  background: radial-gradient(circle at 35% 35%, #fffc00, #ff0084);
+  box-shadow: 0 0 50px rgba(255, 0, 132, 0.8), 0 0 80px rgba(255, 252, 0, 0.4), inset -5px -5px 20px rgba(0,0,0,0.2);
+  animation: aura-levitate 1.5s ease-in-out infinite, aura-overdrive 1s ease-in-out infinite;
+}
+
+@keyframes aura-levitate {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.03); }
+}
+@keyframes aura-idle {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(0.85); }
+}
+@keyframes aura-fed {
+  0%, 100% { filter: brightness(1.2); }
+  50% { filter: brightness(0.9); }
+}
+@keyframes aura-overdrive {
+  0%, 100% { filter: brightness(1.5) contrast(1.1); }
+  50% { filter: brightness(1.1) contrast(1.0); }
+}
+
+.aura-msg {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 18px;
+  letter-spacing: 0.05em;
+  transition: color 0.5s;
+  max-width: 220px;
+  line-height: 1.4;
+}

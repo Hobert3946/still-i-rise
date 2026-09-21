@@ -776,3 +776,76 @@ function updateTopHeader() {
 }
 setInterval(updateTopHeader, 1000);
 setTimeout(updateTopHeader, 200); // Initial call after state loads
+
+
+// AURA CORE UPDATE LOGIC
+function updateAuraCore() {
+    const vDeck = document.getElementById("v-deck");
+    if(!vDeck) return;
+    
+    let auraContainer = document.getElementById("aura-container");
+    if(!auraContainer) {
+        auraContainer = document.createElement("div");
+        auraContainer.id = "aura-container";
+        auraContainer.className = "aura-container";
+        auraContainer.innerHTML = `
+            <div class="aura-core" id="auraCoreEl"></div>
+            <div class="aura-msg" id="auraMsgEl">O núcleo está ocioso. Vamos alimentar essa máquina?</div>
+        `;
+        vDeck.insertBefore(auraContainer, vDeck.firstChild);
+    }
+    
+    const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
+    if(!d) return;
+
+    // Calculate states
+    const prot = d.meals ? d.meals.reduce((a, m) => a + (m.p || 0), 0) : 0;
+    const water = d.water || 0;
+    const hasCardio = d.cardios && d.cardios.length > 0;
+    
+    const core = document.getElementById("auraCoreEl");
+    const msg = document.getElementById("auraMsgEl");
+    
+    if(prot >= 160 && hasCardio) {
+        core.className = "aura-core overdrive";
+        msg.innerText = "Overdrive ativado. Suas fibras e proteínas estão otimizadas.";
+        msg.style.color = "var(--accent)";
+    } else if (prot >= 40 || water > 1000) {
+        core.className = "aura-core fed";
+        msg.innerText = "O núcleo absorveu energia. Mantenha o fluxo de proteína e hidratação.";
+        msg.style.color = "var(--text)";
+    } else {
+        core.className = "aura-core";
+        msg.innerText = "Sua aura precisa fluir. Tome um copo grande de água agora.";
+        msg.style.color = "var(--muted)";
+    }
+}
+
+// Hook into rDeck
+const agy_orig_rDeck = typeof orig_rDeck === 'function' ? orig_rDeck : rDeck;
+rDeck = function() {
+    if(typeof orig_rDeck === 'function' && orig_rDeck !== rDeck) {
+       orig_rDeck();
+    } else {
+       agy_orig_rDeck();
+    }
+    
+    // Inject Cardio Button if not exists
+    const vDeck = document.getElementById("v-deck");
+    if(vDeck && !document.getElementById("agy-deck-ext")) {
+        const ext = document.createElement("div");
+        ext.id = "agy-deck-ext";
+        ext.innerHTML = `
+          <div class="card" style="margin-top:10px;">
+            <h3 class="h1" style="font-size:20px;">Cardio Detalhado</h3>
+            <button class="btn solid full" onclick="document.getElementById('cardioSheet').classList.add('on')">
+              <svg class="icon"><use href="#i-flame"/></svg> Registrar Cardio
+            </button>
+          </div>
+        `;
+        // Insert after aura
+        vDeck.insertBefore(ext, vDeck.children[1] || vDeck.firstChild); 
+    }
+    
+    updateAuraCore();
+}
