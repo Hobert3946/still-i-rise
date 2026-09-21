@@ -477,7 +477,7 @@ function rMais() {
     <div class="row between"><span class="grow">Avisar fim do descanso e próximo exercício</span><button class="tog ${s.notif ? "on" : ""}" data-act="notif" aria-label="notificações"><i></i></button></div>
     ${banner("warn", "info", "Limite honesto", "Sem servidor de Web Push, o app não consegue disparar alarme com ele fechado (05:00, lembrete de água). Para isso use o despertador do celular. As notificações funcionam com o app aberto ou em segundo plano recente.")}
   </section>
-  ${gemCard()}
+  
   <section class="card">
     <div class="lbl">Dados e backup</div>
     <p class="muted" style="font-size:15px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
@@ -593,7 +593,7 @@ document.addEventListener("click", e => {
       break;
     }
     case "foto": fotoIniciar(); break;
-    case "gem-save": { const kv = $("#gemKey").value.trim(), mv = $("#gemModel").value.trim(); if (kv) S.settings.gemKey = kv; S.settings.gemModel = mv || GEM_DEFAULT_MODEL; save(); rMais(); toast(kv ? "Chave salva neste aparelho." : "Modelo salvo."); break; }
+    case "gem-save": { const kEl = $("#gemKey"), mEl = $("#gemModel"), kv = kEl ? kEl.value.trim() : null, mv = mEl ? mEl.value.trim() : null; if (kv) S.settings.gemKey = kv; if (mv) S.settings.gemModel = mv; save(); render(); toast(kv ? "Chave configurada." : "Modelo atualizado."); break; }
     case "gem-clear": S.settings.gemKey = ""; S.settings.gemAck = false; save(); rMais(); toast("Chave removida."); break;
     case "ia-del": IA.items.splice(+b.dataset.i, 1); if (!IA.items.length) closeSheet(); else iaSheet(); break;
     case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ t: Date.now(), n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: é estimativa."); haptic(); break; }
@@ -1086,6 +1086,22 @@ function rIA() {
     const vIA = document.getElementById("v-ia");
     if (!vIA) return;
     
+    if (!S.settings.gemKey) {
+        vIA.innerHTML = `<section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
+           <h2 class="h1">A.I. Pessoal</h2>
+           <p class="muted">Conecte o cérebro da sua IA para ela analisar seus treinos, dieta e pratos de comida.</p>
+        </section>
+        <section class="card">
+            <div class="lbl">Chave API do Gemini (fica só neste aparelho)</div>
+            <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui">
+            <label class="lbl">Modelo</label>
+            <input class="field" id="gemModel" value="${esc(S.settings.gemModel || "gemini-2.5-flash-lite")}" autocomplete="off">
+            <div style="margin-top:10px;"><button class="btn solid full" data-act="gem-save">Conectar IA</button></div>
+            <p class="muted" style="font-size:14px; margin-top:15px;">A chave nunca entra no backup nem vai para a internet. Crie gratuitamente no Google AI Studio.</p>
+        </section>`;
+        return;
+    }
+    
     let msgsHTML = "";
     if (!S.chat || S.chat.length === 0) {
         msgsHTML = `<div style="text-align:center; padding:40px 20px;">
@@ -1099,7 +1115,16 @@ function rIA() {
     
     vIA.innerHTML = `
     <section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
-       <h2 class="h1">A.I. Pessoal</h2>
+       <div class="row between">
+           <h2 class="h1">A.I. Pessoal</h2>
+           <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">🔧 Modelo</summary>
+             <div class="body" style="padding:10px; margin-top:5px; background:var(--surface2); border-radius:8px;">
+               <div class="lbl">Modelo Atual</div>
+               <input class="field" id="gemModel" value="${esc(S.settings.gemModel || "gemini-2.5-flash-lite")}" style="margin-bottom:10px;" autocomplete="off">
+               <button class="btn sm solid full" data-act="gem-save">Salvar Modelo</button>
+             </div>
+           </details>
+       </div>
     </section>
     <div id="chat-messages" style="padding-bottom: 70px;">${msgsHTML}</div>
     

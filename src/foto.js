@@ -84,20 +84,7 @@ function fotoIniciar() {
   $("#foto").click();
 }
 function fotoBtn() { return FOTO_IA ? `<button class="btn solid full" data-act="foto"><svg class="icon"><use href="#i-camera"/></svg> FOTO DO PRATO</button><input type="file" id="foto" accept="image/*" hidden>` : ""; }
-function gemCard() {
-  if (!FOTO_IA) return "";
-  const s = S.settings;
-  return `<section class="card">
-    <div class="lbl">Foto do prato (IA opcional)</div>
-    <p class="muted" style="font-size:15px">Tire uma foto e o Gemini estima os alimentos, gramas, kcal e proteína. Você confere antes de adicionar. Usa o modelo mais barato com imagem; pela tabela do Google custa uma fração de centavo por foto. Sem chave ou sem internet, o app funciona igual.</p>
-    <label class="lbl">Sua chave do Gemini (fica só neste aparelho)</label>
-    <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="${s.gemKey ? "Chave salva. Cole outra para trocar." : "Cole a chave aqui"}">
-    <label class="lbl">Modelo</label>
-    <input class="field" id="gemModel" value="${esc(s.gemModel || GEM_DEFAULT_MODEL)}" autocomplete="off">
-    <div class="grid2"><button class="btn solid" data-act="gem-save">Salvar</button><button class="btn danger" data-act="gem-clear">Remover chave</button></div>
-    <p class="muted" style="font-size:14px">A chave nunca entra no backup .json e nunca vai para o GitHub. Crie uma em aistudio.google.com e, por segurança, restrinja o uso dela no painel do Google.</p>
-  </section>`;
-}
+function gemCard() { return ""; }
 function recentesHTML() {
   const seen = new Set(), out = [];
   Object.keys(S.days).sort().reverse().slice(0, 30).forEach(k => D(k).meals.slice().reverse().forEach(m => { if (!seen.has(m.n) && out.length < 8) { seen.add(m.n); out.push(m); } }));
