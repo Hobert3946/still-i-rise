@@ -859,3 +859,76 @@ rDeck = function() {
     
     updateAuraCore();
 }
+
+
+/* --- AURA CORE & NEXUS REST DAY PATCH --- */
+const agy_orig_rTreino = typeof orig_rTreino === 'function' ? orig_rTreino : (typeof rTreino !== 'undefined' ? rTreino : function(){});
+if (typeof rTreino !== 'undefined') {
+    window.orig_rTreino = agy_orig_rTreino; // Keep a reference
+    rTreino = function() {
+        const k = today();
+        const d = typeof DW === 'function' ? DW(k) : (S.days && S.days[k] ? S.days[k] : null);
+        
+        if (d && d.skipWk && !UI.pickDay) {
+            const L = (typeof planLetter === 'function' ? planLetter(k) : null) || (typeof seqNext === 'function' ? seqNext() : "A");
+            const pName = typeof PLAN !== 'undefined' && PLAN[L] ? PLAN[L].name : "";
+            
+            const vTreino = document.getElementById("v-treino");
+            if (vTreino) {
+                vTreino.innerHTML = `
+                <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E.</p></section>
+                <section class="card" style="text-align:center; padding: 40px 20px;">
+                    <div style="font-size:50px; margin-bottom:15px; animation: aura-levitate 3s infinite;">🛡️</div>
+                    <h3 class="mid" style="font-size: 22px; color: var(--text);">Tudo bem, o foco hoje é na dieta.</h3>
+                    <p class="muted" style="margin-top: 10px; line-height: 1.5;">Você marcou que não conseguiu ir hoje. O seu treino <b style="color:var(--text);">${L} - ${pName}</b> está guardado para amanhã. A sua sequência não foi quebrada.</p>
+                    <button class="btn ghost full" style="margin-top:25px; border: 1px solid var(--line);" data-act="wk-unskip">Desfazer (Vou treinar sim!)</button>
+                </section>`;
+            }
+            return;
+        }
+
+        // Call original rendering
+        orig_rTreino();
+        
+        // Inject the skip button if not already started and not picking a day
+        if (!S.cur && !UI.pickDay) {
+            const vTreino = document.getElementById("v-treino");
+            if (vTreino) {
+                const cards = vTreino.querySelectorAll("section.card");
+                if (cards.length >= 2) {
+                    const btnContainer = cards[1];
+                    if (!btnContainer.querySelector('[data-act="wk-skip"]')) {
+                       const skipBtn = document.createElement("button");
+                       skipBtn.className = "btn ghost full";
+                       skipBtn.style.marginTop = "12px";
+                       skipBtn.style.color = "var(--muted)";
+                       skipBtn.dataset.act = "wk-skip";
+                       skipBtn.innerText = "Não consegui ir hoje";
+                       btnContainer.appendChild(skipBtn);
+                    }
+                }
+            }
+        }
+    }
+}
+
+document.addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const a = b.dataset.act;
+    if (a === "wk-skip") {
+        const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
+        if(d) {
+            d.skipWk = true;
+            if(typeof save === 'function') save();
+            rTreino();
+        }
+    } else if (a === "wk-unskip") {
+        const d = typeof DW === 'function' ? DW(today()) : (S.days && S.days[today()] ? S.days[today()] : null);
+        if(d) {
+            d.skipWk = false;
+            if(typeof save === 'function') save();
+            rTreino();
+        }
+    }
+});
