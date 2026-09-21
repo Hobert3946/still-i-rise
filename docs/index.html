@@ -1283,7 +1283,7 @@ document.addEventListener("click", e => {
   }
 });
 
-﻿"use strict";
+"use strict";
 /* ============ utilidades ============ */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -1298,12 +1298,12 @@ const mondayOf = k => { const d = parseKey(k); const w = (d.getDay() + 6) % 7; d
 const ic = (n, c = "") => `<svg class="icon ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const num = (v, d = 0) => { const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? d : n; };
 const r1 = n => Math.round(n * 10) / 10;
-const DOW = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÃB"];
+const DOW = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const dispDate = k => { const d = parseKey(k); return `${pad(d.getDate())} ${MESES[d.getMonth()]}`; };
 const fmtInt = n => Math.round(n).toLocaleString("pt-BR");
 
-/* ============ estado e persistÃªncia (3 camadas) ============ */
+/* ============ estado e persistência (3 camadas) ============ */
 const KEY = "sir_v1";
 const defaults = () => ({
   v: 1,
@@ -1333,7 +1333,7 @@ async function loadState() {
   save();
 }
 
-/* ============ dia / hÃ¡bitos ============ */
+/* ============ dia / hábitos ============ */
 const newDay = () => ({ h: {}, s: {}, water: 0, meals: [] });
 const D = k => S.days[k] || newDay();
 function DW(k) { if (!S.days[k]) S.days[k] = newDay(); return S.days[k]; }
@@ -1386,11 +1386,11 @@ function varId(slot) {
 const estMin = L => { const p = PLAN[L]; let s = p.cuff ? 8 : 5; p.ex.forEach(e => s += e.sets * (45 + e.rest) / 60); return Math.round(s / 5) * 5 + 10; };
 function prefill(slot, vid) {
   const hist = S.logs[vid] || [], last = hist[hist.length - 1];
-  const out = []; let hint = "Sem histÃ³rico: escolha uma carga leve.";
+  const out = []; let hint = "Sem histórico: escolha uma carga leve.";
   if (last) {
     const nx = nextLoad(slot, last.sets), delta = nx.kg - (last.sets[0] ? last.sets[0].kg : 0);
     for (let i = 0; i < slot.sets; i++) { const ls = last.sets[i] || last.sets[last.sets.length - 1]; out.push({ kg: r1(Math.max(0, ls.kg + delta)), reps: nx.dir === "up" ? slot.reps[0] : nx.dir === "down" ? slot.reps[0] : ls.reps, done: false }); }
-    hint = `Ãšltima vez (${dispDate(last.date)}): ${last.sets.map(s => `${s.kg}Ã—${s.reps}`).join(" Â· ")} â†’ ${nx.dir === "up" ? `hoje +${nx.inc} kg` : nx.dir === "down" ? `hoje âˆ’${nx.inc} kg` : "mantenha a carga"}. ${nx.why}`;
+    hint = `Última vez (${dispDate(last.date)}): ${last.sets.map(s => `${s.kg}×${s.reps}`).join(" · ")} → ${nx.dir === "up" ? `hoje +${nx.inc} kg` : nx.dir === "down" ? `hoje −${nx.inc} kg` : "mantenha a carga"}. ${nx.why}`;
   } else for (let i = 0; i < slot.sets; i++) out.push({ kg: 0, reps: slot.reps[0], done: false });
   return { sets: out, hint };
 }
@@ -1408,7 +1408,7 @@ const painAvg = () => { const l = S.pain.slice(-3); return l.length >= 3 ? l.red
 const weekVolume = () => { let push = 0, pull = 0; DAY_ORDER.forEach(L => PLAN[L].ex.forEach(e => { push += (e.push || 0); pull += (e.pull || 0); })); return { push, pull }; };
 
 /* ============ UI base ============ */
-const UI = { tab: "deck", cat: "Todos", q: "", meal: "CafÃ© da manhÃ£", supSort: "price", supType: "all", pickDay: null };
+const UI = { tab: "deck", cat: "Todos", q: "", meal: "Café da manhã", supSort: "price", supType: "all", pickDay: null };
 let toastT = null;
 function toast(t, fn) { const e = $("#toast"); e.textContent = t; e.onclick = fn ? () => { clearTimeout(toastT); e.classList.remove("on", "act"); fn(); } : null; e.classList.toggle("act", !!fn); e.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove("on", "act"), fn ? 5000 : 2600); }
 function applyTheme() {
@@ -1429,7 +1429,7 @@ const banner = (cls, icon, title, txt, extra = "") => `<div class="banner ${cls}
 function openSheet(html) { const o = $("#sheet"); $(".sheet", o).innerHTML = html; o.classList.add("on"); }
 function closeSheet() { $("#sheet").classList.remove("on"); }
 
-/* ============ render: navegaÃ§Ã£o ============ */
+/* ============ render: navegação ============ */
 function go(tab) {
   UI.tab = tab;
   $$(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + tab));
@@ -1450,30 +1450,30 @@ function orig_rDeck() {
   const ban = [];
   const ab = ABSENCE.find(a => abs >= a.min);
   if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
-  if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `VocÃª comeÃ§ou o treino ${S.cur.day}. Continue de onde parou.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>`));
-  const pa = painAvg(); if (pa !== null && pa >= 4) ban.push(banner("bad", "shield", "Dor no ombro em alta", `MÃ©dia das 3 Ãºltimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`));
-  if (deloadSignal()) ban.push(banner("warn", "info", "Sinal de deload", "3 ou mais exercÃ­cios falharam 2 sessÃµes seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie."));
+  if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}. Continue de onde parou.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>`));
+  const pa = painAvg(); if (pa !== null && pa >= 4) ban.push(banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`));
+  if (deloadSignal()) ban.push(banner("warn", "info", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie."));
   const bk = S.settings.lastBackup, bdays = bk ? diffDays(k, bk) : (Object.keys(S.days).length ? diffDays(k, firstDay()) : 0);
-  if (bdays > 21) ban.push(banner("warn", "download", "Backup atrasado", `${bk ? `Ãšltimo backup hÃ¡ ${bdays} dias.` : "VocÃª nunca exportou um backup."} O arquivo .json Ã© o Ãºnico que sobrevive Ã  troca de celular.`, `<div style="margin-top:8px"><button class="btn sm" data-act="export">Exportar agora</button></div>`));
+  if (bdays > 21) ban.push(banner("warn", "download", "Backup atrasado", `${bk ? `Último backup há ${bdays} dias.` : "Você nunca exportou um backup."} O arquivo .json é o único que sobrevive à troca de celular.`, `<div style="margin-top:8px"><button class="btn sm" data-act="export">Exportar agora</button></div>`));
   const isMon = parseKey(k).getDay() === 1, wk = mondayOf(k);
-  if (isMon && !S.weights.some(w => w.d >= wk)) ban.push(banner("acc", "scale", "Dia de pesagem", "Segunda: ao acordar, depois do banheiro, antes de comer. MeÃ§a a cintura junto.", `<div style="margin-top:8px"><button class="btn sm solid" data-act="weigh">Registrar peso</button></div>`));
+  if (isMon && !S.weights.some(w => w.d >= wk)) ban.push(banner("acc", "scale", "Dia de pesagem", "Segunda: ao acordar, depois do banheiro, antes de comer. Meça a cintura junto.", `<div style="margin-top:8px"><button class="btn sm solid" data-act="weigh">Registrar peso</button></div>`));
 
   const bars = Array.from({ length: 7 }, (_, i) => { const kk = addDays(k, i - 6), c = habitCount(kk); const dd = parseKey(kk); return `<div class="d ${kk === k ? "t" : ""}"><i style="height:${Math.max(8, c / 6 * 100)}%;background:${isActive(kk) ? "var(--ok)" : c ? "var(--accent)" : "var(--surface2)"}"></i><span>${DOW[dd.getDay()][0]}</span></div>`; }).join("");
   const wtxt = week >= 5 ? "Meta da semana cumprida." : week === 4 ? "Semana amarela: um dia a mais e fecha." : `Faltam ${5 - week} dia(s) ativos para a meta.`;
 
-  const habits = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}${id === "acucar" ? `<span class="s">Regra nÂº 1. Se cumprir uma sÃ³, que seja esta.</span>` : ""}</span></button>`).join("");
+  const habits = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}${id === "acucar" ? `<span class="s">Regra nº 1. Se cumprir uma só, que seja esta.</span>` : ""}</span></button>`).join("");
 
   const doneToday = !!D(k).wk && !S.cur;
   let wk2;
   if (L && doneToday) {
     const nl = seqNext();
-    wk2 = `<div class="sec-t"><span class="dot ok"></span><span class="lbl">Treino de hoje</span></div><h3 class="mid">${L} Â· ${PLAN[L].name} concluÃ­do</h3><p class="muted">As cargas do prÃ³ximo treino jÃ¡ foram atualizadas. PrÃ³ximo: <b>${nl} Â· ${PLAN[nl].name}</b>.</p><button class="btn full" data-act="goto-treino" data-day="${nl}">Ver prÃ³ximo treino</button>`;
+    wk2 = `<div class="sec-t"><span class="dot ok"></span><span class="lbl">Treino de hoje</span></div><h3 class="mid">${L} · ${PLAN[L].name} concluído</h3><p class="muted">As cargas do próximo treino já foram atualizadas. Próximo: <b>${nl} · ${PLAN[nl].name}</b>.</p><button class="btn full" data-act="goto-treino" data-day="${nl}">Ver próximo treino</button>`;
   } else if (L) {
     const p = PLAN[L];
-    wk2 = `<div class="row between"><div><div class="sec-t"><span class="dot"></span><span class="lbl" style="color:var(--accent-ink)">SessÃ£o do amanhecer Â· ${DOW[parseKey(k).getDay()]}</span></div><h3 class="mid" style="margin-top:4px">${L} Â· ${p.name}</h3></div><span class="pill">05:00 Â· ${estMin(L)} min</span></div>
-      <p class="muted">${p.focus}. ${p.cuff ? "ComeÃ§a com aquecimento de manguito." : "Sem aquecimento de manguito hoje."} ${inAdapt() ? "Semana " + weekNo() + " de adaptaÃ§Ã£o: carga leve." : ""}</p>
+    wk2 = `<div class="row between"><div><div class="sec-t"><span class="dot"></span><span class="lbl" style="color:var(--accent-ink)">Sessão do amanhecer · ${DOW[parseKey(k).getDay()]}</span></div><h3 class="mid" style="margin-top:4px">${L} · ${p.name}</h3></div><span class="pill">05:00 · ${estMin(L)} min</span></div>
+      <p class="muted">${p.focus}. ${p.cuff ? "Começa com aquecimento de manguito." : "Sem aquecimento de manguito hoje."} ${inAdapt() ? "Semana " + weekNo() + " de adaptação: carga leve." : ""}</p>
       <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR TREINO" : "INICIAR TREINO DO DIA"}</button>`;
-  } else wk2 = `<div class="sec-t"><span class="dot sage"></span><span class="lbl">Descanso ativo</span></div><h3 class="mid">Fim de semana</h3><p class="muted">Sem treino de academia. Caminhada livre de 30 minutos conta como hÃ¡bito. Se quiser treinar, escolha um dia na aba Treino.</p>`;
+  } else wk2 = `<div class="sec-t"><span class="dot sage"></span><span class="lbl">Descanso ativo</span></div><h3 class="mid">Fim de semana</h3><p class="muted">Sem treino de academia. Caminhada livre de 30 minutos conta como hábito. Se quiser treinar, escolha um dia na aba Treino.</p>`;
 
   const pw = Math.min(1, d.water / S.settings.waterGoal);
   const nextM = MILESTONES.find(m => !m.test(S.profile.startWeight, Math.min(...S.weights.map(w => w.kg), S.profile.startWeight)));
@@ -1481,43 +1481,43 @@ function orig_rDeck() {
 
   $("#v-deck").innerHTML = `
   <section class="card hero" style="gap:8px">
-    <div class="row between"><span class="pill">${DOW[parseKey(k).getDay()]} Â· ${dispDate(k)}</span><span class="lbl">Semana ${weekNo()}${inAdapt() ? " Â· adaptaÃ§Ã£o" : ""}</span></div>
+    <div class="row between"><span class="pill">${DOW[parseKey(k).getDay()]} · ${dispDate(k)}</span><span class="lbl">Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}</span></div>
     <div class="row" style="gap:14px;margin-top:4px"><img class="avatar lg" src="data:image/jpeg;base64,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" alt="" width="56" height="56"><h2 class="h1 grow">${hi}, ${esc(S.profile.name)}.</h2></div>
-    <p class="quote">"Still I Rise. O crescimento Ã© orgÃ¢nico, como raÃ­zes antigas que se aprofundam calmas na terra morna."</p>
+    <p class="quote">"Still I Rise. O crescimento é orgânico, como raízes antigas que se aprofundam calmas na terra morna."</p>
   </section>
   ${ban.length ? `<section style="order:1;display:flex;flex-direction:column;gap:10px">${ban.join("")}</section>` : ""}
   <section class="card" style="order:4">
-    <div class="row between"><div class="sec-t"><span class="dot sage"></span><span class="lbl">Ritmo semanal</span></div><span class="pill ok">NÃ£o-punitivo</span></div>
+    <div class="row between"><div class="sec-t"><span class="dot sage"></span><span class="lbl">Ritmo semanal</span></div><span class="pill ok">Não-punitivo</span></div>
     <div class="row" style="gap:16px">
       ${ring(week / 5, 112, 8, "var(--sage)", `<div><div class="big tabnum">${week}<span class="muted" style="font-size:16px">/5</span></div><div class="lbl">dias ativos</div></div>`)}
       <div class="grow" style="display:flex;flex-direction:column;gap:10px">
-        <div class="tile row between"><div><div class="lbl">SequÃªncia de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
-        <div class="tile row between"><div><div class="lbl">SequÃªncia de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
+        <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
+        <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
       </div>
     </div>
     <div class="week">${bars}</div>
-    <p class="muted" style="font-size:15px">${wtxt} Dia ativo = zero aÃ§Ãºcar + 2 outros hÃ¡bitos. Semana verde: 5+ dias. Semana amarela (4) nÃ£o quebra a sequÃªncia. SÃ³ 2 semanas ruins seguidas zeram.</p>
+    <p class="muted" style="font-size:15px">${wtxt} Dia ativo = zero açúcar + 2 outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
   </section>
   <section class="card" style="order:3">
-    <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">HÃ¡bitos de hoje</span></div><span class="pill">${habitCount(k)}/6</span></div>
+    <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">Hábitos de hoje</span></div><span class="pill">${habitCount(k)}/6</span></div>
     <div style="display:flex;flex-direction:column;gap:10px">${habits}</div>
   </section>
   <section class="card" style="order:2">${wk2}</section>
   <section class="card" style="order:5">
-    <div class="row between"><div class="sec-t"><span class="dot" style="background:var(--sage)"></span><span class="lbl">HidrataÃ§Ã£o</span></div><span class="lbl">Meta ${S.settings.waterGoal / 1000} L</span></div>
+    <div class="row between"><div class="sec-t"><span class="dot" style="background:var(--sage)"></span><span class="lbl">Hidratação</span></div><span class="lbl">Meta ${S.settings.waterGoal / 1000} L</span></div>
     <div class="row between" style="align-items:baseline"><div><span class="big tabnum">${(d.water / 1000).toFixed(2)}</span><span class="muted"> / ${(S.settings.waterGoal / 1000).toFixed(2)} litros</span></div><span class="lbl">${Math.round(pw * 100)}%</span></div>
     <div class="bar"><i style="width:${pw * 100}%"></i></div>
-    <div class="grid3"><button class="btn sm" data-act="water" data-ml="250">+250 ml</button><button class="btn sm" data-act="water" data-ml="500">+500 ml</button><button class="btn sm ghost" data-act="water" data-ml="-250">âˆ’250</button></div>
+    <div class="grid3"><button class="btn sm" data-act="water" data-ml="250">+250 ml</button><button class="btn sm" data-act="water" data-ml="500">+500 ml</button><button class="btn sm ghost" data-act="water" data-ml="-250">−250</button></div>
   </section>
   <section class="card" style="order:6">
-    <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">NutriÃ§Ã£o de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
+    <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Nutrição de hoje</span></div><button class="lbl" style="color:var(--accent-ink)" data-go="comer">Registrar comida</button></div>
     <div class="row" style="justify-content:space-around">
       ${ring(tot.k / tg.kcal, 104, 8, "grad", `<div><div class="mid tabnum">${fmtInt(tot.k)}</div><div class="lbl">/ ${fmtInt(tg.kcal)} kcal</div></div>`)}
       ${ring(tot.p / tg.prot, 104, 8, "var(--ok)", `<div><div class="mid tabnum">${Math.round(tot.p)}</div><div class="lbl">/ ${tg.prot} g prot</div></div>`)}
     </div>
   </section>
-  <details class="fold card" style="order:7;padding:0 14px"><summary><span class="row"><span class="dot sage"></span><span class="lbl">Suplementos de hoje Â· ${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length}</span></span>${ic("down")}</summary><div class="body">${sup}</div></details>
-  ${nextM ? `<section class="card flat" style="order:8"><div class="lbl">PrÃ³ximo marco</div><div class="mid">${nextM.nm} Â· ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
+  <details class="fold card" style="order:7;padding:0 14px"><summary><span class="row"><span class="dot sage"></span><span class="lbl">Suplementos de hoje · ${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length}</span></span>${ic("down")}</summary><div class="body">${sup}</div></details>
+  ${nextM ? `<section class="card flat" style="order:8"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
   <section class="card flat row" style="order:9;align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>`;
 }
 
@@ -1525,29 +1525,29 @@ function orig_rDeck() {
 function rTreino() {
   const k = today(), L = UI.pickDay || (D(k).wk ? seqNext() : (planLetter(k) || seqNext()));
   const p = PLAN[L], vol = weekVolume();
-  const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} Ã— ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "â€“" + e.reps[1]}${e.unit ? " s" : ""} Â· descanso ${e.rest}s${e.inc ? ` Â· +${e.inc} kg` : ""}</div></div>${nextBadge(e, v[0])}<span class="tag">${e.v.length} variaÃ§Ãµes</span></div>`; }).join("");
-  const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:14px">${c.sets} Ã— ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
+  const list = p.ex.map(e => { const v = findV(e, varId(e)); return `<div class="li"><div class="grow"><div style="font-weight:700">${v[1]}</div><div class="muted" style="font-size:14px">${e.sets} × ${e.reps[0] === e.reps[1] ? e.reps[0] : e.reps[0] + "–" + e.reps[1]}${e.unit ? " s" : ""} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</div></div>${nextBadge(e, v[0])}<span class="tag">${e.v.length} variações</span></div>`; }).join("");
+  const warm = p.cuff ? CUFF.map(c => `<div class="li"><div class="grow"><div style="font-weight:700">${c.name}</div><div class="muted" style="font-size:14px">${c.sets} × ${c.reps[0]}</div></div><span class="tag">AQUEC.</span></div>`).join("") : "";
   const pa = painAvg();
   $("#v-treino").innerHTML = `
-  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta Ã s 5h, seguindo a sequÃªncia A a E: se vocÃª faltar um dia, o treino continua de onde parou. As cargas da prÃ³xima vez sÃ£o recalculadas ao fim de cada treino.</p></section>
+  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E: se você faltar um dia, o treino continua de onde parou. As cargas da próxima vez são recalculadas ao fim de cada treino.</p></section>
   ${S.cur ? banner("acc", "play", "Treino em andamento", `Treino ${S.cur.day} aberto.`, `<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar</button></div>`) : ""}
-  ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `MÃ©dia das 3 Ãºltimas: ${r1(pa)}/10. Procure um fisioterapeuta.`) : ""}
-  <div class="chips">${DAY_ORDER.map(x => `<button class="chip ${x === L ? "on" : ""}" data-act="pickday" data-day="${x}">${x} Â· ${PLAN[x].name}</button>`).join("")}</div>
+  ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta.`) : ""}
+  <div class="chips">${DAY_ORDER.map(x => `<button class="chip ${x === L ? "on" : ""}" data-act="pickday" data-day="${x}">${x} · ${PLAN[x].name}</button>`).join("")}</div>
   <section class="card">
-    <div class="row between"><div><div class="lbl" style="color:var(--accent-ink)">Treino ${L}</div><h3 class="mid">${p.name}</h3></div><span class="pill">â‰ˆ ${estMin(L)} min</span></div>
-    <p class="muted">${p.focus}. Termina com 10 min de esteira inclinada (4â€“6%), ritmo de conversa.</p>
+    <div class="row between"><div><div class="lbl" style="color:var(--accent-ink)">Treino ${L}</div><h3 class="mid">${p.name}</h3></div><span class="pill">≈ ${estMin(L)} min</span></div>
+    <p class="muted">${p.focus}. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
     <div class="list">${warm}${list}</div>
     <button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR" : `INICIAR TREINO ${L}`}</button>
   </section>
   <section class="card flat">
-    <div class="lbl">BalanÃ§o semanal de sÃ©ries</div>
+    <div class="lbl">Balanço semanal de séries</div>
     <div class="grid2"><div class="tile in"><div class="lbl">Empurrar</div><div class="big tabnum">${vol.push}</div></div><div class="tile in"><div class="lbl">Puxar</div><div class="big tabnum">${vol.pull}</div></div></div>
-    <p class="muted" style="font-size:15px">Puxar â‰¥ empurrar protege o ombro. Aquecimento de manguito antes de peito, ombro e braÃ§o.</p>
+    <p class="muted" style="font-size:15px">Puxar ≥ empurrar protege o ombro. Aquecimento de manguito antes de peito, ombro e braço.</p>
   </section>
   <section class="card flat">
     <div class="lbl">Regras de carga</div>
-    <p class="muted" style="font-size:16px"><b>Semanas 1â€“2:</b> adaptaÃ§Ã£o com carga leve. <b>Depois, ao fim de cada treino:</b> fechou todas as repetiÃ§Ãµes em todas as sÃ©ries, sobe a carga; falhou na 1Âª sÃ©rie ou em 2 ou mais sÃ©ries, desce um degrau; senÃ£o mantÃ©m. <b>Deload sÃ³ por sinal</b> (2 sessÃµes falhando ou dor â‰¥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se nÃ£o completou, estava pesada.<br>${INCS_TXT}</p>
-    <div class="row between"><span class="grow">RodÃ­zio automÃ¡tico de variaÃ§Ãµes (a cada 4 semanas)</span><button class="tog ${S.settings.rotate ? "on" : ""}" data-act="tog-rotate" aria-label="alternar"><i></i></button></div>
+    <p class="muted" style="font-size:16px"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois, ao fim de cada treino:</b> fechou todas as repetições em todas as séries, sobe a carga; falhou na 1ª série ou em 2 ou mais séries, desce um degrau; senão mantém. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
+    <div class="row between"><span class="grow">Rodízio automático de variações (a cada 4 semanas)</span><button class="tog ${S.settings.rotate ? "on" : ""}" data-act="tog-rotate" aria-label="alternar"><i></i></button></div>
   </section>`;
 }
 
@@ -1579,37 +1579,37 @@ function wkRender() {
   if (step.t === "warm") {
     body = `<span class="pill acc">AQUECIMENTO DE MANGUITO</span><h2 class="mid">${step.c.name}</h2>
       <p class="how">${step.c.how}</p>
-      <div class="lbl">${step.c.sets} sÃ©ries de ${step.c.reps[0]} repetiÃ§Ãµes, carga leve</div>
-      <div style="display:flex;flex-direction:column;gap:8px">${dd.sets.map((s, i) => `<button class="chk ${s.done ? "on" : ""}" data-act="wk-warmset" data-i="${i}"><span class="box">${ic("check")}</span><span class="t">SÃ©rie ${i + 1}</span></button>`).join("")}</div>`;
+      <div class="lbl">${step.c.sets} séries de ${step.c.reps[0]} repetições, carga leve</div>
+      <div style="display:flex;flex-direction:column;gap:8px">${dd.sets.map((s, i) => `<button class="chk ${s.done ? "on" : ""}" data-act="wk-warmset" data-i="${i}"><span class="box">${ic("check")}</span><span class="t">Série ${i + 1}</span></button>`).join("")}</div>`;
   } else {
     const slot = step.e, v = findV(slot, dd.vid), unit = slot.unit ? "seg" : "reps";
     const done = dd.sets.filter(s => s.done).length;
     const pend = dd.sets.findIndex(s => !s.done);
     const rows = dd.sets.map((s, i) => `<div class="setrow ${s.done ? "done" : ""} ${i === pend && c.mode === "set" ? "cur" : ""}"><span class="n">${i + 1}</span>
-      <input inputmode="decimal" data-f="kg" data-i="${i}" value="${s.kg || ""}" placeholder="kg" aria-label="carga sÃ©rie ${i + 1}">
-      <input inputmode="numeric" data-f="reps" data-i="${i}" value="${s.reps}" aria-label="${unit} sÃ©rie ${i + 1}">
+      <input inputmode="decimal" data-f="kg" data-i="${i}" value="${s.kg || ""}" placeholder="kg" aria-label="carga série ${i + 1}">
+      <input inputmode="numeric" data-f="reps" data-i="${i}" value="${s.reps}" aria-label="${unit} série ${i + 1}">
       ${c.mode === "set" ? `<button class="ok" data-act="wk-set" data-i="${i}" aria-label="feito">${ic("check")}</button>` : `<span></span>`}</div>`).join("");
     const kstep = slot.inc ? Math.min(slot.inc, 5) : 0, rstep = slot.unit ? 5 : 1; const ru = slot.unit ? "s" : "rep";
-    const adj = c.mode === "set" && pend >= 0 ? `<div class="chips" style="justify-content:center" aria-label="ajuste rÃ¡pido da prÃ³xima sÃ©rie">${kstep ? `<button class="chip" data-act="wk-adj" data-f="kg" data-d="${-kstep}">âˆ’ ${kstep} kg</button><button class="chip" data-act="wk-adj" data-f="kg" data-d="${kstep}">+ ${kstep} kg</button>` : ""}<button class="chip" data-act="wk-adj" data-f="reps" data-d="${-rstep}">âˆ’ ${rstep} ${ru}</button><button class="chip" data-act="wk-adj" data-f="reps" data-d="${rstep}">+ ${rstep} ${ru}</button></div>` : "";
-    body = `<div class="row between"><span class="pill">${slot.sets} Ã— ${slot.reps[0] === slot.reps[1] ? slot.reps[0] : slot.reps[0] + "â€“" + slot.reps[1]}${slot.unit ? " s" : ""} Â· descanso ${slot.rest}s</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por sÃ©rie" : "Registrar ao final"}</button></div>
+    const adj = c.mode === "set" && pend >= 0 ? `<div class="chips" style="justify-content:center" aria-label="ajuste rápido da próxima série">${kstep ? `<button class="chip" data-act="wk-adj" data-f="kg" data-d="${-kstep}">− ${kstep} kg</button><button class="chip" data-act="wk-adj" data-f="kg" data-d="${kstep}">+ ${kstep} kg</button>` : ""}<button class="chip" data-act="wk-adj" data-f="reps" data-d="${-rstep}">− ${rstep} ${ru}</button><button class="chip" data-act="wk-adj" data-f="reps" data-d="${rstep}">+ ${rstep} ${ru}</button></div>` : "";
+    body = `<div class="row between"><span class="pill">${slot.sets} × ${slot.reps[0] === slot.reps[1] ? slot.reps[0] : slot.reps[0] + "–" + slot.reps[1]}${slot.unit ? " s" : ""} · descanso ${slot.rest}s</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por série" : "Registrar ao final"}</button></div>
       <h2 class="mid">${v[1]}</h2>
       <p class="muted" style="font-size:15px">${dd.hint}</p>
       <div class="grid3" style="grid-template-columns:30px 1fr 1fr 76px;gap:8px;margin-bottom:-6px"><span></span><span class="mini">kg</span><span class="mini">${unit}</span><span class="mini">${c.mode === "set" ? "feito" : ""}</span></div>
       ${rows}
       ${adj}
-      ${c.mode === "end" ? `<button class="btn solid full" data-act="wk-allset">${ic("check")} REGISTRAR EXERCÃCIO (${dd.sets.length} sÃ©ries)</button>` : ""}
+      ${c.mode === "end" ? `<button class="btn solid full" data-act="wk-allset">${ic("check")} REGISTRAR EXERCÍCIO (${dd.sets.length} séries)</button>` : ""}
       <details class="fold" open><summary>Como fazer ${ic("down")}</summary><div class="body"><p class="how">${v[2]}</p></div></details>
-      <div><div class="lbl" style="margin-bottom:6px">VariaÃ§Ãµes (para nÃ£o enjoar)</div><div class="chips">${slot.v.map(x => `<button class="chip ${x[0] === dd.vid ? "on" : ""}" data-act="wk-var" data-v="${x[0]}">${x[1].replace(/ \(.*\)/, "")}</button>`).join("")}</div></div>
-      ${slot.id === "a2" && dd.vid === "a2_incl_barra" && painAvg() !== null && painAvg() >= 2 ? banner("warn", "shield", "AtenÃ§Ã£o ao ombro", "Sua dor recente estÃ¡ acima de 2. Prefira halteres hoje.") : ""}
-      <p class="muted" style="font-size:14px">${done}/${dd.sets.length} sÃ©ries. Termine sentindo que faria mais 3 repetiÃ§Ãµes.</p>`;
+      <div><div class="lbl" style="margin-bottom:6px">Variações (para não enjoar)</div><div class="chips">${slot.v.map(x => `<button class="chip ${x[0] === dd.vid ? "on" : ""}" data-act="wk-var" data-v="${x[0]}">${x[1].replace(/ \(.*\)/, "")}</button>`).join("")}</div></div>
+      ${slot.id === "a2" && dd.vid === "a2_incl_barra" && painAvg() !== null && painAvg() >= 2 ? banner("warn", "shield", "Atenção ao ombro", "Sua dor recente está acima de 2. Prefira halteres hoje.") : ""}
+      <p class="muted" style="font-size:14px">${done}/${dd.sets.length} séries. Termine sentindo que faria mais 3 repetições.</p>`;
   }
   const pIdx = step.t === "ex" ? dd.sets.findIndex(s => !s.done) : -1;
   const cta = step.t === "ex" && c.mode === "set" && pIdx >= 0
-    ? `<button class="btn solid big-cta grow" data-act="wk-set" data-i="${pIdx}">${ic("check")} SÃ‰RIE ${pIdx + 1} FEITA</button><button class="btn" data-act="wk-next" aria-label="${last ? "finalizar treino" : "prÃ³ximo exercÃ­cio"}">${ic(last ? "check" : "right")}</button>`
-    : `<button class="btn solid big-cta grow" data-act="wk-next">${last ? "FINALIZAR TREINO" : "PRÃ“XIMO"} ${ic(last ? "check" : "right")}</button>`;
+    ? `<button class="btn solid big-cta grow" data-act="wk-set" data-i="${pIdx}">${ic("check")} SÉRIE ${pIdx + 1} FEITA</button><button class="btn" data-act="wk-next" aria-label="${last ? "finalizar treino" : "próximo exercício"}">${ic(last ? "check" : "right")}</button>`
+    : `<button class="btn solid big-cta grow" data-act="wk-next">${last ? "FINALIZAR TREINO" : "PRÓXIMO"} ${ic(last ? "check" : "right")}</button>`;
   const pct = (c.i + 1) / st.length * 100;
   $("#wk-body").innerHTML = `
-    <div class="row between"><button class="circ-btn" data-act="wk-back" aria-label="voltar">${ic("left")}</button><div class="grow" style="text-align:center"><div class="lbl">Treino ${c.day} Â· ${PLAN[c.day].name}</div><div class="muted" style="font-size:14px">${c.i + 1} de ${st.length}</div></div><button class="circ-btn" data-act="wk-exit" aria-label="sair">${ic("x")}</button></div>
+    <div class="row between"><button class="circ-btn" data-act="wk-back" aria-label="voltar">${ic("left")}</button><div class="grow" style="text-align:center"><div class="lbl">Treino ${c.day} · ${PLAN[c.day].name}</div><div class="muted" style="font-size:14px">${c.i + 1} de ${st.length}</div></div><button class="circ-btn" data-act="wk-exit" aria-label="sair">${ic("x")}</button></div>
     <div class="prog"><i style="width:${pct}%"></i></div>
     ${body}
     <div class="stickybar">
@@ -1660,12 +1660,12 @@ function restDraw() {
   const l = restLeft(), p = RT.total ? l / RT.total : 0;
   $("#rest-in").innerHTML = `<div class="lbl">Descanso</div>${ring(p, 200, 10, "var(--accent)", `<div class="time">${Math.floor(l / 60)}:${pad(l % 60)}</div>`)}
   <div class="muted">${RT.next ? esc(RT.next) : ""}</div>
-  <div class="grid2" style="width:100%"><button class="btn" data-act="rest-adj" data-s="-15">âˆ’15 s</button><button class="btn" data-act="rest-adj" data-s="15">+15 s</button><button class="btn" data-act="rest-pause">${RT.paused !== null ? "Retomar" : "Pausar"}</button><button class="btn solid" data-act="rest-skip">Pular</button></div>`;
+  <div class="grid2" style="width:100%"><button class="btn" data-act="rest-adj" data-s="-15">−15 s</button><button class="btn" data-act="rest-adj" data-s="15">+15 s</button><button class="btn" data-act="rest-pause">${RT.paused !== null ? "Retomar" : "Pausar"}</button><button class="btn solid" data-act="rest-skip">Pular</button></div>`;
 }
 function restTick() { if (RT.paused !== null) return; if (restLeft() <= 0) return restDone(); restDraw(); }
 function restDone() {
   clearInterval(RT.iv); beep(); try { navigator.vibrate && navigator.vibrate([200, 100, 200, 100, 200]); } catch (e) { }
-  notify("Descanso acabou", RT.next || "Hora da prÃ³xima sÃ©rie.");
+  notify("Descanso acabou", RT.next || "Hora da próxima série.");
   setTimeout(closeRest, 900);
 }
 function closeRest() { clearInterval(RT.iv); $("#rest").classList.remove("on"); }
@@ -1675,53 +1675,53 @@ function notify(title, body) {
 
 /* ============ COMER ============ */
 function foodSheet(i) {
-  const f = FOODS[i], sug = f[5] === "Bebidas" && /COM aÃ§Ãºcar/.test(f[0]);
-  const chips = ["CafÃ© da manhÃ£", "AlmoÃ§o", "Lanche", "Jantar", "Ceia"].map(m => `<button class="chip ${UI.meal === m ? "on" : ""}" data-act="meal-sel" data-m="${m}">${m}</button>`).join("");
-  openSheet(`<h3 class="mid">${esc(f[0])}</h3><div class="muted">${f[1]} kcal e ${f[2]} g de proteÃ­na por 100 g Â· fonte ${f[6] === "T" ? "TACO 4Âª ed." : "estimativa/rÃ³tulo"}</div>
-  ${sug ? banner("warn", "info", "Bebida com aÃ§Ãºcar", "Quebra a Regra nÂº 1 de hoje. Pode registrar: o app nÃ£o julga, amanhÃ£ continua normal.") : ""}
-  <div class="row"><div class="stepper grow"><button data-act="g-adj" data-s="-10">âˆ’</button><input id="g" inputmode="numeric" value="${f[4]}" data-i="${i}"><button data-act="g-adj" data-s="10">+</button><span class="muted">g</span></div></div>
-  <div class="grid3"><button class="chip" data-act="g-set" data-g="${f[4]}">1 porÃ§Ã£o</button><button class="chip" data-act="g-set" data-g="${f[4] * 2}">2 porÃ§Ãµes</button><button class="chip" data-act="g-set" data-g="100">100 g</button></div>
+  const f = FOODS[i], sug = f[5] === "Bebidas" && /COM açúcar/.test(f[0]);
+  const chips = ["Café da manhã", "Almoço", "Lanche", "Jantar", "Ceia"].map(m => `<button class="chip ${UI.meal === m ? "on" : ""}" data-act="meal-sel" data-m="${m}">${m}</button>`).join("");
+  openSheet(`<h3 class="mid">${esc(f[0])}</h3><div class="muted">${f[1]} kcal e ${f[2]} g de proteína por 100 g · fonte ${f[6] === "T" ? "TACO 4ª ed." : "estimativa/rótulo"}</div>
+  ${sug ? banner("warn", "info", "Bebida com açúcar", "Quebra a Regra nº 1 de hoje. Pode registrar: o app não julga, amanhã continua normal.") : ""}
+  <div class="row"><div class="stepper grow"><button data-act="g-adj" data-s="-10">−</button><input id="g" inputmode="numeric" value="${f[4]}" data-i="${i}"><button data-act="g-adj" data-s="10">+</button><span class="muted">g</span></div></div>
+  <div class="grid3"><button class="chip" data-act="g-set" data-g="${f[4]}">1 porção</button><button class="chip" data-act="g-set" data-g="${f[4] * 2}">2 porções</button><button class="chip" data-act="g-set" data-g="100">100 g</button></div>
   <div class="muted">${f[3]} = ${f[4]} g</div><div class="chips">${chips}</div>${favBtn(i)}
   <div class="tile in row between"><span id="g-sum" class="mid tabnum"></span></div>
   <button class="btn solid full" data-act="food-add" data-i="${i}">ADICIONAR</button>`);
   gSum(i);
 }
-function gSum(i) { const f = FOODS[i], g = num($("#g").value); $("#g-sum").textContent = `${Math.round(f[1] * g / 100)} kcal Â· ${r1(f[2] * g / 100)} g prot`; }
+function gSum(i) { const f = FOODS[i], g = num($("#g").value); $("#g-sum").textContent = `${Math.round(f[1] * g / 100)} kcal · ${r1(f[2] * g / 100)} g prot`; }
 
-/* ============ EVOLUÃ‡ÃƒO ============ */
+/* ============ EVOLUÇÃO ============ */
 function chartSVG() {
-  const pts = S.weights.slice(-16); if (pts.length < 2) return `<p class="muted">O grÃ¡fico aparece a partir da segunda pesagem.</p>`;
+  const pts = S.weights.slice(-16); if (pts.length < 2) return `<p class="muted">O gráfico aparece a partir da segunda pesagem.</p>`;
   const W = 320, H = 130, pl = 30, pr = 8, pt = 10, pb = 20, goal = S.profile.goal;
   const all = pts.map(p => p.kg).concat(goal), mn = Math.floor(Math.min(...all) - 1), mx = Math.ceil(Math.max(...all) + 1);
   const x = i => pl + i * (W - pl - pr) / (pts.length - 1), y = v => pt + (mx - v) / (mx - mn) * (H - pt - pb);
   const path = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.kg).toFixed(1)}`).join(" ");
-  return `<svg class="svg-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="GrÃ¡fico de peso"><line x1="${pl}" x2="${W - pr}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ok)" stroke-dasharray="4 4"/><text x="${pl + 2}" y="${y(goal) - 3}">meta ${goal}</text><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.kg)}" r="3.5" fill="var(--accent)"/>`).join("")}<text x="0" y="${y(mx) + 8}">${mx}</text><text x="0" y="${y(mn)}">${mn}</text><text x="${pl}" y="${H - 4}">${dispDate(pts[0].d)}</text><text x="${W - pr}" y="${H - 4}" text-anchor="end">${dispDate(pts[pts.length - 1].d)}</text></svg>`;
+  return `<svg class="svg-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de peso"><line x1="${pl}" x2="${W - pr}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ok)" stroke-dasharray="4 4"/><text x="${pl + 2}" y="${y(goal) - 3}">meta ${goal}</text><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.kg)}" r="3.5" fill="var(--accent)"/>`).join("")}<text x="0" y="${y(mx) + 8}">${mx}</text><text x="0" y="${y(mn)}">${mn}</text><text x="${pl}" y="${H - 4}">${dispDate(pts[0].d)}</text><text x="${W - pr}" y="${H - 4}" text-anchor="end">${dispDate(pts[pts.length - 1].d)}</text></svg>`;
 }
 function rEvol() {
   const w = curWeight(), s = S.profile.startWeight, g = S.profile.goal, minW = Math.min(s, ...S.weights.map(x => x.kg));
   const prog = Math.max(0, Math.min(1, (s - w) / (s - g)));
-  const ms = MILESTONES.map(m => { const ok = m.test(s, minW); return `<div class="li"><span class="box" style="width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;${ok ? "background:var(--ok);color:#fff" : "box-shadow:var(--inset);color:transparent"}">${ic("check")}</span><div class="grow"><div style="font-weight:700">${m.nm} Â· ${m.lbl(s)}</div><div class="muted" style="font-size:14px">${m.txt}</div></div></div>`; }).join("");
+  const ms = MILESTONES.map(m => { const ok = m.test(s, minW); return `<div class="li"><span class="box" style="width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;${ok ? "background:var(--ok);color:#fff" : "box-shadow:var(--inset);color:transparent"}">${ic("check")}</span><div class="grow"><div style="font-weight:700">${m.nm} · ${m.lbl(s)}</div><div class="muted" style="font-size:14px">${m.txt}</div></div></div>`; }).join("");
   const wkSq = Array.from({ length: 8 }, (_, i) => { const mk = addDays(mondayOf(today()), (i - 7) * 7), a = activeInWeek(mk); return `<div style="flex:1;text-align:center"><div style="height:34px;border-radius:10px;background:${a >= 5 ? "var(--ok)" : a === 4 ? "var(--warn)" : a ? "var(--bad)" : "var(--surface2)"};opacity:${a ? 1 : .6}"></div><div class="lbl" style="margin-top:4px">${a}</div></div>`; }).join("");
   const recs = Object.entries(S.logs).map(([vid, a]) => { let best = 0; a.forEach(l => l.sets.forEach(x => best = Math.max(best, x.kg))); let nm = vid; PLAN && DAY_ORDER.forEach(L => PLAN[L].ex.forEach(e => e.v.forEach(v => { if (v[0] === vid) nm = v[1]; }))); return [nm, best, a.length]; }).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const lastNeck = S.neck[S.neck.length - 1];
   $("#v-evol").innerHTML = `
-  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">EvoluÃ§Ã£o</h2><p class="muted">Pesagem semanal, segunda ao acordar. O pescoÃ§o clareia antes da balanÃ§a.</p></section>
+  <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Evolução</h2><p class="muted">Pesagem semanal, segunda ao acordar. O pescoço clareia antes da balança.</p></section>
   <section class="card">
-    <div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${r1(w)} <span class="muted" style="font-size:16px">kg</span></div></div><div style="text-align:right"><div class="lbl">Desde o inÃ­cio</div><div class="mid tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${r1(w - s) > 0 ? "+" : ""}${r1(w - s)} kg</div></div></div>
-    <div class="bar acc"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${s} kg</span><span class="lbl">Meta ${g} kg Â· faltam ${r1(Math.max(0, w - g))}</span></div>
+    <div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${r1(w)} <span class="muted" style="font-size:16px">kg</span></div></div><div style="text-align:right"><div class="lbl">Desde o início</div><div class="mid tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${r1(w - s) > 0 ? "+" : ""}${r1(w - s)} kg</div></div></div>
+    <div class="bar acc"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${s} kg</span><span class="lbl">Meta ${g} kg · faltam ${r1(Math.max(0, w - g))}</span></div>
     ${chartSVG()}
     <button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
-    <p class="muted" style="font-size:15px">Nunca se pese depois de furar: o nÃºmero vem inflado por sÃ³dio e Ã¡gua e vocÃª vai ler como gordura.</p>
-    ${S.weights.length ? `<div class="list">${S.weights.slice(-6).reverse().map(x => `<div class="li"><div class="grow"><b class="tabnum">${x.kg} kg</b>${x.waist ? `<span class="muted"> Â· cintura ${x.waist} cm</span>` : ""}</div><span class="muted">${dispDate(x.d)}</span></div>`).join("")}</div>` : ""}
+    <p class="muted" style="font-size:15px">Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
+    ${S.weights.length ? `<div class="list">${S.weights.slice(-6).reverse().map(x => `<div class="li"><div class="grow"><b class="tabnum">${x.kg} kg</b>${x.waist ? `<span class="muted"> · cintura ${x.waist} cm</span>` : ""}</div><span class="muted">${dispDate(x.d)}</span></div>`).join("")}</div>` : ""}
   </section>
   <section class="card"><div class="lbl">Marcos</div><div class="list">${ms}</div></section>
   <section class="card">
-    <div class="lbl">TermÃ´metro do pescoÃ§o (acantose)</div>
+    <div class="lbl">Termômetro do pescoço (acantose)</div>
     <p class="muted">Compare a mancha com o espelho, a cada 2 semanas. 1 = bem escura, 5 = quase sumiu.</p>
     <div class="seg">${[1, 2, 3, 4, 5].map(v => `<button class="${lastNeck && lastNeck.v === v && lastNeck.d === today() ? "on" : ""}" data-act="neck" data-v="${v}">${v}</button>`).join("")}</div>
-    ${S.neck.length ? `<div class="muted" style="font-size:15px">${S.neck.slice(-6).map(n => `${dispDate(n.d)}: ${n.v}`).join(" Â· ")}</div>` : ""}
+    ${S.neck.length ? `<div class="muted" style="font-size:15px">${S.neck.slice(-6).map(n => `${dispDate(n.d)}: ${n.v}`).join(" · ")}</div>` : ""}
   </section>
-  <section class="card"><div class="lbl">Ritmo das Ãºltimas 8 semanas</div><div class="row" style="gap:6px;align-items:flex-start">${wkSq}</div><p class="muted" style="font-size:14px">Verde = 5+ dias ativos Â· amarelo = 4 Â· vermelho = menos.</p></section>
+  <section class="card"><div class="lbl">Ritmo das últimas 8 semanas</div><div class="row" style="gap:6px;align-items:flex-start">${wkSq}</div><p class="muted" style="font-size:14px">Verde = 5+ dias ativos · amarelo = 4 · vermelho = menos.</p></section>
   ${recs.length ? `<section class="card"><div class="lbl">Maiores cargas registradas</div><div class="list">${recs.map(r => `<div class="li"><div class="grow">${esc(r[0])}</div><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div></section>` : ""}`;
 }
 
@@ -1729,7 +1729,7 @@ function rEvol() {
 function suppCatalogHTML() {
   let a = SUPP_CATALOG.filter(x => UI.supType === "all" || x.t === UI.supType);
   a = a.slice().sort((p, q) => UI.supSort === "price" ? (p.price - q.price || q.help - p.help) : (q.help - p.help || p.price - q.price));
-  return a.map(x => `<div class="tile" style="display:flex;flex-direction:column;gap:6px"><div class="row between"><b>${x.n}</b><span class="tag">${x.t === "M" ? "LEVAR AO MÃ‰DICO" : "SUPLEMENTO"}</span></div>
+  return a.map(x => `<div class="tile" style="display:flex;flex-direction:column;gap:6px"><div class="row between"><b>${x.n}</b><span class="tag">${x.t === "M" ? "LEVAR AO MÉDICO" : "SUPLEMENTO"}</span></div>
     <div class="row wrap gap6"><span class="pill acc">Custo ${"$".repeat(x.price)}</span><span class="pill ok">Ajuda ${x.help}/5</span></div>
     <div style="font-size:16px">${x.why}</div><div class="muted" style="font-size:15px"><b>Risco:</b> ${x.risk}</div></div>`).join("");
 }
@@ -1740,48 +1740,48 @@ function rMais() {
   <section class="card"><img class="logo-card" src="data:image/jpeg;base64,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" alt="Still I Rise, por Hobert Silva Santos, Salvador BR" width="240" height="240"></section>
   <section class="card">
     <div class="lbl">Metas nutricionais (Mifflin-St Jeor)</div>
-    <div class="grid2"><div class="tile in"><div class="lbl">TMB</div><div class="mid tabnum">${fmtInt(tg.tmb)}</div></div><div class="tile in"><div class="lbl">Gasto total</div><div class="mid tabnum">${fmtInt(tg.tdee)}</div></div><div class="tile in"><div class="lbl">Meta diÃ¡ria</div><div class="mid tabnum">${fmtInt(tg.kcal)} kcal</div></div><div class="tile in"><div class="lbl">ProteÃ­na</div><div class="mid tabnum">${tg.prot} g</div></div></div>
-    <p class="muted" style="font-size:15px">Calculado para ${r1(s.calcWeight)} kg, dÃ©ficit de 1.000 kcal, piso de 1.800. Recalcula sozinho a cada 4 kg de variaÃ§Ã£o.</p>
-    <div class="row between"><span class="grow">${esc(S.profile.name)} Â· ${S.profile.height} cm Â· ${S.profile.age} anos</span><button class="btn sm" data-act="profile">${ic("edit")} Editar</button></div>
+    <div class="grid2"><div class="tile in"><div class="lbl">TMB</div><div class="mid tabnum">${fmtInt(tg.tmb)}</div></div><div class="tile in"><div class="lbl">Gasto total</div><div class="mid tabnum">${fmtInt(tg.tdee)}</div></div><div class="tile in"><div class="lbl">Meta diária</div><div class="mid tabnum">${fmtInt(tg.kcal)} kcal</div></div><div class="tile in"><div class="lbl">Proteína</div><div class="mid tabnum">${tg.prot} g</div></div></div>
+    <p class="muted" style="font-size:15px">Calculado para ${r1(s.calcWeight)} kg, déficit de 1.000 kcal, piso de 1.800. Recalcula sozinho a cada 4 kg de variação.</p>
+    <div class="row between"><span class="grow">${esc(S.profile.name)} · ${S.profile.height} cm · ${S.profile.age} anos</span><button class="btn sm" data-act="profile">${ic("edit")} Editar</button></div>
   </section>
   <section class="card">
-    <div class="lbl">Suplementos e remÃ©dios</div>
-    <p class="muted" style="font-size:15px">Informativo, sem doses de remÃ©dio. Tudo que Ã© prescriÃ§Ã£o deve ser decidido com seu mÃ©dico. GLP-1 ficou de fora por decisÃ£o sua.</p>
+    <div class="lbl">Suplementos e remédios</div>
+    <p class="muted" style="font-size:15px">Informativo, sem doses de remédio. Tudo que é prescrição deve ser decidido com seu médico. GLP-1 ficou de fora por decisão sua.</p>
     <div class="seg"><button class="${UI.supSort === "price" ? "on" : ""}" data-act="sup-sort" data-v="price">Menor custo</button><button class="${UI.supSort === "help" ? "on" : ""}" data-act="sup-sort" data-v="help">Mais ajuda</button></div>
-    <div class="seg"><button class="${UI.supType === "all" ? "on" : ""}" data-act="sup-type" data-v="all">Todos</button><button class="${UI.supType === "S" ? "on" : ""}" data-act="sup-type" data-v="S">Suplementos</button><button class="${UI.supType === "M" ? "on" : ""}" data-act="sup-type" data-v="M">Levar ao mÃ©dico</button></div>
+    <div class="seg"><button class="${UI.supType === "all" ? "on" : ""}" data-act="sup-type" data-v="all">Todos</button><button class="${UI.supType === "S" ? "on" : ""}" data-act="sup-type" data-v="S">Suplementos</button><button class="${UI.supType === "M" ? "on" : ""}" data-act="sup-type" data-v="M">Levar ao médico</button></div>
     <div style="display:flex;flex-direction:column;gap:10px" id="supcat">${suppCatalogHTML()}</div>
   </section>
   <section class="card">
-    <div class="lbl">AparÃªncia</div>
+    <div class="lbl">Aparência</div>
     <div class="seg"><button class="${s.theme === "auto" ? "on" : ""}" data-act="theme" data-v="auto">Auto</button><button class="${s.theme === "light" ? "on" : ""}" data-act="theme" data-v="light">Claro</button><button class="${s.theme === "dark" ? "on" : ""}" data-act="theme" data-v="dark">Escuro</button></div>
     <div class="lbl" style="margin-top:6px">Registro no Modo Treino</div>
-    <div class="seg"><button class="${s.logMode === "set" ? "on" : ""}" data-act="logmode" data-v="set">1 toque por sÃ©rie</button><button class="${s.logMode === "end" ? "on" : ""}" data-act="logmode" data-v="end">Ao final</button></div>
+    <div class="seg"><button class="${s.logMode === "set" ? "on" : ""}" data-act="logmode" data-v="set">1 toque por série</button><button class="${s.logMode === "end" ? "on" : ""}" data-act="logmode" data-v="end">Ao final</button></div>
   </section>
   <section class="card">
-    <div class="lbl">NotificaÃ§Ãµes</div>
-    <div class="row between"><span class="grow">Avisar fim do descanso e prÃ³ximo exercÃ­cio</span><button class="tog ${s.notif ? "on" : ""}" data-act="notif" aria-label="notificaÃ§Ãµes"><i></i></button></div>
-    ${banner("warn", "info", "Com o app fechado", "Um app web nÃ£o consegue disparar alarme sozinho (05:00, Ã¡gua). Por isso o app gera lembretes para o calendÃ¡rio do seu celular, que tocam mesmo com ele fechado. O aviso de fim de descanso acima sÃ³ funciona com o app aberto.")}
-    <button class="btn full" data-act="rem-open">${ic("download")} Criar lembretes no calendÃ¡rio</button>
+    <div class="lbl">Notificações</div>
+    <div class="row between"><span class="grow">Avisar fim do descanso e próximo exercício</span><button class="tog ${s.notif ? "on" : ""}" data-act="notif" aria-label="notificações"><i></i></button></div>
+    ${banner("warn", "info", "Com o app fechado", "Um app web não consegue disparar alarme sozinho (05:00, água). Por isso o app gera lembretes para o calendário do seu celular, que tocam mesmo com ele fechado. O aviso de fim de descanso acima só funciona com o app aberto.")}
+    <button class="btn full" data-act="rem-open">${ic("download")} Criar lembretes no calendário</button>
   </section>
   
   <section class="card">
     <div class="lbl">Dados e backup</div>
-    <p class="muted" style="font-size:15px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o Ãºnico que sobrevive Ã  troca de celular. ${bk ? `Ãšltimo backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
+    <p class="muted" style="font-size:15px">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(k, bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
     <div class="grid2"><button class="btn" data-act="export">${ic("download")} Exportar</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
     <input type="file" id="file" accept="application/json,.json" hidden>
   </section>
   <section class="card">
-    <div class="lbl">Protocolo de recaÃ­da</div>
-    <p class="muted" style="font-size:16px"><b>Furou uma refeiÃ§Ã£o:</b> a prÃ³xima Ã© normal. NÃ£o compensa pulando nem treina dobrado.<br><b>Furou um dia:</b> entra como dia ruim e amanhÃ£ segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda Ã© dÃ©ficit.<br><b>Furou uma semana:</b> volte pelo menor degrau: sÃ³ nÃ£o beber aÃ§Ãºcar. Os outros hÃ¡bitos voltam depois.<br><b>Nunca se pese apÃ³s furar.</b></p>
+    <div class="lbl">Protocolo de recaída</div>
+    <p class="muted" style="font-size:16px"><b>Furou uma refeição:</b> a próxima é normal. Não compensa pulando nem treina dobrado.<br><b>Furou um dia:</b> entra como dia ruim e amanhã segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda é déficit.<br><b>Furou uma semana:</b> volte pelo menor degrau: só não beber açúcar. Os outros hábitos voltam depois.<br><b>Nunca se pese após furar.</b></p>
   </section>
   <section class="card"><button class="btn danger full" data-act="reset">Apagar todos os dados</button></section>
     <div style="text-align:center; padding:30px 0 20px; color:var(--muted); font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase;">
-      âš¡ Powered by Hobert Silva
+      ⚡ Powered by Hobert Silva
     </div>`;
-  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const e = $("#persist"); if (e) e.textContent = p ? "Armazenamento persistente ativo." : "Armazenamento persistente nÃ£o concedido: exporte backups."; });
+  if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const e = $("#persist"); if (e) e.textContent = p ? "Armazenamento persistente ativo." : "Armazenamento persistente não concedido: exporte backups."; });
 }
 
-/* ============ aÃ§Ãµes ============ */
+/* ============ ações ============ */
 function exportData() {
   const safe = JSON.parse(JSON.stringify(S)); delete safe.settings.gemKey;
   const blob = new Blob([JSON.stringify(safe, null, 1)], { type: "application/json" });
@@ -1792,8 +1792,8 @@ function exportData() {
 function weighSheet() {
   const k = today(), y = !isActive(addDays(k, -1)) && S.weights.length;
   openSheet(`<h3 class="mid">Registrar peso</h3>
-  <p class="muted">Ao acordar, depois do banheiro, antes de comer. Sempre nas mesmas condiÃ§Ãµes.</p>
-  ${y ? banner("warn", "info", "Ontem foi um dia difÃ­cil", "O nÃºmero pode estar inflado por sÃ³dio e Ã¡gua. Se puder, espere a prÃ³xima segunda.") : ""}
+  <p class="muted">Ao acordar, depois do banheiro, antes de comer. Sempre nas mesmas condições.</p>
+  ${y ? banner("warn", "info", "Ontem foi um dia difícil", "O número pode estar inflado por sódio e água. Se puder, espere a próxima segunda.") : ""}
   <label class="lbl">Peso (kg)</label><input class="field" id="wkg" inputmode="decimal" placeholder="${r1(curWeight())}">
   <label class="lbl">Cintura (cm, opcional)</label><input class="field" id="wwaist" inputmode="decimal" placeholder="ex.: 128">
   <button class="btn solid full" data-act="weigh-save">SALVAR</button>`);
@@ -1806,10 +1806,10 @@ function profileSheet() {
   <button class="btn solid full" data-act="profile-save">SALVAR</button>`);
 }
 function quickSheet() {
-  openSheet(`<h3 class="mid">Adicionar por rÃ³tulo</h3>
-  <input class="field" id="qn" placeholder="Nome (ex.: Barra de proteÃ­na)">
-  <div class="grid2"><input class="field" id="qk" inputmode="decimal" placeholder="kcal totais"><input class="field" id="qp" inputmode="decimal" placeholder="proteÃ­na (g)"></div>
-  <div class="chips">${["CafÃ© da manhÃ£", "AlmoÃ§o", "Lanche", "Jantar", "Ceia"].map(m => `<button class="chip ${UI.meal === m ? "on" : ""}" data-act="meal-sel" data-m="${m}">${m}</button>`).join("")}</div>
+  openSheet(`<h3 class="mid">Adicionar por rótulo</h3>
+  <input class="field" id="qn" placeholder="Nome (ex.: Barra de proteína)">
+  <div class="grid2"><input class="field" id="qk" inputmode="decimal" placeholder="kcal totais"><input class="field" id="qp" inputmode="decimal" placeholder="proteína (g)"></div>
+  <div class="chips">${["Café da manhã", "Almoço", "Lanche", "Jantar", "Ceia"].map(m => `<button class="chip ${UI.meal === m ? "on" : ""}" data-act="meal-sel" data-m="${m}">${m}</button>`).join("")}</div>
   <button class="btn solid full" data-act="quick-add">ADICIONAR</button>`);
 }
 
@@ -1821,7 +1821,7 @@ document.addEventListener("click", e => {
   switch (a) {
     case "habit": {
       const d = DW(k), wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5; d.h[b.dataset.id] = !d.h[b.dataset.id]; save(); render(); haptic();
-      if (!wasA && isActive(k)) toast(activeInWeek(mondayOf(k)) >= 5 && !wasW ? "Meta da semana cumprida. Isso Ã© ritmo." : "Dia ativo. Este dia conta.");
+      if (!wasA && isActive(k)) toast(activeInWeek(mondayOf(k)) >= 5 && !wasW ? "Meta da semana cumprida. Isso é ritmo." : "Dia ativo. Este dia conta.");
       break;
     }
     case "supp": { const d = DW(k); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); break; }
@@ -1837,35 +1837,35 @@ document.addEventListener("click", e => {
     case "wk-warmset": { const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i; dd.sets[i].done = !dd.sets[i].done; save(); wkRender(); break; }
     case "wk-set": {
       const st = stepsOf(c.day)[c.i], dd = wkData(st), i = +b.dataset.i, s = dd.sets[i]; s.done = !s.done; save(); wkRender(); haptic(15);
-      if (s.done && i < dd.sets.length - 1) startRest(st.e.rest, `PrÃ³xima: sÃ©rie ${i + 2} de ${dd.sets.length}`);
-      else if (s.done) { const st2 = stepsOf(c.day); const nx = st2[c.i + 1]; if (nx) startRest(60, `PrÃ³ximo: ${nx.t === "warm" ? nx.c.name : findV(nx.e, varId(nx.e))[1]}`); }
+      if (s.done && i < dd.sets.length - 1) startRest(st.e.rest, `Próxima: série ${i + 2} de ${dd.sets.length}`);
+      else if (s.done) { const st2 = stepsOf(c.day); const nx = st2[c.i + 1]; if (nx) startRest(60, `Próximo: ${nx.t === "warm" ? nx.c.name : findV(nx.e, varId(nx.e))[1]}`); }
       break;
     }
     case "goto-treino": UI.pickDay = b.dataset.day; go("treino"); break;
     case "sum-next": if (["A", "D", "E"].includes(b.dataset.day)) painSheet(b.dataset.day); else closeSheet(); render(); break;
     case "wk-adj": { const st = stepsOf(c.day)[c.i], dd = wkData(st), f = b.dataset.f, d = num(b.dataset.d), p = dd.sets.findIndex(x => !x.done); if (p < 0) break; for (let i = p; i < dd.sets.length; i++) if (!dd.sets[i].done) dd.sets[i][f] = Math.max(0, r1(num(dd.sets[i][f]) + d)); save(); wkRender(); haptic(); break; }
-    case "wk-allset": { const st = stepsOf(c.day)[c.i], dd = wkData(st); dd.sets.forEach(s => s.done = true); save(); notify("ExercÃ­cio registrado", "PrÃ³ximo exercÃ­cio."); wkNext(); break; }
+    case "wk-allset": { const st = stepsOf(c.day)[c.i], dd = wkData(st); dd.sets.forEach(s => s.done = true); save(); notify("Exercício registrado", "Próximo exercício."); wkNext(); break; }
     case "wk-var": { const st = stepsOf(c.day)[c.i]; S.sel[st.e.id] = b.dataset.v; delete c.data[st.e.id]; save(); wkRender(); break; }
     case "rest-adj": { const s = num(b.dataset.s); if (RT.paused !== null) RT.paused = Math.max(1, RT.paused + s); else RT.end += s * 1000; RT.total = Math.max(1, RT.total + s); restDraw(); break; }
     case "rest-pause": if (RT.paused === null) RT.paused = restLeft(); else { RT.end = Date.now() + RT.paused * 1000; RT.paused = null; } restDraw(); break;
     case "rest-skip": closeRest(); break;
-    case "pain": S.pain.push({ d: today(), day: S.days[today()]?.wk || "", v: +b.dataset.v }); save(); closeSheet(); toast(`Dor ${b.dataset.v}/10 registrada.`); if (painAvg() >= 4) toast("MÃ©dia de dor â‰¥ 4: procure um fisioterapeuta."); break;
+    case "pain": S.pain.push({ d: today(), day: S.days[today()]?.wk || "", v: +b.dataset.v }); save(); closeSheet(); toast(`Dor ${b.dataset.v}/10 registrada.`); if (painAvg() >= 4) toast("Média de dor ≥ 4: procure um fisioterapeuta."); break;
     case "close": closeSheet(); break;
     case "cat": UI.cat = b.dataset.c; rComer(); break;
     case "food": if (b.dataset.m) UI.meal = b.dataset.m; foodSheet(+b.dataset.i); break;
     case "meal-sel": UI.meal = b.dataset.m; $$("[data-act=meal-sel]").forEach(x => x.classList.toggle("on", x.dataset.m === UI.meal)); { const fb = $("#favbtn"); if (fb) fb.outerHTML = favBtn(+fb.dataset.i); } break;
     case "g-adj": { const inp = $("#g"); inp.value = Math.max(0, num(inp.value) + num(b.dataset.s)); gSum(+inp.dataset.i); break; }
     case "g-set": { const inp = $("#g"); inp.value = b.dataset.g; gSum(+inp.dataset.i); break; }
-    case "food-add": { const f = FOODS[+b.dataset.i], gm = num($("#g").value); if (gm <= 0) return; const d = DW(k); d.meals.push({ t: Date.now(), n: f[0], g: gm, k: f[1] * gm / 100, p: f[2] * gm / 100, m: UI.meal }); if (f[5] === "Bebidas" && /COM aÃ§Ãºcar/.test(f[0])) d.h.acucar = false; save(); closeSheet(); render(); toast("Adicionado."); break; }
+    case "food-add": { const f = FOODS[+b.dataset.i], gm = num($("#g").value); if (gm <= 0) return; const d = DW(k); d.meals.push({ t: Date.now(), n: f[0], g: gm, k: f[1] * gm / 100, p: f[2] * gm / 100, m: UI.meal }); if (f[5] === "Bebidas" && /COM açúcar/.test(f[0])) d.h.acucar = false; save(); closeSheet(); render(); toast("Adicionado."); break; }
     case "meal-del": { DW(k).meals.splice(+b.dataset.i, 1); save(); render(); break; }
     case "quick": quickSheet(); break;
-    case "quick-add": { const kc = num($("#qk").value), pr = num($("#qp").value), nm = $("#qn").value.trim() || "Item de rÃ³tulo"; if (kc <= 0) return toast("Informe as kcal."); DW(k).meals.push({ t: Date.now(), n: nm, g: 0, k: kc, p: pr, m: UI.meal }); save(); closeSheet(); render(); break; }
+    case "quick-add": { const kc = num($("#qk").value), pr = num($("#qp").value), nm = $("#qn").value.trim() || "Item de rótulo"; if (kc <= 0) return toast("Informe as kcal."); DW(k).meals.push({ t: Date.now(), n: nm, g: 0, k: kc, p: pr, m: UI.meal }); save(); closeSheet(); render(); break; }
     case "weigh": weighSheet(); break;
     case "weigh-save": {
-      const kg = num($("#wkg").value), waist = num($("#wwaist").value); if (kg < 40 || kg > 300) return toast("Peso invÃ¡lido.");
+      const kg = num($("#wkg").value), waist = num($("#wwaist").value); if (kg < 40 || kg > 300) return toast("Peso inválido.");
       S.weights = S.weights.filter(x => x.d !== k); S.weights.push({ d: k, kg: r1(kg), waist: waist || null }); S.weights.sort((x, y) => x.d < y.d ? -1 : 1);
       let msg = "Peso registrado.";
-      if (Math.abs(kg - S.settings.calcWeight) >= 4) { S.settings.calcWeight = r1(kg); msg = `Peso registrado. Metas recalculadas: ${fmtInt(TG().kcal)} kcal e ${TG().prot} g de proteÃ­na.`; }
+      if (Math.abs(kg - S.settings.calcWeight) >= 4) { S.settings.calcWeight = r1(kg); msg = `Peso registrado. Metas recalculadas: ${fmtInt(TG().kcal)} kcal e ${TG().prot} g de proteína.`; }
       save(); closeSheet(); render(); toast(msg); break;
     }
     case "neck": S.neck = S.neck.filter(n => n.d !== k); S.neck.push({ d: k, v: +b.dataset.v }); save(); render(); break;
@@ -1877,15 +1877,15 @@ document.addEventListener("click", e => {
     case "logmode": S.settings.logMode = b.dataset.v; save(); rMais(); break;
     case "notif": {
       if (S.settings.notif) { S.settings.notif = false; save(); rMais(); break; }
-      if (!("Notification" in window)) return toast("Este navegador nÃ£o suporta notificaÃ§Ãµes.");
-      Notification.requestPermission().then(p => { S.settings.notif = p === "granted"; save(); rMais(); toast(p === "granted" ? "NotificaÃ§Ãµes ativadas." : "PermissÃ£o negada."); });
+      if (!("Notification" in window)) return toast("Este navegador não suporta notificações.");
+      Notification.requestPermission().then(p => { S.settings.notif = p === "granted"; save(); rMais(); toast(p === "granted" ? "Notificações ativadas." : "Permissão negada."); });
       break;
     }
     case "foto": fotoIniciar(); break;
     case "gem-save": { const kEl = $("#gemKey"), mEl = $("#gemModel"), kv = kEl ? kEl.value.trim() : null, mv = mEl ? mEl.value.trim() : null; if (kv) S.settings.gemKey = kv; if (mv) S.settings.gemModel = mv; save(); render(); toast(kv ? "Chave configurada." : "Modelo atualizado."); break; }
     case "gem-clear": S.settings.gemKey = ""; S.settings.gemAck = false; save(); rMais(); toast("Chave removida."); break;
     case "ia-del": IA.items.splice(+b.dataset.i, 1); if (!IA.items.length) closeSheet(); else iaSheet(); break;
-    case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ t: Date.now(), n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: Ã© estimativa."); haptic(); break; }
+    case "ia-add": { const d = DW(k); IA.items.forEach(x => d.meals.push({ t: Date.now(), n: "IA: " + x.nome, g: x.g, k: x.k, p: x.p, m: UI.meal })); save(); closeSheet(); render(); toast("Adicionado. Lembre: é estimativa."); haptic(); break; }
     case "recent": recenteSheet(+b.dataset.i); break;
     case "recent-add": { const m = IA.rec; if (!m) break; DW(k).meals.push({ t: Date.now(), n: m.n, g: m.g, k: m.k, p: m.p, m: UI.meal }); save(); closeSheet(); render(); toast("Adicionado."); haptic(); break; }
     
@@ -1930,7 +1930,7 @@ document.addEventListener("change", e => {
   if (e.target.id === "foto") { const f = e.target.files[0]; e.target.value = ""; if (f) fotoAnalisar(f); return; }
   if (e.target.id !== "file") return;
   const f = e.target.files[0]; if (!f) return;
-  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const oldKey = S.settings.gemKey; S = mergeDefaults(o); S.settings.gemKey = oldKey; save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo invÃ¡lido."));
+  f.text().then(tx => { const o = JSON.parse(tx); if (!o || typeof o !== "object" || !o.profile || !o.days) throw 0; if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return; const oldKey = S.settings.gemKey; S = mergeDefaults(o); S.settings.gemKey = oldKey; save(); applyTheme(); go("deck"); toast("Backup importado."); }).catch(() => toast("Arquivo inválido."));
   e.target.value = "";
 });
 $("#themeBtn").addEventListener("click", () => { const dark = document.documentElement.dataset.theme === "dark"; S.settings.theme = dark ? "light" : "dark"; save(); applyTheme(); if (UI.tab === "mais") rMais(); });
@@ -1986,20 +1986,20 @@ function rComer() {
     ext.id = "agy-comer-ext";
     ext.innerHTML = `
       <div class="card">
-        <h3 class="h1" style="font-size:20px;">Meta Fibras & RefeiÃ§Ã£o RÃ¡pida</h3>
+        <h3 class="h1" style="font-size:20px;">Meta Fibras & Refeição Rápida</h3>
         <div class="row between"><div class="lbl">Fibras (Meta: 30g)</div><div style="font-weight:700">${d.fiber}g</div></div>
         <div class="bar"><i style="width:${Math.min((d.fiber/30)*100, 100)}%; background:var(--ok)"></i></div>
         <div class="alert-glicose" id="agyWalkAlert" style="display:none; background:var(--warn-soft); border-left:4px solid var(--warn); padding:12px; border-radius:8px; margin-top:12px;">
-            <strong>Pico GlicÃªmico!</strong> Caminhe 10-15 min para regular.
-            <button class="btn sm ghost" style="margin-top:10px" onclick="document.getElementById('agyWalkAlert').style.display='none'">Fiz a caminhada âœ…</button>
+            <strong>Pico Glicêmico!</strong> Caminhe 10-15 min para regular.
+            <button class="btn sm ghost" style="margin-top:10px" onclick="document.getElementById('agyWalkAlert').style.display='none'">Fiz a caminhada ✅</button>
         </div>
-        <button class="btn solid full" style="margin-top:10px;" id="btnStdLunch">ðŸ± Meu AlmoÃ§o PadrÃ£o (40g P / 10g F)</button>
+        <button class="btn solid full" style="margin-top:10px;" id="btnStdLunch">🍱 Meu Almoço Padrão (40g P / 10g F)</button>
       </div>
     `;
     vComer.appendChild(ext);
 
     document.getElementById("btnStdLunch").addEventListener("click", () => {
-        d.meals.push({ t: Date.now(), n: "AlmoÃ§o PadrÃ£o (Antigravity)", g: 0, k: 450, p: 40, m: "AlmoÃ§o" });
+        d.meals.push({ t: Date.now(), n: "Almoço Padrão (Antigravity)", g: 0, k: 450, p: 40, m: "Almoço" });
         d.fiber += 10;
         save();
         rComer(); 
@@ -2035,7 +2035,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const rW = document.getElementById("revW");
           const rS = document.getElementById("revSug");
           if(rW) rW.innerText = "Semana " + weekNo() + "/8";
-          if(weekNo() >= 8 && rS) rS.innerText = "Semana de ManutenÃ§Ã£o! Teste cargas mÃ¡ximas.";
+          if(weekNo() >= 8 && rS) rS.innerText = "Semana de Manutenção! Teste cargas máximas.";
           const sheet = document.getElementById("reviewSheet");
           if(sheet) sheet.classList.add("on");
       }
@@ -2081,7 +2081,7 @@ function updateAuraCore() {
         auraContainer.className = "aura-container";
         auraContainer.innerHTML = `
             <div class="aura-core" id="auraCoreEl"></div>
-            <div class="aura-msg" id="auraMsgEl">O nÃºcleo estÃ¡ ocioso. Vamos alimentar essa mÃ¡quina?</div>
+            <div class="aura-msg" id="auraMsgEl">O núcleo está ocioso. Vamos alimentar essa máquina?</div>
         `;
     }
     
@@ -2098,15 +2098,15 @@ function updateAuraCore() {
     
     if(prot >= 160 && hasCardio) {
         core.className = "aura-core overdrive";
-        msg.innerText = "Overdrive ativado. Suas fibras e proteÃ­nas estÃ£o otimizadas.";
+        msg.innerText = "Overdrive ativado. Suas fibras e proteínas estão otimizadas.";
         msg.style.color = "var(--accent)";
     } else if (prot >= 40 || water > 1000) {
         core.className = "aura-core fed";
-        msg.innerText = "O nÃºcleo absorveu energia. Mantenha o fluxo de proteÃ­na e hidrataÃ§Ã£o.";
+        msg.innerText = "O núcleo absorveu energia. Mantenha o fluxo de proteína e hidratação.";
         msg.style.color = "var(--text)";
     } else {
         core.className = "aura-core";
-        msg.innerText = "Sua aura precisa fluir. Tome um copo grande de Ã¡gua agora.";
+        msg.innerText = "Sua aura precisa fluir. Tome um copo grande de água agora.";
         msg.style.color = "var(--muted)";
     }
 }
@@ -2156,11 +2156,11 @@ if (typeof rTreino !== 'undefined') {
             const vTreino = document.getElementById("v-treino");
             if (vTreino) {
                 vTreino.innerHTML = `
-                <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta Ã s 5h, seguindo a sequÃªncia A a E.</p></section>
+                <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Treino</h2><p class="muted">Segunda a sexta às 5h, seguindo a sequência A a E.</p></section>
                 <section class="card" style="text-align:center; padding: 40px 20px;">
-                    <div style="font-size:50px; margin-bottom:15px; animation: aura-levitate 3s infinite;">ðŸ›¡ï¸</div>
-                    <h3 class="mid" style="font-size: 22px; color: var(--text);">Tudo bem, o foco hoje Ã© na dieta.</h3>
-                    <p class="muted" style="margin-top: 10px; line-height: 1.5;">VocÃª marcou que nÃ£o conseguiu ir hoje. O seu treino <b style="color:var(--text);">${L} - ${pName}</b> estÃ¡ guardado para amanhÃ£. A sua sequÃªncia nÃ£o foi quebrada.</p>
+                    <div style="font-size:50px; margin-bottom:15px; animation: aura-levitate 3s infinite;">🛡️</div>
+                    <h3 class="mid" style="font-size: 22px; color: var(--text);">Tudo bem, o foco hoje é na dieta.</h3>
+                    <p class="muted" style="margin-top: 10px; line-height: 1.5;">Você marcou que não conseguiu ir hoje. O seu treino <b style="color:var(--text);">${L} - ${pName}</b> está guardado para amanhã. A sua sequência não foi quebrada.</p>
                     <button class="btn ghost full" style="margin-top:25px; border: 1px solid var(--line);" data-act="wk-unskip">Desfazer (Vou treinar sim!)</button>
                 </section>`;
             }
@@ -2183,7 +2183,7 @@ if (typeof rTreino !== 'undefined') {
                        skipBtn.style.marginTop = "12px";
                        skipBtn.style.color = "var(--muted)";
                        skipBtn.dataset.act = "wk-skip";
-                       skipBtn.innerText = "NÃ£o consegui ir hoje";
+                       skipBtn.innerText = "Não consegui ir hoje";
                        btnContainer.appendChild(skipBtn);
                     }
                 }
@@ -2223,7 +2223,7 @@ function orig_rDeck() {
     const ban = [];
     const ab = ABSENCE.find(a => abs >= a.min);
     if (ab) ban.push(banner("acc", "leaf", `${abs} dias sem registro`, ab.txt));
-    if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `VocÃª comeÃ§ou o treino ${S.cur.day}.`, '<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>'));
+    if (S.cur) ban.push(banner("acc", "play", "Treino em andamento", `Você começou o treino ${S.cur.day}.`, '<div style="margin-top:8px"><button class="btn sm solid" data-act="wk-resume">Continuar treino</button></div>'));
     
     const waterL = (d.water / 1000).toFixed(1);
     const habitsList = HABITS.map(([id, t]) => `<button class="chk ${d.h[id] ? "on" : ""} ${id === "acucar" ? "key" : ""}" data-act="habit" data-id="${id}"><span class="box">${ic("check")}</span><span class="t">${t}</span></button>`).join("");
@@ -2237,37 +2237,37 @@ function orig_rDeck() {
     
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 20px;">
        <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="agua">
-          <div style="font-size:24px; margin-bottom:5px;">ðŸ’§</div>
+          <div style="font-size:24px; margin-bottom:5px;">💧</div>
           <div style="font-weight:700; font-size:16px;">${waterL} L</div>
-          <div class="lbl">Ãgua Â· ${Math.round(Math.min(1, d.water / S.settings.waterGoal) * 100)}%</div>
+          <div class="lbl">Água · ${Math.round(Math.min(1, d.water / S.settings.waterGoal) * 100)}%</div>
        </div>
        <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="comer">
-          <div style="font-size:24px; margin-bottom:5px;">ðŸ±</div>
+          <div style="font-size:24px; margin-bottom:5px;">🍱</div>
           <div style="font-weight:700; font-size:16px;">${Math.round(tot.p)}g</div>
           <div class="lbl">+ Dieta</div>
        </div>
        <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" data-go="treino">
-          <div style="font-size:24px; margin-bottom:5px;">ðŸ‹ï¸â€â™‚ï¸</div>
+          <div style="font-size:24px; margin-bottom:5px;">🏋️‍♂️</div>
           <div style="font-weight:700; font-size:16px;">${L || "Descanso"}</div>
           <div class="lbl">Treino Hoje</div>
        </div>
        <div class="card" style="padding:15px; text-align:center; cursor:pointer; background:var(--surface2);" onclick="document.getElementById('cardioSheet').classList.add('on')">
-          <div style="font-size:24px; margin-bottom:5px;">ðŸ”¥</div>
+          <div style="font-size:24px; margin-bottom:5px;">🔥</div>
           <div style="font-weight:700; font-size:16px;">Cardio</div>
           <div class="lbl">Registrar</div>
        </div>
     </div>
     
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot ok"></span><span class="lbl" style="font-size:15px; font-weight:600;">HÃ¡bitos DiÃ¡rios (${habitCount(k)}/6)</span></span>${ic("down")}</summary><div class="body" style="display:flex;flex-direction:column;gap:10px">${habitsList}</div></details>
+    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot ok"></span><span class="lbl" style="font-size:15px; font-weight:600;">Hábitos Diários (${habitCount(k)}/6)</span></span>${ic("down")}</summary><div class="body" style="display:flex;flex-direction:column;gap:10px">${habitsList}</div></details>
     
-    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot sage"></span><span class="lbl" style="font-size:15px; font-weight:600;">SuplementaÃ§Ã£o (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})</span></span>${ic("down")}</summary><div class="body">${supList}</div></details>
+    <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot sage"></span><span class="lbl" style="font-size:15px; font-weight:600;">Suplementação (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})</span></span>${ic("down")}</summary><div class="body">${supList}</div></details>
     
     <details class="fold card" style="padding:0 14px; margin-bottom:10px;"><summary><span class="row"><span class="dot" style="background:var(--accent)"></span><span class="lbl" style="font-size:15px; font-weight:600;">Ritmo Semanal (${week}/5)</span></span>${ic("down")}</summary><div class="body">
        <div class="row" style="gap:16px; margin-top:10px;">
           ${ring(week / 5, 80, 6, "var(--sage)", '<div><div class="big tabnum">' + week + '<span class="muted" style="font-size:12px">/5</span></div></div>')}
           <div class="grow" style="display:flex;flex-direction:column;gap:10px">
-            <div class="tile row between"><div><div class="lbl">SequÃªncia de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
-            <div class="tile row between"><div><div class="lbl">SequÃªncia de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
+            <div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="mid tabnum">${ds}</div></div>${ic("flame")}</div>
+            <div class="tile row between"><div><div class="lbl">Sequência de semanas</div><div class="mid tabnum">${ws}</div></div>${ic("trend")}</div>
           </div>
         </div>
     </div></details>
@@ -2291,8 +2291,8 @@ function getMetabolicAdvice(k) {
     const h = now.getHours();
     const endOfDay = 22; // 22:00
     
-    if (h >= endOfDay) return { diet: "Dia finalizado. Hora de descansar o sistema digestivo.", water: "Beba Ã¡gua com moderaÃ§Ã£o agora para nÃ£o prejudicar o sono." };
-    if (h < 5) return { diet: "Madrugada. Se estiver acordado, mantenha-se hidratado.", water: "Beba Ã¡gua se tiver sede." };
+    if (h >= endOfDay) return { diet: "Dia finalizado. Hora de descansar o sistema digestivo.", water: "Beba água com moderação agora para não prejudicar o sono." };
+    if (h < 5) return { diet: "Madrugada. Se estiver acordado, mantenha-se hidratado.", water: "Beba água se tiver sede." };
     
     // 1. Diet Advice
     let dietAdvice = "";
@@ -2313,21 +2313,44 @@ function getMetabolicAdvice(k) {
     const protPerMeal = Math.round(remainingProt / mealsLeft);
     
     if (remainingProt <= 0) {
-        dietAdvice = "âœ… Meta de proteÃ­na batida! Se for comer mais tarde, priorize fibras e vegetais.";
+        dietAdvice = "✅ Meta de proteína batida! Se for comer mais tarde, priorize fibras e vegetais.";
     } else if (lastMealTime) {
         const diffHrs = (now - lastMealTime) / (1000 * 60 * 60);
         if (diffHrs < 2) {
             let nextH = Math.floor(lastMealTime.getHours() + 3.5);
             let nextM = Math.floor((lastMealTime.getHours() + 3.5 - nextH) * 60);
             let nextTimeStr = String(nextH).padStart(2, '0') + ":" + String(nextM).padStart(2, '0');
-            dietAdvice = "â³ VocÃª comeu hÃ¡ pouco tempo. PrÃ³xima janela anabÃ³lica sugerida: " + nextTimeStr + ". Faltam " + Math.round(remainingProt) + "g no dia.";
+            dietAdvice = "⏳ Você comeu há pouco tempo. Próxima janela anabólica sugerida: " + nextTimeStr + ". Faltam " + Math.round(remainingProt) + "g no dia.";
         } else if (diffHrs >= 3.5) {
-            dietAdvice = "ðŸ”¥ Janela anabÃ³lica aberta! Faltam " + Math.round(remainingProt) + "g no dia. Tente bater " + protPerMeal + "g na prÃ³xima refeiÃ§Ã£o.";
+            dietAdvice = "🔥 Janela anabólica aberta! Faltam " + Math.round(remainingProt) + "g no dia. Tente bater " + protPerMeal + "g na próxima refeição.";
         } else {
-            dietAdvice = "â³ Faltam " + Math.round(remainingProt) + "g no dia. SugestÃ£o para a prÃ³xima refeiÃ§Ã£o: " + protPerMeal + "g de proteÃ­na.";
+            dietAdvice = "⏳ Faltam " + Math.round(remainingProt) + "g no dia. Sugestão para a próxima refeição: " + protPerMeal + "g de proteína.";
         }
     } else {
-        dietAdvice = "ðŸŒ… Primeira refeiÃ§Ã£o do dia? Faltam " + Math.round(remainingProt) + "g. Comece forte com " + protPerMeal + "g de proteÃ­na!";
+        dietAdvice = "🌅 Primeira refeição do dia? Faltam " + Math.round(remainingProt) + "g. Comece forte com " + protPerMeal + "g de proteína!";
+    }
+    
+    if (remainingProt > 0 && h < endOfDay) {
+        const target = protPerMeal > 0 ? protPerMeal : Math.round(remainingProt);
+        const chicken = Math.round((target / 30) * 100);
+        const beef = Math.round((target / 26) * 100);
+        const eggs = Math.round(target / 6);
+        const cheese = Math.round((target / 25) * 100);
+        const whey = Math.round((target / 24) * 30);
+        dietAdvice += `
+        <details class="fold" style="margin-top:12px; background:var(--surface2);">
+          <summary style="font-size:13px; font-weight:600; color:var(--accent);">💡 Como bater ${target}g de proteína?</summary>
+          <div class="body" style="font-size:13px; line-height:1.5;">
+            <div style="font-weight:600; margin-top:5px; color:var(--text);">🥩 Carnes</div>
+            <div style="color:var(--muted);">~${chicken}g de Frango desfiado</div>
+            <div style="color:var(--muted);">~${beef}g de Patinho (moído)</div>
+            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥚 Laticínios e Ovos</div>
+            <div style="color:var(--muted);">~${eggs} Ovos inteiros</div>
+            <div style="color:var(--muted);">~${cheese}g de Queijo Muçarela</div>
+            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥤 Suplementos</div>
+            <div style="color:var(--muted);">~${whey}g de Whey Protein</div>
+          </div>
+        </details>`;
     }
     
     // 2. Water Advice
@@ -2335,13 +2358,13 @@ function getMetabolicAdvice(k) {
     const goalWater = (S.settings.waterGoal || 3000);
     const remainingWater = Math.max(0, goalWater - d.water);
     if (remainingWater <= 0) {
-        waterAdvice = "âœ… Meta de hidrataÃ§Ã£o batida!";
+        waterAdvice = "✅ Meta de hidratação batida!";
     } else {
         const mlPerHour = Math.round(remainingWater / hoursLeft);
         if (mlPerHour > 600) {
-            waterAdvice = "âš ï¸ VocÃª estÃ¡ desidratado para esse horÃ¡rio. Tome 500ml de Ã¡gua agora.";
+            waterAdvice = "⚠️ Você está desidratado para esse horário. Tome 500ml de água agora.";
         } else {
-            waterAdvice = "ðŸ’§ Ritmo ideal: tome aprox. " + mlPerHour + "ml de Ã¡gua por hora atÃ© as " + endOfDay + "h.";
+            waterAdvice = "💧 Ritmo ideal: tome aprox. " + mlPerHour + "ml de água por hora até as " + endOfDay + "h.";
         }
     }
     
@@ -2367,7 +2390,7 @@ orig_rDeck = function() {
         metaBanner.style.borderRadius = "12px";
         metaBanner.style.background = "var(--surface2)";
         metaBanner.style.borderLeft = "4px solid var(--accent)";
-        metaBanner.innerHTML = '<div style="font-size:14px; font-weight:600; margin-bottom:4px;">ðŸ§  Dica do NÃºcleo</div><div style="font-size:14px; color:var(--muted); line-height:1.4;">' + advice.diet + ' <br><span style="color:var(--text);">' + advice.water + '</span></div>';
+        metaBanner.innerHTML = '<div style="font-size:14px; font-weight:600; margin-bottom:4px;">🧠 Dica do Núcleo</div><div style="font-size:14px; color:var(--muted); line-height:1.4;">' + advice.diet + ' <br><span style="color:var(--text);">' + advice.water + '</span></div>';
         
         // Insert right after aura container
         vDeck.insertBefore(metaBanner, auraContainer.nextSibling);
@@ -2388,7 +2411,7 @@ orig_rComer = function() {
         metaBanner.className = "card";
         metaBanner.style.background = "var(--surface2)";
         metaBanner.style.borderTop = "4px solid var(--ok)";
-        metaBanner.innerHTML = '<h3 class="h1" style="font-size:18px; display:flex; align-items:center; gap:8px;">ðŸ§  InteligÃªncia MetabÃ³lica</h3><p class="muted" style="margin-top:8px;">' + advice.diet + '</p>';
+        metaBanner.innerHTML = '<h3 class="h1" style="font-size:18px; display:flex; align-items:center; gap:8px;">🧠 Inteligência Metabólica</h3><p class="muted" style="margin-top:8px;">' + advice.diet + '</p>';
         
         vComer.insertBefore(metaBanner, vComer.children[1]);
     }
@@ -2403,16 +2426,16 @@ function rIA() {
     if (!S.settings.gemKey) {
         vIA.innerHTML = `<section class="card" style="background:transparent;box-shadow:none;padding:0;margin-bottom:10px;">
            <h2 class="h1">A.I. Pessoal</h2>
-           <p class="muted">Conecte o cÃ©rebro da sua IA para ela analisar seus treinos, dieta e pratos de comida.</p>
+           <p class="muted">Conecte o cérebro da sua IA para ela analisar seus treinos, dieta e pratos de comida.</p>
         </section>
         <section class="card">
-            <div class="lbl">Chave API do Gemini (fica sÃ³ neste aparelho)</div>
+            <div class="lbl">Chave API do Gemini (fica só neste aparelho)</div>
             <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui">
             <label class="lbl">Modelo</label>
             
             <select class="field" id="gemModel" style="margin-bottom:10px;">
-                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (AvanÃ§ado - Requer Assinatura Pro)</option>
-                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (RÃ¡pido - PadrÃ£o)</option>
+                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
+                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
                 <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
             </select>
 
@@ -2425,9 +2448,9 @@ function rIA() {
     let msgsHTML = "";
     if (!S.chat || S.chat.length === 0) {
         msgsHTML = `<div style="text-align:center; padding:40px 20px;">
-           <div style="font-size:48px; margin-bottom:15px; animation:aura-levitate 3s infinite;">âœ¨</div>
+           <div style="font-size:48px; margin-bottom:15px; animation:aura-levitate 3s infinite;">✨</div>
            <h3 class="mid">Sou o seu assistente Aura</h3>
-           <p class="muted" style="margin-top:10px;">Eu conheÃ§o a sua dieta, seus treinos e seu histÃ³rico. Me pergunte qualquer coisa, peÃ§a para eu montar seu prato ou tire foto de um rÃ³tulo.</p>
+           <p class="muted" style="margin-top:10px;">Eu conheço a sua dieta, seus treinos e seu histórico. Me pergunte qualquer coisa, peça para eu montar seu prato ou tire foto de um rótulo.</p>
         </div>`;
     } else {
         msgsHTML = '<div class="chat-container">' + S.chat.map(m => `<div class="chat-msg ${m.role}">${esc(m.text || "").replace(/\n/g, "<br>")}${m.img ? `<div class="chat-msg img"><img src="data:image/jpeg;base64,${m.img}"></div>` : ""}</div>`).join("") + '<div id="ai-typing" style="display:none;" class="chat-msg ai typing">Pensando...</div></div>';
@@ -2439,13 +2462,13 @@ function rIA() {
            <h2 class="h1">A.I. Pessoal</h2>
            <div style="display:flex; gap:10px; align-items:center;">
              <button class="btn sm" data-act="ia-clear" style="padding:0 10px; font-size:12px; height:28px; background:var(--surface2);">🗑️ Nova</button>
-             <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">ðŸ”§ Modelo</summary>
+             <details class="fold" style="margin:0; padding:0; background:transparent;"><summary style="padding:0; margin:0; min-height:auto; font-size:13px; color:var(--accent);">🔧 Modelo</summary>
              <div class="body" style="padding:10px; margin-top:5px; background:var(--surface2); border-radius:8px;">
                <div class="lbl">Modelo Atual</div>
                
             <select class="field" id="gemModel" style="margin-bottom:10px;">
-                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (AvanÃ§ado - Requer Assinatura Pro)</option>
-                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (RÃ¡pido - PadrÃ£o)</option>
+                <option value="gemini-2.5-pro" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-2.5-pro' ? 'selected' : ''}>gemini-2.5-pro (Avançado - Requer Assinatura Pro)</option>
+                <option value="gemini-3.5-flash-lite" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.5-flash-lite' ? 'selected' : ''}>gemini-3.5-flash-lite (Rápido - Padrão)</option>
                 <option value="gemini-3.7-flash" ${'${S.settings.gemModel || "gemini-2.5-flash-lite"}' === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Equilibrado)</option>
             </select>
 
@@ -2489,21 +2512,21 @@ function buildAuraContext() {
     const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
     const L = typeof planLetter === 'function' ? planLetter(k) : "Descanso";
     
-    return `VocÃª Ã© a Aura, um assistente de saÃºde premium, direto, objetivo e amigÃ¡vel, integrado ao aplicativo Still I Rise.
-DADOS DO USUÃRIO HOJE:
-- Nome: ${S.profile.name || "UsuÃ¡rio"}
+    return `Você é a Aura, um assistente de saúde premium, direto, objetivo e amigável, integrado ao aplicativo Still I Rise.
+DADOS DO USUÁRIO HOJE:
+- Nome: ${S.profile.name || "Usuário"}
 - Meta de Calorias: ${Math.round(tot.k)} / ${tg.kcal} kcal
-- Meta de ProteÃ­na: ${Math.round(tot.p)} / ${tg.prot} g
-- Ãgua: ${(d.water/1000).toFixed(1)} / ${(S.settings.waterGoal/1000).toFixed(1)} L
+- Meta de Proteína: ${Math.round(tot.p)} / ${tg.prot} g
+- Água: ${(d.water/1000).toFixed(1)} / ${(S.settings.waterGoal/1000).toFixed(1)} L
 - Treino do Dia: ${L}
 - Fibras Consumidas: ${d.fiber || 0}g
-- HorÃ¡rio Atual: ${new Date().toLocaleTimeString()}
+- Horário Atual: ${new Date().toLocaleTimeString()}
 
 Regras:
-1. Responda de forma extremamente concisa, sem enrolaÃ§Ã£o. Use no mÃ¡ximo 2-3 parÃ¡grafos curtos.
+1. Responda de forma extremamente concisa, sem enrolação. Use no máximo 2-3 parágrafos curtos.
 2. Analise fotos de comida e sugira como encaixar na dieta restante do dia.
 3. Se perguntarem se podem comer algo, avalie se os macros restantes permitem.
-4. NUNCA diga que Ã© uma IA. Aja como o nÃºcleo inteligente do aplicativo. Mantenha um tom encorajador e prÃ¡tico.`;
+4. NUNCA diga que é uma IA. Aja como o núcleo inteligente do aplicativo. Mantenha um tom encorajador e prático.`;
 }
 
 // Ask Gemini
@@ -2552,7 +2575,7 @@ async function askAuraIA(text, file = null) {
         save();
         rIA();
     } catch(e) {
-        S.chat.push({ role: 'ai', text: "Desculpe, ocorreu um erro na conexÃ£o: " + e.message });
+        S.chat.push({ role: 'ai', text: "Desculpe, ocorreu um erro na conexão: " + e.message });
         save();
         rIA();
     }
@@ -2598,27 +2621,6 @@ async function askAuraIA(text, file = null) {
         }
     });
 })();
-if (remainingProt > 0 && h < endOfDay) {
-        const target = protPerMeal > 0 ? protPerMeal : Math.round(remainingProt);
-        const chicken = Math.round((target / 30) * 100);
-        const beef = Math.round((target / 26) * 100);
-        const eggs = Math.round(target / 6);
-        const cheese = Math.round((target / 25) * 100);
-        const whey = Math.round((target / 24) * 30);
-        dietAdvice += \<details class="fold" style="margin-top:12px; background:var(--surface2);">
-          <summary style="font-size:13px; font-weight:600; color:var(--accent);">💡 Ideias para bater \g de proteína</summary>
-          <div class="body" style="font-size:13px; line-height:1.5;">
-            <div style="font-weight:600; margin-top:5px; color:var(--text);">🥩 Carnes</div>
-            <div style="color:var(--muted);">~\g de Frango desfiado</div>
-            <div style="color:var(--muted);">~\g de Patinho (moído)</div>
-            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥚 Laticínios e Ovos</div>
-            <div style="color:var(--muted);">~\ Ovos inteiros</div>
-            <div style="color:var(--muted);">~\g de Queijo Muçarela</div>
-            <div style="font-weight:600; margin-top:10px; color:var(--text);">🥤 Suplementos</div>
-            <div style="color:var(--muted);">~\g de Whey Protein</div>
-          </div>
-        </details>\;
-    } else if (remainingProt <= 0) {
 
 </script>
 
