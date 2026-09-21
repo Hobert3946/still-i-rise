@@ -740,3 +740,26 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   }, 1000);
 });
+
+
+// Update Header Clock and Name
+function updateTopHeader() {
+  const now = new Date();
+  const hr = now.getHours();
+  let greet = "Boa noite";
+  if (hr >= 5 && hr < 12) greet = "Bom dia";
+  else if (hr >= 12 && hr < 18) greet = "Boa tarde";
+  
+  const greetingEl = document.getElementById("topGreeting");
+  if(greetingEl) greetingEl.innerText = greet;
+  
+  const clockEl = document.getElementById("topClock");
+  if(clockEl) clockEl.innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+  
+  const nameEl = document.getElementById("topName");
+  if(nameEl && typeof S !== 'undefined' && S.profile) {
+     nameEl.innerText = S.profile.name || "Praticante";
+  }
+}
+setInterval(updateTopHeader, 1000);
+setTimeout(updateTopHeader, 200); // Initial call after state loads

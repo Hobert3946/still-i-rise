@@ -210,6 +210,21 @@ details.fold .body{padding:12px 0 14px;display:flex;flex-direction:column;gap:10
 body.theme-morning { background: linear-gradient(135deg, #ff9a9e, #fecfef) !important; color: #1d1710; }
 body.theme-night { background: linear-gradient(135deg, #0f2027, #203a43) !important; color: #fff; }
 
+
+/* Glassmorphism Header */
+.glass-header {
+  background: color-mix(in srgb, var(--surface) 75%, transparent) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 20px !important;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04) !important;
+  transition: background 0.3s, border 0.3s;
+}
+
 </style>
 </head>
 <body>
@@ -241,11 +256,27 @@ body.theme-night { background: linear-gradient(135deg, #0f2027, #203a43) !import
 </defs></svg>
 
 <a class="skip" href="#v-deck">Pular para o conteúdo</a>
-<header class="top"><div class="top-in">
-  <div class="who"><img class="avatar" src="data:image/jpeg;base64,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" alt="Logo Still I Rise" width="40" height="40"><div><div class="lbl">Praticante</div><div style="font-weight:700;font-size:15px">Still I Rise</div></div></div>
-  <h1 class="brand">STILL I RISE</h1>
-  <button class="circ-btn" id="themeBtn" aria-label="Alternar tema claro/escuro"></button>
+
+<header class="top glass-header"><div class="top-in" style="justify-content: space-between; align-items: center;">
+  <div class="who" style="display:flex; align-items:center; gap:12px;">
+    <img class="avatar" src="data:image/jpeg;base64,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" alt="Avatar" width="48" height="48" style="border: 2px solid var(--accent); border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+    <div style="display:flex; flex-direction:column;">
+      <div class="lbl greeting-text" id="topGreeting" style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Olá</div>
+      <div style="font-weight:800; font-size:18px; font-family:var(--f-display); letter-spacing:-0.5px; color:var(--text);" id="topName">Praticante</div>
+    </div>
+  </div>
+  
+  <div style="display:flex; align-items:center; gap:15px;">
+    <div style="text-align:right;">
+      <div style="font-weight:700; font-size:20px; font-variant-numeric:tabular-nums; font-family:var(--f-display); color:var(--text);" id="topClock">--:--</div>
+      <div class="lbl" style="font-size:10px; color:var(--accent);">HOJE</div>
+    </div>
+    <button class="circ-btn" id="themeBtn" aria-label="Alternar tema claro/escuro" style="width:40px; height:40px; box-shadow:none; border: 1px solid var(--line); background: var(--surface2);">
+      <svg class="icon"><use href="#i-sun"/></svg>
+    </button>
+  </div>
 </div></header>
+
 
 <main>
   <div class="view on" id="v-deck"></div>
@@ -1400,6 +1431,29 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   }, 1000);
 });
+
+
+// Update Header Clock and Name
+function updateTopHeader() {
+  const now = new Date();
+  const hr = now.getHours();
+  let greet = "Boa noite";
+  if (hr >= 5 && hr < 12) greet = "Bom dia";
+  else if (hr >= 12 && hr < 18) greet = "Boa tarde";
+  
+  const greetingEl = document.getElementById("topGreeting");
+  if(greetingEl) greetingEl.innerText = greet;
+  
+  const clockEl = document.getElementById("topClock");
+  if(clockEl) clockEl.innerText = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+  
+  const nameEl = document.getElementById("topName");
+  if(nameEl && typeof S !== 'undefined' && S.profile) {
+     nameEl.innerText = S.profile.name || "Praticante";
+  }
+}
+setInterval(updateTopHeader, 1000);
+setTimeout(updateTopHeader, 200); // Initial call after state loads
 
 </script>
 
