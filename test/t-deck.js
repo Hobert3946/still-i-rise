@@ -12,7 +12,7 @@ module.exports = async T => {
   T.ok(/Dica do dia/.test(t) && /Sequência de dias/.test(t) && /Próximo marco/.test(t), "dica do dia, sequência e próximo marco aparecem");
   T.ok(a.qa("#quote-card").length === 1, "exatamente um card de frase");
   T.ok(a.qa(".qstrip .qtile").length === 4 && /Água/.test(a.q(".qstrip").textContent) && /Dias? seguidos?/.test(a.q(".qstrip").textContent), "faixa de resumo com água, proteína, cardio e sequência");
-  T.ok(a.qa(".aura-core").length === 1 && a.qa("#v-deck [data-act='fab-open']").length === 1, "uma Aura e um botão FAB");
+  T.ok(a.qa(".aura-core").length === 1 && !a.q(".fab") && !a.q("[data-act='fab-open']"), "uma Aura e sem o botão flutuante \"+\"");
   a.close();
 
   // sem alertas quando está tudo bem
@@ -20,11 +20,10 @@ module.exports = async T => {
   T.ok(!/Dor no ombro|Backup atrasado/.test(a.q("#v-deck").textContent), "sem dor e com backup em dia: sem alertas");
 
   // cardio
-  a.ev('ACT["fab-open"]()'); a.q("[data-act=cardio-open]").click(); T.ok(a.q("#cardioSheet").classList.contains("on"), "abre o cardio");
+  a.q("[data-act=cardio-open]").click(); T.ok(a.q("#cardioSheet").classList.contains("on"), "abre o cardio");
   a.q("[data-act=cardio-save]").click(); T.ok(!a.ev("(D(today()).cardios||[]).length"), "cardio sem minutos não grava");
   a.q("#cardioMins").value = "30"; a.q("#cardioSpd").value = "5.5"; a.q("[data-act=cardio-save]").click();
   T.ok(a.ev("D(today()).cardios[0].min") === 30 && !a.q("#cardioSheet").classList.contains("on"), "cardio de 30 min gravado e fecha");
-  a.ev('ACT["fab-open"]()'); T.ok(/30 min/.test(a.q("#sheet").textContent), "Sheet FAB mostra 30 min de cardio");
 
   // pular treino (só vale em dia útil; força a letra com pickDay não é necessário)
   a.ev('DW(today()).skipWk = true; save(); render()');
@@ -37,10 +36,6 @@ module.exports = async T => {
   T.ok(/100 g/.test(b.q("#revP").textContent) && /60 min/.test(b.q("#revC").textContent), "resumo mostra proteína média 100 g e 60 min de cardio: " + b.q("#revP").textContent + " / " + b.q("#revC").textContent);
   T.ok(/abaixo da meta/.test(b.q("#revSug").textContent), "sugestão aponta proteína abaixo da meta");
   b.q("[data-act=review-close]").click(); T.ok(!b.q("#reviewSheet").classList.contains("on"), "fecha o resumo");
-  // ações rápidas navegam e fecham a folha; nada de onclick inline nem emoji nas telas novas
-  a.ev('ACT["fab-open"]()'); T.ok(a.qa("#sheet [data-act=quick-go]").length === 4, "folha rápida tem 4 atalhos de navegação");
-  a.q("#sheet [data-act=quick-go][data-to=agua]").click(); T.ok(a.ev("UI.tab") === "agua" && !a.q("#sheet").classList.contains("on"), "atalho abre a aba Água e fecha a folha");
-  T.ok(!/onclick=/.test(a.q("#sheet").innerHTML), "folha sem onclick inline");
   const css = require("fs").readFileSync(require("path").join(__dirname, "..", "src", "styles.css"), "utf8");
   T.ok(/--dock-h:/.test(css), "--dock-h está definida (botão flutuante e barra da A.I. dependem dela)");
   T.ok(!a.errors.length && !b.errors.length, "sem erros de script");

@@ -34,13 +34,14 @@ function rIA() {
   </section>
   <div id="chat-messages" style="padding-bottom:70px">${msgs}</div>
   <div class="chat-input-area">
+    <button class="dock-handle" data-act="dock-toggle" aria-label="Mostrar ou esconder o menu"></button>
     <button class="chat-btn" data-act="ia-clear" style="color:var(--bad)" aria-label="Limpar conversa">${ic("trash")}</button>
     <button class="chat-btn" data-act="ia-cam" aria-label="Enviar foto">${ic("camera")}</button>
     <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none;padding-top:12px;max-height:120px;overflow-y:auto"></textarea>
     <button class="chat-btn primary" data-act="ia-send" aria-label="Enviar">${ic("right")}</button>
     <input type="file" id="ia-foto" accept="image/*" hidden>
   </div>`;
-  window.scrollTo(0, document.body.scrollHeight);
+  requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight)));
 }
 /* memória: resumo dos últimos 7 dias, calculado dos registros reais do app */
 function weekMemory() {

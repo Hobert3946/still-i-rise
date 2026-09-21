@@ -148,6 +148,7 @@ function closeSheet() { $("#sheet").classList.remove("on"); }
 /* ============ render: navegação ============ */
 function go(tab) {
   UI.tab = tab;
+  document.body.classList.toggle("chat-mode", tab === "ia"); document.body.classList.remove("dock-open");
   $$(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + tab));
   $$(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === tab));
   render(); window.scrollTo({ top: 0 });

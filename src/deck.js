@@ -82,26 +82,8 @@ function rDeck() {
       <button class="btn sm full" data-act="review-open" style="margin-top:8px">Ver resumo da semana</button>`)}
   ${nextM ? `<section class="card flat"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
   <section class="card flat row" style="align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>
-  <button class="fab" data-act="fab-open" aria-label="Ações rápidas">${ic("plus")}</button>
   `;
 }
-
-function quickRow(act, tab, icon, titulo, sub) {
-  return `<button class="btn solid quickrow" data-act="${act}" ${tab ? `data-to="${tab}"` : ""}><span class="qi">${ic(icon)}</span><span class="grow"><b>${titulo}</b><span class="muted">${sub}</span></span>${ic("right")}</button>`;
-}
-ACT["fab-open"] = () => {
-  const k = today(), d = D(k), L = planLetter(k), tot = dayTotals(k), ds = dayStreak();
-  const cardioMin = (d.cardios || []).reduce((s, c) => s + (c.min || 0), 0);
-  openSheet(`<h3 class="mid">Ações rápidas</h3>
-    <div class="stack">
-      ${quickRow("quick-go", "agua", "drop", "Registrar água", `Hoje: ${(d.water / 1000).toFixed(1).replace(".", ",")} L de ${(S.settings.waterGoal / 1000).toFixed(1).replace(".", ",")} L`)}
-      ${quickRow("quick-go", "comer", "fork", "Registrar refeição", `Hoje: ${Math.round(tot.p)} g de proteína, ${fmtInt(tot.k)} kcal`)}
-      ${quickRow("quick-go", "treino", "dumb", "Treino", L ? `Ficha ${L} · ${PLAN[L].name}` : "Descanso hoje")}
-      ${quickRow("cardio-open", "", "flame", "Registrar cardio", cardioMin ? `Hoje: ${cardioMin} min` : "Nenhum hoje")}
-      ${quickRow("quick-go", "evol", "trend", "Evolução", `Sequência: ${ds} ${ds === 1 ? "dia" : "dias"}`)}
-    </div>`);
-};
-ACT["quick-go"] = b => { closeSheet(); go(b.dataset.to); };
 
 /* --- cardio --- */
 ACT["cardio-open"] = () => { closeSheet(); $("#cardioSheet").classList.add("on"); };

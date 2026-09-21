@@ -346,11 +346,12 @@ nav.dock{width:min(480px,calc(100% - 16px));padding:5px}
 .qstrip .qtile b{font-size:16px}
 .qstrip .qtile .lbl{font-size:10px;letter-spacing:.03em}
 .qstrip .qi .icon{width:20px;height:20px}
-.fab{position:fixed;right:20px;bottom:calc(var(--dock-h) + 12px);width:56px;height:56px;border-radius:50%;display:grid;place-items:center;z-index:50;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent));color:#1d1710;box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 45%,transparent);transition:transform .2s}
-.fab:active{transform:scale(.94)}
-.fab .icon{width:26px;height:26px;stroke-width:2.4}
-.quickrow{justify-content:flex-start;text-align:left;min-height:64px;padding:0 16px;gap:14px;width:100%}
-.quickrow .grow{display:flex;flex-direction:column;line-height:1.25}
-.quickrow .grow b{font-size:16px}
-.quickrow .grow .muted{font-size:13px;font-weight:500;color:#3d3327}
-.quickrow .qi{color:#1d1710}
+
+/* --- Modo chat: menu recolhido, campo de digitar no fim da tela, alça para puxar o menu --- */
+body.chat-mode nav.dock{transform:translate(-50%,160%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+body.chat-mode.dock-open nav.dock{transform:translateX(-50%)}
+body.chat-mode .chat-input-area{bottom:0;transition:bottom .3s cubic-bezier(.4,0,.2,1)}
+body.chat-mode.dock-open .chat-input-area{bottom:var(--dock-h)}
+body.chat-mode main{padding-bottom:calc(96px + var(--safe-b))}
+.dock-handle{position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:96px;height:26px;display:grid;place-items:center;touch-action:none}
+.dock-handle::before{content:"";width:44px;height:5px;border-radius:5px;background:var(--muted);opacity:.7}

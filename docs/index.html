@@ -365,14 +365,15 @@ nav.dock{width:min(480px,calc(100% - 16px));padding:5px}
 .qstrip .qtile b{font-size:16px}
 .qstrip .qtile .lbl{font-size:10px;letter-spacing:.03em}
 .qstrip .qi .icon{width:20px;height:20px}
-.fab{position:fixed;right:20px;bottom:calc(var(--dock-h) + 12px);width:56px;height:56px;border-radius:50%;display:grid;place-items:center;z-index:50;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent));color:#1d1710;box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 45%,transparent);transition:transform .2s}
-.fab:active{transform:scale(.94)}
-.fab .icon{width:26px;height:26px;stroke-width:2.4}
-.quickrow{justify-content:flex-start;text-align:left;min-height:64px;padding:0 16px;gap:14px;width:100%}
-.quickrow .grow{display:flex;flex-direction:column;line-height:1.25}
-.quickrow .grow b{font-size:16px}
-.quickrow .grow .muted{font-size:13px;font-weight:500;color:#3d3327}
-.quickrow .qi{color:#1d1710}
+
+/* --- Modo chat: menu recolhido, campo de digitar no fim da tela, alça para puxar o menu --- */
+body.chat-mode nav.dock{transform:translate(-50%,160%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+body.chat-mode.dock-open nav.dock{transform:translateX(-50%)}
+body.chat-mode .chat-input-area{bottom:0;transition:bottom .3s cubic-bezier(.4,0,.2,1)}
+body.chat-mode.dock-open .chat-input-area{bottom:var(--dock-h)}
+body.chat-mode main{padding-bottom:calc(96px + var(--safe-b))}
+.dock-handle{position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:96px;height:26px;display:grid;place-items:center;touch-action:none}
+.dock-handle::before{content:"";width:44px;height:5px;border-radius:5px;background:var(--muted);opacity:.7}
 
 </style>
 </head>
@@ -1372,26 +1373,8 @@ function rDeck() {
       <button class="btn sm full" data-act="review-open" style="margin-top:8px">Ver resumo da semana</button>`)}
   ${nextM ? `<section class="card flat"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
   <section class="card flat row" style="align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>
-  <button class="fab" data-act="fab-open" aria-label="Ações rápidas">${ic("plus")}</button>
   `;
 }
-
-function quickRow(act, tab, icon, titulo, sub) {
-  return `<button class="btn solid quickrow" data-act="${act}" ${tab ? `data-to="${tab}"` : ""}><span class="qi">${ic(icon)}</span><span class="grow"><b>${titulo}</b><span class="muted">${sub}</span></span>${ic("right")}</button>`;
-}
-ACT["fab-open"] = () => {
-  const k = today(), d = D(k), L = planLetter(k), tot = dayTotals(k), ds = dayStreak();
-  const cardioMin = (d.cardios || []).reduce((s, c) => s + (c.min || 0), 0);
-  openSheet(`<h3 class="mid">Ações rápidas</h3>
-    <div class="stack">
-      ${quickRow("quick-go", "agua", "drop", "Registrar água", `Hoje: ${(d.water / 1000).toFixed(1).replace(".", ",")} L de ${(S.settings.waterGoal / 1000).toFixed(1).replace(".", ",")} L`)}
-      ${quickRow("quick-go", "comer", "fork", "Registrar refeição", `Hoje: ${Math.round(tot.p)} g de proteína, ${fmtInt(tot.k)} kcal`)}
-      ${quickRow("quick-go", "treino", "dumb", "Treino", L ? `Ficha ${L} · ${PLAN[L].name}` : "Descanso hoje")}
-      ${quickRow("cardio-open", "", "flame", "Registrar cardio", cardioMin ? `Hoje: ${cardioMin} min` : "Nenhum hoje")}
-      ${quickRow("quick-go", "evol", "trend", "Evolução", `Sequência: ${ds} ${ds === 1 ? "dia" : "dias"}`)}
-    </div>`);
-};
-ACT["quick-go"] = b => { closeSheet(); go(b.dataset.to); };
 
 /* --- cardio --- */
 ACT["cardio-open"] = () => { closeSheet(); $("#cardioSheet").classList.add("on"); };
@@ -1528,13 +1511,14 @@ function rIA() {
   </section>
   <div id="chat-messages" style="padding-bottom:70px">${msgs}</div>
   <div class="chat-input-area">
+    <button class="dock-handle" data-act="dock-toggle" aria-label="Mostrar ou esconder o menu"></button>
     <button class="chat-btn" data-act="ia-clear" style="color:var(--bad)" aria-label="Limpar conversa">${ic("trash")}</button>
     <button class="chat-btn" data-act="ia-cam" aria-label="Enviar foto">${ic("camera")}</button>
     <textarea class="field" id="ia-input" placeholder="Pergunte algo..." rows="1" style="resize:none;padding-top:12px;max-height:120px;overflow-y:auto"></textarea>
     <button class="chat-btn primary" data-act="ia-send" aria-label="Enviar">${ic("right")}</button>
     <input type="file" id="ia-foto" accept="image/*" hidden>
   </div>`;
-  window.scrollTo(0, document.body.scrollHeight);
+  requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight)));
 }
 /* memória: resumo dos últimos 7 dias, calculado dos registros reais do app */
 function weekMemory() {
@@ -1607,6 +1591,22 @@ function iaFoto(e) {
   const i = $("#ia-input"), t = i ? i.value.trim() : ""; if (i) { i.value = ""; i.style.height = "auto"; }
   askAuraIA(t, f);
 }
+
+/* ============ MENU RECOLHÍVEL (aba A.I.): puxe a alça para cima para mostrar o menu, arraste o menu para baixo para esconder ============ */
+const setDock = open => document.body.classList.toggle("dock-open", open);
+ACT["dock-toggle"] = () => { if (UI.dockSwipe && Date.now() - UI.dockSwipe < 350) return; setDock(!document.body.classList.contains("dock-open")); }; // ignora o clique que vem logo após um arrasto
+(function () {
+  let g = null;
+  document.addEventListener("pointerdown", e => { const h = e.target.closest(".dock-handle, nav.dock"); if (h && document.body.classList.contains("chat-mode")) g = { y: e.clientY, id: e.pointerId, moved: false }; });
+  document.addEventListener("pointermove", e => { if (g && e.pointerId === g.id && Math.abs(e.clientY - g.y) > 12) g.moved = true; });
+  document.addEventListener("pointerup", e => {
+    if (!g || e.pointerId !== g.id) return;
+    const dy = e.clientY - g.y, moved = g.moved; g = null;
+    if (!moved) return;
+    setDock(dy < 0);          // arrastou para cima: mostra; para baixo: esconde
+    UI.dockSwipe = Date.now();
+  });
+})();
 
 /* ============ NUVEM: cópia dos dados em um gist secreto do GitHub + estado sem segredos ============ */
 // Gist "secreto" NÃO é privado: quem tiver o link consegue ler. Os dados de saúde vão para lá.
@@ -1794,6 +1794,7 @@ function closeSheet() { $("#sheet").classList.remove("on"); }
 /* ============ render: navegação ============ */
 function go(tab) {
   UI.tab = tab;
+  document.body.classList.toggle("chat-mode", tab === "ia"); document.body.classList.remove("dock-open");
   $$(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + tab));
   $$(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === tab));
   render(); window.scrollTo({ top: 0 });
