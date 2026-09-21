@@ -442,12 +442,25 @@ function rEvol() {
 
 /* ============ MAIS ============ */
 function suppCatalogHTML() {
-  let a = SUPP_CATALOG.filter(x => UI.supType === "all" || x.t === UI.supType);
-  a = a.slice().sort((p, q) => UI.supSort === "price" ? (p.price - q.price || q.help - p.help) : (q.help - p.help || p.price - q.price));
-  return a.map(x => `<div class="tile" style="display:flex;flex-direction:column;gap:6px"><div class="row between"><b>${x.n}</b><span class="tag">${x.t === "M" ? "LEVAR AO MÉDICO" : "SUPLEMENTO"}</span></div>
-    <div class="row wrap gap6"><span class="pill acc">Custo ${"$".repeat(x.price)}</span><span class="pill ok">Ajuda ${x.help}/5</span></div>
-    <div style="font-size:16px">${x.why}</div><div class="muted" style="font-size:15px"><b>Risco:</b> ${x.risk}</div></div>`).join("");
+  let a = SUPP_CATALOG.slice().sort((p, q) => UI.supSort === "price" ? (p.price - q.price || q.help - p.help) : (q.help - p.help || p.price - q.price));
+  
+  let sups = a.filter(x => x.t === "S");
+  let meds = a.filter(x => x.t === "M");
+  
+  const renderItem = (x) => `<div class="tile" style="display:flex;flex-direction:column;gap:6px; margin-bottom:10px; background:var(--surface);"><div class="row between"><b style="color:var(--text); font-size:15px;">${x.n}</b></div><div class="row wrap gap6"><span class="pill acc" style="font-size:11px;">Custo ${"$".repeat(x.price)}</span><span class="pill ok" style="font-size:11px;">Ajuda ${x.help}/5</span></div><div style="font-size:14px; color:var(--text); line-height:1.4;">${x.why}</div><div class="muted" style="font-size:13px"><b>Risco:</b> ${x.risk}</div></div>`;
+  
+  return `
+    <details class="fold" style="margin-bottom:10px; background:var(--surface2);">
+        <summary style="font-weight:600; font-size:14px; color:var(--text);">💊 Suplementos</summary>
+        <div class="body" style="padding:10px 10px 0 10px;">${sups.map(renderItem).join("")}</div>
+    </details>
+    <details class="fold" style="background:var(--surface2);">
+        <summary style="font-weight:600; font-size:14px; color:var(--text);">👨‍⚕️ Remédios (Levar ao médico)</summary>
+        <div class="body" style="padding:10px 10px 0 10px;">${meds.map(renderItem).join("")}</div>
+    </details>
+  `;
 }
+
 function rMais() {
   const tg = TG(), s = S.settings, k = today(), bk = s.lastBackup;
   $("#v-mais").innerHTML = `
@@ -463,7 +476,7 @@ function rMais() {
     <div class="lbl">Suplementos e remédios</div>
     <p class="muted" style="font-size:15px">Informativo, sem doses de remédio. Tudo que é prescrição deve ser decidido com seu médico. GLP-1 ficou de fora por decisão sua.</p>
     <div class="seg"><button class="${UI.supSort === "price" ? "on" : ""}" data-act="sup-sort" data-v="price">Menor custo</button><button class="${UI.supSort === "help" ? "on" : ""}" data-act="sup-sort" data-v="help">Mais ajuda</button></div>
-    <div class="seg"><button class="${UI.supType === "all" ? "on" : ""}" data-act="sup-type" data-v="all">Todos</button><button class="${UI.supType === "S" ? "on" : ""}" data-act="sup-type" data-v="S">Suplementos</button><button class="${UI.supType === "M" ? "on" : ""}" data-act="sup-type" data-v="M">Levar ao médico</button></div>
+    
     <div style="display:flex;flex-direction:column;gap:10px" id="supcat">${suppCatalogHTML()}</div>
   </section>
   <section class="card">
