@@ -1050,7 +1050,7 @@ function rAgua() {
   const from = UI.wLast == null ? 0 : UI.wLast; UI.wLast = p;
   const [pc, pt] = waterPace(w), ws = waterStreak();
   const log = (d.wlog || []).slice().reverse();
-  const bars = Array.from({ length: 7 }, (_, i) => { const kk = addDays(k, i - 6), v = D(kk).water || 0, f = Math.min(1, v / goal); return `<div class="d ${kk === k ? "t" : ""}"><i style="height:${Math.max(6, f * 100)}%;background:${v >= goal ? "var(--ok)" : v ? "#5aa9d6" : "var(--surface2)"}"></i><span>${DOW[parseKey(kk).getDay()][0]}</span></div>`; }).join("");
+  const mon = mondayOf(k); const bars = Array.from({ length: 7 }, (_, i) => { const kk = addDays(mon, i), v = D(kk).water || 0, f = Math.min(1, v / goal); return `<div class="d ${kk === k ? "t" : ""}"><i style="height:${Math.max(6, f * 100)}%;background:${v >= goal ? "var(--ok)" : v ? "#5aa9d6" : "var(--surface2)"}"></i><span>${DOW[parseKey(kk).getDay()][0]}</span></div>`; }).join("");
   const wkAvg = Math.round(Array.from({ length: 7 }, (_, i) => D(addDays(k, -i)).water || 0).reduce((a, b) => a + b, 0) / 7);
   $("#v-agua").innerHTML = `
   <section class="card" style="background:transparent;box-shadow:none;padding:0"><h2 class="h1">Água</h2><p class="muted">Cada toque enche a garrafa. A meta é ${(goal / 1000).toFixed(2).replace(".", ",")} L por dia.</p></section>
@@ -1066,9 +1066,9 @@ function rAgua() {
     <div class="row" style="gap:10px"><input id="wcust" class="winput" type="number" inputmode="numeric" placeholder="Outro valor em ml" aria-label="Quantidade em ml"><button class="btn sm solid" data-act="w-custom">Adicionar</button></div>
   </section>
   <section class="card">
-    <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">Últimos 7 dias</span></div><span class="pill ${ws ? "ok" : ""}">${ws} ${ws === 1 ? "dia" : "dias"} na meta</span></div>
+    <div class="row between"><div class="sec-t"><span class="dot ok"></span><span class="lbl">Esta semana</span></div><span class="pill ${ws ? "ok" : ""}">${ws} ${ws === 1 ? "dia" : "dias"} na meta</span></div>
     <div class="week">${bars}</div>
-    <p class="muted" style="font-size:15px">Média dos últimos 7 dias: ${(wkAvg / 1000).toFixed(2).replace(".", ",")} L. Barra verde = meta batida.</p>
+    <p class="muted" style="font-size:15px">Média desta semana: ${(wkAvg / 1000).toFixed(2).replace(".", ",")} L. Barra verde = meta batida.</p>
   </section>
   <section class="card">
     <div class="row between"><div class="sec-t"><span class="dot"></span><span class="lbl">Hoje</span></div><span class="lbl">${log.length} ${log.length === 1 ? "registro" : "registros"}</span></div>
