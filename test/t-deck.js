@@ -11,7 +11,7 @@ module.exports = async T => {
   T.ok(/Backup atrasado/.test(t), "alerta de backup atrasado aparece");
   T.ok(/Dica do dia/.test(t) && /Sequência de dias/.test(t) && /Próximo marco/.test(t), "dica do dia, sequência e próximo marco aparecem");
   T.ok(a.qa("#quote-card").length === 1, "exatamente um card de frase");
-  T.ok(a.qa(".aura-core").length === 1 && a.qa("#v-deck [data-act='cardio-open']").length === 1, "uma Aura e um botão de cardio");
+  T.ok(a.qa(".aura-core").length === 1 && a.qa("#v-deck [data-act='fab-open']").length === 1, "uma Aura e um botão FAB");
   a.close();
 
   // sem alertas quando está tudo bem
@@ -19,11 +19,11 @@ module.exports = async T => {
   T.ok(!/Dor no ombro|Backup atrasado/.test(a.q("#v-deck").textContent), "sem dor e com backup em dia: sem alertas");
 
   // cardio
-  a.q("[data-act=cardio-open]").click(); T.ok(a.q("#cardioSheet").classList.contains("on"), "abre o cardio");
+  a.ev('ACT["fab-open"]()'); a.q("[data-act=cardio-open]").click(); T.ok(a.q("#cardioSheet").classList.contains("on"), "abre o cardio");
   a.q("[data-act=cardio-save]").click(); T.ok(!a.ev("(D(today()).cardios||[]).length"), "cardio sem minutos não grava");
   a.q("#cardioMins").value = "30"; a.q("#cardioSpd").value = "5.5"; a.q("[data-act=cardio-save]").click();
   T.ok(a.ev("D(today()).cardios[0].min") === 30 && !a.q("#cardioSheet").classList.contains("on"), "cardio de 30 min gravado e fecha");
-  T.ok(/30 min/.test(a.q("#v-deck").textContent), "Deck mostra 30 min de cardio");
+  a.ev('ACT["fab-open"]()'); T.ok(/30 min/.test(a.q("#sheet").textContent), "Sheet FAB mostra 30 min de cardio");
 
   // pular treino (só vale em dia útil; força a letra com pickDay não é necessário)
   a.ev('DW(today()).skipWk = true; save(); render()');
