@@ -68,7 +68,12 @@ function rDeck() {
   <section class="card tipcard"><div class="lbl" style="color:var(--text)">Dica do núcleo</div><div style="font-size:15px;line-height:1.5;color:var(--muted)">${advice.diet}<br><span style="color:var(--text)">${advice.water}</span></div></section>
   ${fraseHTML()}
   <section class="card">${deckWorkoutCard(k, d, L)}</section>
-  
+  <div class="qstrip">
+    ${qtile('data-go="agua"', "drop", (d.water / 1000).toFixed(1).replace(".", ",") + " L", `Água ${Math.round(Math.min(1, (d.water || 0) / S.settings.waterGoal) * 100)}%`)}
+    ${qtile('data-go="comer"', "fork", Math.round(tot.p) + " g", "Proteína")}
+    ${qtile('data-act="cardio-open"', "flame", cardioMin ? cardioMin + " min" : "0 min", "Cardio")}
+    ${qtile('data-go="evol"', "trend", String(ds), ds === 1 ? "Dia seguido" : "Dias seguidos")}
+  </div>
   ${fold("ok", `Hábitos diários (${habitCount(k)}/6)`, `<div class="stack">${habits}</div>`)}
   ${fold("sage", `Suplementos de hoje (${Object.values(d.s).filter(Boolean).length}/${SUPP_BASE.length})`, sup)}
   ${fold("acc", `Ritmo semanal (${week}/5)`, `<div class="row" style="gap:16px;margin-top:10px">${ring(week / 5, 96, 7, "var(--sage)", `<div><div class="big tabnum">${week}<span class="muted" style="font-size:14px">/5</span></div><div class="lbl">ativos</div></div>`)}
@@ -77,52 +82,26 @@ function rDeck() {
       <button class="btn sm full" data-act="review-open" style="margin-top:8px">Ver resumo da semana</button>`)}
   ${nextM ? `<section class="card flat"><div class="lbl">Próximo marco</div><div class="mid">${nextM.nm} · ${nextM.lbl(S.profile.startWeight)}</div><p class="muted">${nextM.txt}</p></section>` : ""}
   <section class="card flat row" style="align-items:flex-start"><span style="color:var(--accent-ink)">${ic("sun")}</span><div><div class="lbl" style="color:var(--text)">Dica do dia</div><p class="muted" style="margin-top:2px">${tipOfDay()}</p></div></section>
-  <button class="chat-btn primary" style="position:fixed; bottom:calc(var(--dock-h) + 20px); right:20px; width:56px; height:56px; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.3); z-index:50;" data-act="fab-open">
-    ${ic("plus")}
-  </button>
+  <button class="fab" data-act="fab-open" aria-label="Ações rápidas">${ic("plus")}</button>
   `;
 }
 
+function quickRow(act, tab, icon, titulo, sub) {
+  return `<button class="btn solid quickrow" data-act="${act}" ${tab ? `data-to="${tab}"` : ""}><span class="qi">${ic(icon)}</span><span class="grow"><b>${titulo}</b><span class="muted">${sub}</span></span>${ic("right")}</button>`;
+}
 ACT["fab-open"] = () => {
-    const k = today(), d = typeof DW === 'function' ? DW(k) : D(k), L = typeof planLetter === 'function' ? planLetter(k) : null;
-    const tot = typeof dayTotals === 'function' ? dayTotals(k) : {k:0, p:0};
-    const cardioMin = d.cardios ? d.cardios.reduce((s, c) => s + c.min, 0) : 0;
-    
-    openSheet(`
-      <h3 class="mid" style="margin-bottom:20px;">⚡ Ações Rápidas</h3>
-      <div style="display:flex; flex-direction:column; gap:10px; padding-bottom:10px;">
-         <button class="btn solid" style="justify-content:flex-start; min-height:60px; padding:0 20px;" onclick="closeSheet(); go('agua');">
-            <span style="font-size:24px; margin-right:15px; width:30px; text-align:center;">💧</span> 
-            <div style="flex:1; text-align:left;">
-                <div style="font-weight:700; font-size:16px;">Registrar Água</div>
-                <div class="muted" style="font-size:13px; margin-top:2px;">Hoje: ${(d.water/1000).toFixed(1).replace('.',',')} L</div>
-            </div>
-         </button>
-         <button class="btn solid" style="justify-content:flex-start; min-height:60px; padding:0 20px;" onclick="closeSheet(); go('comer');">
-            <span style="font-size:24px; margin-right:15px; width:30px; text-align:center;">🥗</span> 
-            <div style="flex:1; text-align:left;">
-                <div style="font-weight:700; font-size:16px;">Refeição</div>
-                <div class="muted" style="font-size:13px; margin-top:2px;">Hoje: ${Math.round(tot.p)}g proteína</div>
-            </div>
-         </button>
-         <button class="btn solid" style="justify-content:flex-start; min-height:60px; padding:0 20px;" onclick="closeSheet(); go('treino');">
-            <span style="font-size:24px; margin-right:15px; width:30px; text-align:center;">🏋️‍♂️</span> 
-            <div style="flex:1; text-align:left;">
-                <div style="font-weight:700; font-size:16px;">Treino</div>
-                <div class="muted" style="font-size:13px; margin-top:2px;">Ficha ${L || "Descanso"}</div>
-            </div>
-         </button>
-         <button class="btn solid" style="justify-content:flex-start; min-height:60px; padding:0 20px;" data-act="cardio-open">
-            <span style="font-size:24px; margin-right:15px; width:30px; text-align:center;">🔥</span> 
-            <div style="flex:1; text-align:left;">
-                <div style="font-weight:700; font-size:16px;">Cardio</div>
-                <div class="muted" style="font-size:13px; margin-top:2px;">Hoje: ${cardioMin ? cardioMin + " min" : "Nenhum"}</div>
-            </div>
-         </button>
-      </div>
-    `);
+  const k = today(), d = D(k), L = planLetter(k), tot = dayTotals(k), ds = dayStreak();
+  const cardioMin = (d.cardios || []).reduce((s, c) => s + (c.min || 0), 0);
+  openSheet(`<h3 class="mid">Ações rápidas</h3>
+    <div class="stack">
+      ${quickRow("quick-go", "agua", "drop", "Registrar água", `Hoje: ${(d.water / 1000).toFixed(1).replace(".", ",")} L de ${(S.settings.waterGoal / 1000).toFixed(1).replace(".", ",")} L`)}
+      ${quickRow("quick-go", "comer", "fork", "Registrar refeição", `Hoje: ${Math.round(tot.p)} g de proteína, ${fmtInt(tot.k)} kcal`)}
+      ${quickRow("quick-go", "treino", "dumb", "Treino", L ? `Ficha ${L} · ${PLAN[L].name}` : "Descanso hoje")}
+      ${quickRow("cardio-open", "", "flame", "Registrar cardio", cardioMin ? `Hoje: ${cardioMin} min` : "Nenhum hoje")}
+      ${quickRow("quick-go", "evol", "trend", "Evolução", `Sequência: ${ds} ${ds === 1 ? "dia" : "dias"}`)}
+    </div>`);
 };
-
+ACT["quick-go"] = b => { closeSheet(); go(b.dataset.to); };
 
 /* --- cardio --- */
 ACT["cardio-open"] = () => { closeSheet(); $("#cardioSheet").classList.add("on"); };

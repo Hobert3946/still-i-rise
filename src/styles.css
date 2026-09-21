@@ -1,4 +1,5 @@
 :root{
+  --dock-h:calc(84px + env(safe-area-inset-bottom,0px));
   --bg:#f7f5f2;--surface:#f7f5f2;--surface2:#efece6;--text:#242a2e;--muted:#5a656b;
   --accent:#c69c6d;--accent-ink:#8a5f2b;--accent-soft:#f1e3d0;--terra:#b45233;--terra-soft:#f6e1d9;
   --ok:#16a34a;--ok-soft:#e1f2e6;--sage:#506350;--sage-soft:#e5ebe3;--bad:#ef4444;--bad-soft:#fde4e2;--warn:#b7791f;--warn-soft:#faefd2;
@@ -338,3 +339,18 @@ nav.dock{width:min(480px,calc(100% - 16px));padding:5px}
 .tipcard{background:var(--surface2);border-left:4px solid var(--accent);gap:6px}
 .ia-spark{color:var(--accent);animation:aura-levitate 3s infinite}
 .ia-spark .icon{width:48px;height:48px}
+
+/* --- Deck: faixa de resumo, botão flutuante e ações rápidas --- */
+.qstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.qstrip .qtile{padding:10px 4px;gap:2px;border-radius:16px}
+.qstrip .qtile b{font-size:16px}
+.qstrip .qtile .lbl{font-size:10px;letter-spacing:.03em}
+.qstrip .qi .icon{width:20px;height:20px}
+.fab{position:fixed;right:20px;bottom:calc(var(--dock-h) + 12px);width:56px;height:56px;border-radius:50%;display:grid;place-items:center;z-index:50;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent));color:#1d1710;box-shadow:0 8px 20px color-mix(in srgb,var(--accent) 45%,transparent);transition:transform .2s}
+.fab:active{transform:scale(.94)}
+.fab .icon{width:26px;height:26px;stroke-width:2.4}
+.quickrow{justify-content:flex-start;text-align:left;min-height:64px;padding:0 16px;gap:14px;width:100%}
+.quickrow .grow{display:flex;flex-direction:column;line-height:1.25}
+.quickrow .grow b{font-size:16px}
+.quickrow .grow .muted{font-size:13px;font-weight:500;color:#3d3327}
+.quickrow .qi{color:#1d1710}
