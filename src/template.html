@@ -81,3 +81,31 @@
 </script>
 </body>
 </html>
+<!-- Modais Antigravity -->
+<div class="overlay center" id="cardioSheet" role="dialog">
+  <div class="card" style="width:90%;max-width:350px;">
+    <h3>Registrar Cardio</h3>
+    <input type="number" id="cardioMins" placeholder="Minutos" class="btn ghost" style="width:100%;margin-top:10px;">
+    <input type="number" id="cardioSpd" placeholder="Velocidade (km/h)" class="btn ghost" style="width:100%;margin-top:10px;">
+    <input type="number" id="cardioInc" placeholder="Inclinação" class="btn ghost" style="width:100%;margin-top:10px;">
+    <div style="display:flex;gap:10px;margin-top:15px;">
+      <button class="btn ghost grow" onclick="document.getElementById('cardioSheet').classList.remove('on')">Cancelar</button>
+      <button class="btn solid grow" id="saveCardioBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay center" id="reviewSheet" role="dialog">
+  <div class="card" style="width:90%;max-width:350px;text-align:center;">
+    <h2 class="h1">Resumo Semanal</h2>
+    <div class="grid2" style="margin:20px 0;">
+      <div class="tile"><div class="big" id="revP">0g</div><div class="lbl">Prot/Dia</div></div>
+      <div class="tile"><div class="big" id="revC">0</div><div class="lbl">Min Cardio</div></div>
+    </div>
+    <div class="tile in" style="margin-bottom:20px;">
+      <div class="mid" id="revW">Semana 1/8</div>
+      <div class="lbl" id="revSug">Continue focado!</div>
+    </div>
+    <button class="btn solid full" onclick="document.getElementById('reviewSheet').classList.remove('on')">Entendido</button>
+  </div>
+</div>
