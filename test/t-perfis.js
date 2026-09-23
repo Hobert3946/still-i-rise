@@ -25,4 +25,7 @@ module.exports = async T => {
   T.ok(a.ev("Object.keys(R.profiles).length") === 1 && a.ev("S.profile.name") === "Hobert", "excluir perfil (com confirmação)");
   T.ok(a.ev("profileDelete('p1')") === false, "não exclui o último perfil");
   T.ok(!a.errors.length, "sem erros de script"); a.close();
+  // regressão: instalação nova sem dados tinha metas NaN (perfil padrão sobrescrito na mescla)
+  const b = await boot({}); T.ok(b.ev("TG().kcal") > 1000 && b.ev("S.profile.height") === 179 && !/NaN/.test(b.q("#view").textContent), "instalação nova: metas calculadas, sem NaN");
+  b.ev("R.wall = 'aurora'; save()"); T.ok(b.ev("mergeRoot(JSON.parse(JSON.stringify(R))).wall") === "aurora", "papel de parede sobrevive ao recarregar"); b.close();
 };

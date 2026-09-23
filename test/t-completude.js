@@ -23,6 +23,7 @@ module.exports = async T => {
   const miss = fns.filter(f => ev(`typeof ${f}`) !== "function");
   T.ok(!miss.length, "todas as funções de domínio existem" + (miss.length ? ": faltam " + miss.join(", ") : ""));
   ev("S.days = {}; S.weights = [{d: addDays(today(), -9), kg: 130}]; S.logs = {}; render()");
+  a.ev("UI.agoraOpen = true; render()");
   T.ok(/9 dias sem registro/.test(a.q(".agora").textContent) && /menor degrau/.test(a.q(".agora").textContent), "alerta de ausência de 8+ dias vira o card Agora");
   T.ok(!a.errors.length, "sem erros de script"); a.close();
 };

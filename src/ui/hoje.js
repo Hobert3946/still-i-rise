@@ -4,10 +4,13 @@ const fraseIdx = () => (Math.floor((Date.now() - new Date().getTimezoneOffset() 
 const dataAttrs = o => Object.entries(o || {}).map(([k, v]) => `data-${k}="${esc(v)}"`).join(" ");
 function agoraHTML() {
   const c = agoraCard();
+  if (c.pri <= 1) return ""; // "a seguir"/"dia fechado" já estão na lista A seguir: não ocupar a tela
+  if (!UI.agoraOpen) return `<button class="ag-pill" data-act="agora-toggle" aria-expanded="false"><span class="dot"></span><span class="grow"><b>Agora:</b> ${esc(c.title)}</span>${ic("right")}</button>`;
   return `<section class="agora" aria-labelledby="ag-t"><div class="ag-kick">${esc(c.kick)}</div><h2 class="ag-t" id="ag-t">${esc(c.title)}</h2>${c.text ? `<p class="ag-p">${esc(c.text)}</p>` : ""}
     <button class="btn solid xl full" data-act="${c.act}" ${dataAttrs(c.data)}>${esc(c.label)}</button>
     <div class="ag-alt">${c.alt ? `<button class="btn ghost" data-act="${c.alt[0]}" ${dataAttrs(c.alt[2])}>${c.alt[1]}</button>` : ""}${c.pri > 1 ? `<button class="btn ghost" data-act="snooze" data-id="${c.id}">Depois</button>` : ""}</div></section>`;
 }
+ACT["agora-toggle"] = () => { UI.agoraOpen = !UI.agoraOpen; render(); };
 ACT.snooze = b => { UI.snooze[b.dataset.id] = Date.now() + 30 * 6e4; render(); toast("Lembro de novo em 30 min."); };
 function alignHTML() {
   const a = alignment(), col = a.pct >= 80 ? "var(--ok)" : a.pct >= 50 ? "var(--accent)" : "var(--warn)";
@@ -37,12 +40,11 @@ function metersHTML() {
     ${meter("Calorias", fmtInt(t.k), fmtInt(tg.kcal), "kcal", "var(--blue)", "go", 'data-tab="nutri" data-seg="refeicoes"')}</section>`;
 }
 function footHTML() {
-  const [ft, fa] = FRASES[fraseIdx()], nm = MILESTONES.map(milestone).find(m => !m.ok);
-  return `<section class="foot">${fold("Frase, dica e próximo marco", `<button class="quote" data-act="quote-next" aria-label="Outra frase"><p>“${esc(ft)}”</p><small>${esc(fa)}</small></button>
-    <p class="small"><b>Dica do dia:</b> ${tipOfDay()}</p>${nm ? `<p class="small"><b>Próximo marco:</b> ${nm.nm} · ${nm.lbl}. <span class="muted">${nm.txt}</span></p>` : ""}`, false, "foot")}</section>`;
+  const nm = MILESTONES.map(milestone).find(m => !m.ok);
+  return `<section class="foot">${fold("Dica e próximo marco", `<p class="small"><b>Dica do dia:</b> ${tipOfDay()}</p>${nm ? `<p class="small"><b>Próximo marco:</b> ${nm.nm} · ${nm.lbl}. <span class="muted">${nm.txt}</span></p>` : ""}`, false, "foot")}</section>`;
 }
-VIEWS.hoje = () => `${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${footHTML()}`;
-ACT["quote-next"] = () => { UI.qOff++; render(); const f = $('[data-fold="foot"]'); if (f) f.open = true; };
+VIEWS.hoje = () => `${heroHTML()}${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${footHTML()}`;
+ACT["quote-next"] = () => { UI.qOff++; render(); };
 ACT.habit = b => {
   const k = dayK(), d = DW(k), id = b.dataset.id, wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5;
   d.h[id] = !d.h[id]; save(); render(); haptic(); if (STACK.includes("sheet") && $("#sheet .chk[data-act=habit]")) alignSheet();

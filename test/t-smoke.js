@@ -8,7 +8,7 @@ module.exports = async T => {
   const a = await boot({ v1: baseState() });
   T.ok(a.errors.length === 0, "abre sem erro de script " + (a.errors[0] || ""));
   const v = () => a.q("#view").textContent;
-  T.ok(a.q(".agora .btn.solid") && /alinhado/.test(v()) && /A seguir/.test(v()) && !lixo(v()), "Hoje: card Agora com uma ação, dia alinhado e a seguir");
+  T.ok(/alinhado/.test(v()) && /A seguir/.test(v()) && !lixo(v()), "Hoje: dia alinhado e a seguir");
   T.ok(a.qa("#tabbar .tb").length === 4 && a.q("#tabbar .tb-logo img") && /Registrar/.test(a.q("#tabbar").textContent), "barra: 4 seções com nome + logo no centro");
   T.ok(a.qa("#tabbar .tb").every(b => b.textContent.trim().length > 3), "cada seção da barra tem nome escrito");
   const parts = [["treino"], ["nutri", "refeicoes"], ["nutri", "agua"], ["nutri", "apetite"], ["saude", "corpo"], ["saude", "remedios"], ["saude", "suplementos"], ["saude", "tratamento"], ["hoje"]];

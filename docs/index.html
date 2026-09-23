@@ -267,6 +267,22 @@ details.supp>summary,details.tr>summary{gap:8px;min-height:64px}details.supp sum
 .scale button{min-height:48px;border-radius:10px;font:700 15px var(--f-display);background:var(--surface2)}
 .scale button.on{background:color-mix(in srgb,var(--bad) calc(var(--p) * 100%),var(--accent));color:#fff;transform:scale(1.08)}
 .chips.lg .chip{min-height:44px;font-size:14.5px}
+/* papel de parede */
+.wall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.wall-op{display:flex;flex-direction:column;gap:6px;align-items:center;min-height:44px;padding:6px;border-radius:14px;border:2px solid var(--line);font-size:13.5px;font-weight:600}
+.wall-op span{width:100%;height:56px;border-radius:10px}
+.wall-op.on{border-color:var(--accent)}
+body.has-wall .block,body.has-wall .align{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+/* hero de frases */
+.hero{position:relative;overflow:hidden;padding:26px 20px 14px;border-radius:var(--r-l);text-align:center;background:radial-gradient(90% 80% at 50% 0%,rgba(139,124,246,.45),transparent 70%),radial-gradient(80% 70% at 100% 100%,rgba(91,140,255,.35),transparent 70%),var(--surface);border:1px solid rgba(139,124,246,.35);box-shadow:var(--shadow);animation:rise var(--t3) var(--ease) both}
+.hero-av{position:relative;width:96px;height:96px;margin:0 auto 14px;border-radius:50%;padding:3px;background:linear-gradient(135deg,var(--accent),var(--blue));box-shadow:0 0 32px rgba(139,124,246,.55)}
+.hero-av span,.hero-av img{position:absolute;inset:3px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font:700 30px var(--f-display);color:var(--accent-ink);object-fit:cover;width:calc(100% - 6px);height:calc(100% - 6px)}
+.hero-q{font:700 22px/1.3 var(--f-display);letter-spacing:-.015em;margin:0}
+.hero-a{margin-top:10px;color:var(--accent-ink);font-weight:600;font-size:14.5px}
+.hero-next{margin-top:8px}
+.ag-pill{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:10px 16px;border-radius:999px;background:var(--surface);border:1px solid rgba(139,124,246,.35);text-align:left}
+.ag-pill .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);flex:none}
+.hero-av img[hidden]{display:none}
 
 /* ============ SEÇÕES: blocos das telas (corpo, treino, água, coach, ajustes) ============ */
 .card.glow{background:linear-gradient(135deg,rgba(139,124,246,.1),var(--surface));border-color:rgba(139,124,246,.25)}
@@ -475,6 +491,7 @@ details.ex>summary{gap:8px;min-height:64px}details.ex>summary b{display:block;fo
 <input type="file" id="foto" accept="image/*" hidden>
 <input type="file" id="ia-foto" accept="image/*" hidden>
 <input type="file" id="fotoprog" accept="image/*" hidden>
+<input type="file" id="wallfile" accept="image/*" hidden>
 
 <script>
 function sirReset(){var p=navigator.serviceWorker?navigator.serviceWorker.getRegistrations():Promise.resolve([]);p.then(function(rs){rs.forEach(function(r){r.unregister()});return window.caches?caches.keys():[]}).then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}).then(function(){location.reload()})}
@@ -1036,8 +1053,8 @@ function upgradeProfile(p) {
   return p;
 }
 function mergeProfile(o) {
-  const d = rawProfile("Hobert"), s = Object.assign(d, o || {});
-  s.profile = Object.assign(d.profile, (o || {}).profile);
+  const d = rawProfile("Hobert"), dp = d.profile, s = Object.assign(d, o || {});
+  s.profile = Object.assign(dp, (o || {}).profile); // dp guardado antes: Object.assign(d, o) troca d.profile
   s.settings = Object.assign(baseSettings(), (o || {}).settings);
   if (!Array.isArray(s.habits) || !s.habits.length) s.habits = defHabits();
   if (!Array.isArray(s.supps)) s.supps = defSupps();
@@ -1054,7 +1071,7 @@ function migrateV1(o, keepSecrets = true) {
   return { v: 2, active: "p1", theme: st.theme || "auto", profiles: { p1: p } };
 }
 function mergeRoot(o) {
-  const r = { v: 2, active: o.active, theme: o.theme || "auto", profiles: {} };
+  const r = { v: 2, active: o.active, theme: o.theme || "auto", wall: o.wall || "none", profiles: {} };
   Object.entries(o.profiles || {}).forEach(([id, p]) => { r.profiles[id] = mergeProfile(p); r.profiles[id].id = id; });
   if (!Object.keys(r.profiles).length) { const p = newProfile("Hobert"); p.id = "p1"; r.profiles.p1 = p; }
   if (!r.profiles[r.active]) r.active = Object.keys(r.profiles)[0];
@@ -2075,10 +2092,13 @@ const fraseIdx = () => (Math.floor((Date.now() - new Date().getTimezoneOffset() 
 const dataAttrs = o => Object.entries(o || {}).map(([k, v]) => `data-${k}="${esc(v)}"`).join(" ");
 function agoraHTML() {
   const c = agoraCard();
+  if (c.pri <= 1) return ""; // "a seguir"/"dia fechado" já estão na lista A seguir: não ocupar a tela
+  if (!UI.agoraOpen) return `<button class="ag-pill" data-act="agora-toggle" aria-expanded="false"><span class="dot"></span><span class="grow"><b>Agora:</b> ${esc(c.title)}</span>${ic("right")}</button>`;
   return `<section class="agora" aria-labelledby="ag-t"><div class="ag-kick">${esc(c.kick)}</div><h2 class="ag-t" id="ag-t">${esc(c.title)}</h2>${c.text ? `<p class="ag-p">${esc(c.text)}</p>` : ""}
     <button class="btn solid xl full" data-act="${c.act}" ${dataAttrs(c.data)}>${esc(c.label)}</button>
     <div class="ag-alt">${c.alt ? `<button class="btn ghost" data-act="${c.alt[0]}" ${dataAttrs(c.alt[2])}>${c.alt[1]}</button>` : ""}${c.pri > 1 ? `<button class="btn ghost" data-act="snooze" data-id="${c.id}">Depois</button>` : ""}</div></section>`;
 }
+ACT["agora-toggle"] = () => { UI.agoraOpen = !UI.agoraOpen; render(); };
 ACT.snooze = b => { UI.snooze[b.dataset.id] = Date.now() + 30 * 6e4; render(); toast("Lembro de novo em 30 min."); };
 function alignHTML() {
   const a = alignment(), col = a.pct >= 80 ? "var(--ok)" : a.pct >= 50 ? "var(--accent)" : "var(--warn)";
@@ -2108,12 +2128,11 @@ function metersHTML() {
     ${meter("Calorias", fmtInt(t.k), fmtInt(tg.kcal), "kcal", "var(--blue)", "go", 'data-tab="nutri" data-seg="refeicoes"')}</section>`;
 }
 function footHTML() {
-  const [ft, fa] = FRASES[fraseIdx()], nm = MILESTONES.map(milestone).find(m => !m.ok);
-  return `<section class="foot">${fold("Frase, dica e próximo marco", `<button class="quote" data-act="quote-next" aria-label="Outra frase"><p>“${esc(ft)}”</p><small>${esc(fa)}</small></button>
-    <p class="small"><b>Dica do dia:</b> ${tipOfDay()}</p>${nm ? `<p class="small"><b>Próximo marco:</b> ${nm.nm} · ${nm.lbl}. <span class="muted">${nm.txt}</span></p>` : ""}`, false, "foot")}</section>`;
+  const nm = MILESTONES.map(milestone).find(m => !m.ok);
+  return `<section class="foot">${fold("Dica e próximo marco", `<p class="small"><b>Dica do dia:</b> ${tipOfDay()}</p>${nm ? `<p class="small"><b>Próximo marco:</b> ${nm.nm} · ${nm.lbl}. <span class="muted">${nm.txt}</span></p>` : ""}`, false, "foot")}</section>`;
 }
-VIEWS.hoje = () => `${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${footHTML()}`;
-ACT["quote-next"] = () => { UI.qOff++; render(); const f = $('[data-fold="foot"]'); if (f) f.open = true; };
+VIEWS.hoje = () => `${heroHTML()}${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${footHTML()}`;
+ACT["quote-next"] = () => { UI.qOff++; render(); };
 ACT.habit = b => {
   const k = dayK(), d = DW(k), id = b.dataset.id, wasA = isActive(k), wasW = activeInWeek(mondayOf(k)) >= 5;
   d.h[id] = !d.h[id]; save(); render(); haptic(); if (STACK.includes("sheet") && $("#sheet .chk[data-act=habit]")) alignSheet();
@@ -2121,6 +2140,31 @@ ACT.habit = b => {
 };
 ACT.supp = b => { const d = DW(dayK()); d.s[b.dataset.id] = !d.s[b.dataset.id]; save(); render(); haptic(); };
 ACT["fiber-add"] = b => { fiberAdd(num(b.dataset.g), dayK()); render(); haptic(); };
+
+/* ============ HERO do Hoje: frase motivacional em destaque com a foto de quem escreveu ============ */
+// autor da frase → página da Wikipédia (foto buscada na hora e guardada no aparelho; sem internet, iniciais)
+const AUTHOR_WIKI = { "Maya Angelou": "Maya_Angelou", "Will Durant": "Will_Durant", "Ovídio": "Ovídio", "Sêneca": "Sêneca", "Epicteto": "Epicteto",
+  "Marco Aurélio": "Marco_Aurélio", "Lao Tsé": "Lao_Tsé", "Fernando Pessoa": "Fernando_Pessoa", "Jim Rohn": "Jim_Rohn",
+  "Rocky Balboa": "Rocky_Balboa", "Arnold Schwarzenegger": "Arnold_Schwarzenegger", "Muhammad Ali": "Muhammad_Ali" };
+const authorName = a => a.split(",")[0].trim();
+const initials = n => n.split(/\s+/).filter(w => w.length > 2).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "✦";
+async function authorPhoto(n) {
+  const t = AUTHOR_WIKI[n]; if (!t) return null;
+  const k = "au:" + n, c = await photoGet(k); if (c) return c;
+  try {
+    const r = await fetch("https://pt.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t)); if (!r.ok) return null;
+    const u = ((await r.json()).thumbnail || {}).source; if (!/^https:\/\/(upload|thumb)\.wikimedia\.org\//.test(u || "")) return null;
+    await photoPut(k, u); return u;
+  } catch (e) { return null; }
+}
+function heroHTML() {
+  const [ft, fa] = FRASES[fraseIdx()], n = authorName(fa);
+  setTimeout(heroHydrate, 0);
+  return `<section class="hero"><div class="hero-av" aria-hidden="true"><span>${esc(initials(n))}</span><img alt="" data-author="${esc(n)}" hidden></div>
+    <blockquote class="hero-q">“${esc(ft)}”</blockquote><div class="hero-a">— ${esc(fa)}</div>
+    <button class="btn ghost hero-next" data-act="quote-next">Outra frase ${ic("right")}</button></section>`;
+}
+function heroHydrate() { $$("img[data-author]").forEach(async img => { const u = await authorPhoto(img.dataset.author); if (u && img.isConnected) { img.onload = () => { img.hidden = false; }; img.src = u; } }); }
 
 /* ============ AGENDA: semana, dia, itens editáveis (tocar = editar · segurar e arrastar = mover · + = adicionar) ============ */
 const recTxt = it => it.date ? `Só em ${dispDate(it.date)}` : it.days.length === 7 ? "Todo dia" : it.days.length === 5 && WEEKDAYS.every(d => it.days.includes(d)) ? "Seg a sex" : it.days.map(d => DOW[d].slice(0, 3).toLowerCase()).join(", ") || "Nenhum dia";
@@ -3017,6 +3061,7 @@ function goalsFold() {
 function prefsFold() {
   const s = S.settings;
   return fold("Aparência, notificações e lembretes", `<div class="lbl">Tema</div><div class="seg">${[["auto", "Auto"], ["light", "Claro"], ["dark", "Escuro"]].map(([v, n]) => `<button class="${R.theme === v ? "on" : ""}" data-act="theme" data-v="${v}">${n}</button>`).join("")}</div>
+    ${wallHTML()}
     <div class="row between set-row"><span class="grow">Avisar fim do descanso e próximo exercício</span>${tog(s.notif, "notif", "Notificações")}</div>
     ${banner("warn", "info", "Com o app fechado", "Um app web não consegue disparar alarme sozinho (05:00, água). Por isso o app gera lembretes para o calendário do seu celular, que tocam mesmo com ele fechado. O aviso de fim de descanso só funciona com o app aberto.")}
     <button class="btn full" data-act="rem-open">${ic("download")} Criar lembretes no calendário</button>
@@ -3054,6 +3099,28 @@ ACT.reset = () => {
   const id = S.id, p = newProfile(S.profile.name, { startWeight: S.profile.startWeight, goal: S.profile.goal, height: S.profile.height, age: S.profile.age, avatar: S.profile.avatar });
   p.id = id; R.profiles[id] = p; useProfile(id); save(); closeAll(); render(); toast("Dados do perfil apagados.");
 };
+
+/* ============ PAPEL DE PAREDE: presets ou foto sua (só no aparelho, fora do backup) ============ */
+const WALLS = [["none", "Nenhum", ""],
+  ["aurora", "Aurora", "radial-gradient(90% 60% at 10% 0%,rgba(139,124,246,.35),transparent 70%),radial-gradient(80% 60% at 100% 100%,rgba(91,140,255,.3),transparent 70%)"],
+  ["noite", "Noite", "linear-gradient(160deg,rgba(60,40,140,.45),rgba(20,30,90,.35) 60%,transparent)"],
+  ["mar", "Mar", "radial-gradient(120% 70% at 50% 110%,rgba(47,111,224,.45),transparent 70%),linear-gradient(180deg,rgba(91,140,255,.12),transparent)"],
+  ["violeta", "Violeta", "conic-gradient(from 200deg at 70% 20%,rgba(139,124,246,.35),rgba(91,140,255,.2),rgba(139,124,246,.35))"]];
+async function applyWall() {
+  const w = R.wall || "none", b = document.body; let bg = (WALLS.find(x => x[0] === w) || WALLS[0])[2];
+  if (w === "foto") { const u = await photoGet("wall"); bg = u ? `linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url("${u}") center/cover` : ""; }
+  b.style.backgroundImage = ""; b.style.background = bg ? `${bg} fixed, var(--bg)` : "";
+  b.classList.toggle("has-wall", !!bg);
+}
+function wallHTML() {
+  const cur = R.wall || "none", op = (id, n, bg) => `<button class="wall-op ${cur === id ? "on" : ""}" data-act="wall" data-v="${id}" aria-pressed="${cur === id}"><span style="background:${bg || "var(--bg)"},var(--bg)"></span>${n}</button>`;
+  return `<div class="lbl">Papel de parede</div><div class="wall-grid">${WALLS.map(w => op(...w)).join("")}${op("foto", "Sua foto", "var(--surface3)")}</div>`;
+}
+ACT.wall = b => { if (b.dataset.v === "foto") return $("#wallfile").click(); R.wall = b.dataset.v; save(); applyWall(); render(); };
+async function wallSet(file) {
+  const b64 = await fotoDownscale(file, 1600); await photoPut("wall", "data:image/jpeg;base64," + b64);
+  R.wall = "foto"; save(); await applyWall(); render(); toast("Papel de parede trocado.");
+}
 
 /* ============ PERFIS: trocar, criar, editar e excluir (cada perfil tem dados totalmente isolados) ============ */
 function profileRows() {
@@ -3218,6 +3285,7 @@ document.addEventListener("change", e => {
   if (t.id === "ia-foto") { const f = t.files[0]; t.value = ""; if (f) iaFoto(f); return; }
   if (t.id === "foto") { const f = t.files[0]; t.value = ""; if (f) fotoAnalyze(f); return; }
   if (t.id === "file") { const f = t.files[0]; t.value = ""; if (f) importFile(f); return; }
+  if (t.id === "wallfile") { const f = t.files[0]; t.value = ""; if (f) wallSet(f).catch(() => toast("Não consegui ler essa foto.")); return; }
   if (t.id === "fotoprog") { const f = t.files[0]; t.value = ""; if (f) photoAdd(f).then(() => { render(); toast("Foto guardada só neste aparelho."); }).catch(() => toast("Não consegui ler essa foto.")); return; }
   if (t.dataset.change === "rule1" && S.habits.some(h => h.id === t.value)) { S.settings.rule1 = t.value; S.settings.needOthers = Math.min(S.settings.needOthers, S.habits.length - 1); save(); render(); toast("Regra nº 1 atualizada."); }
   if (t.dataset.f && S.cur && t.closest("#arena")) arenaRender();
@@ -3315,7 +3383,7 @@ function registerSW() {
   await loadState();
   Object.values(R.profiles).forEach(p => { if (!GEM_MODELS.some(m => m[0] === p.settings.gemModel)) p.settings.gemModel = GEM_DEFAULT; });
   save();
-  applyTheme();
+  applyTheme(); applyWall();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
   registerSW();
   try { history.replaceState({ layer: null }, ""); } catch (e) { }

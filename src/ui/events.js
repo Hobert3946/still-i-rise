@@ -40,6 +40,7 @@ document.addEventListener("change", e => {
   if (t.id === "ia-foto") { const f = t.files[0]; t.value = ""; if (f) iaFoto(f); return; }
   if (t.id === "foto") { const f = t.files[0]; t.value = ""; if (f) fotoAnalyze(f); return; }
   if (t.id === "file") { const f = t.files[0]; t.value = ""; if (f) importFile(f); return; }
+  if (t.id === "wallfile") { const f = t.files[0]; t.value = ""; if (f) wallSet(f).catch(() => toast("Não consegui ler essa foto.")); return; }
   if (t.id === "fotoprog") { const f = t.files[0]; t.value = ""; if (f) photoAdd(f).then(() => { render(); toast("Foto guardada só neste aparelho."); }).catch(() => toast("Não consegui ler essa foto.")); return; }
   if (t.dataset.change === "rule1" && S.habits.some(h => h.id === t.value)) { S.settings.rule1 = t.value; S.settings.needOthers = Math.min(S.settings.needOthers, S.habits.length - 1); save(); render(); toast("Regra nº 1 atualizada."); }
   if (t.dataset.f && S.cur && t.closest("#arena")) arenaRender();

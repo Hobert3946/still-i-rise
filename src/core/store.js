@@ -33,8 +33,8 @@ function upgradeProfile(p) {
   return p;
 }
 function mergeProfile(o) {
-  const d = rawProfile("Hobert"), s = Object.assign(d, o || {});
-  s.profile = Object.assign(d.profile, (o || {}).profile);
+  const d = rawProfile("Hobert"), dp = d.profile, s = Object.assign(d, o || {});
+  s.profile = Object.assign(dp, (o || {}).profile); // dp guardado antes: Object.assign(d, o) troca d.profile
   s.settings = Object.assign(baseSettings(), (o || {}).settings);
   if (!Array.isArray(s.habits) || !s.habits.length) s.habits = defHabits();
   if (!Array.isArray(s.supps)) s.supps = defSupps();
@@ -51,7 +51,7 @@ function migrateV1(o, keepSecrets = true) {
   return { v: 2, active: "p1", theme: st.theme || "auto", profiles: { p1: p } };
 }
 function mergeRoot(o) {
-  const r = { v: 2, active: o.active, theme: o.theme || "auto", profiles: {} };
+  const r = { v: 2, active: o.active, theme: o.theme || "auto", wall: o.wall || "none", profiles: {} };
   Object.entries(o.profiles || {}).forEach(([id, p]) => { r.profiles[id] = mergeProfile(p); r.profiles[id].id = id; });
   if (!Object.keys(r.profiles).length) { const p = newProfile("Hobert"); p.id = "p1"; r.profiles.p1 = p; }
   if (!r.profiles[r.active]) r.active = Object.keys(r.profiles)[0];

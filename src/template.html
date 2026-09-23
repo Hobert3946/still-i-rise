@@ -80,6 +80,7 @@
 <input type="file" id="foto" accept="image/*" hidden>
 <input type="file" id="ia-foto" accept="image/*" hidden>
 <input type="file" id="fotoprog" accept="image/*" hidden>
+<input type="file" id="wallfile" accept="image/*" hidden>
 
 <script>
 function sirReset(){var p=navigator.serviceWorker?navigator.serviceWorker.getRegistrations():Promise.resolve([]);p.then(function(rs){rs.forEach(function(r){r.unregister()});return window.caches?caches.keys():[]}).then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k)}))}).then(function(){location.reload()})}

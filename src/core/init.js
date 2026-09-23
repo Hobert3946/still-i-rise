@@ -14,7 +14,7 @@ function registerSW() {
   await loadState();
   Object.values(R.profiles).forEach(p => { if (!GEM_MODELS.some(m => m[0] === p.settings.gemModel)) p.settings.gemModel = GEM_DEFAULT; });
   save();
-  applyTheme();
+  applyTheme(); applyWall();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
   registerSW();
   try { history.replaceState({ layer: null }, ""); } catch (e) { }
