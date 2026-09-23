@@ -15,8 +15,8 @@ module.exports = async T => {
   run("dor 3"); T.ok(a.ev("S.pain[S.pain.length-1].v") === 3, "dor no ombro");
   run("pescoço 4"); T.ok(a.ev("S.neck[S.neck.length-1].v") === 4, "termômetro do pescoço");
   T.ok(first("dor 11") !== "Dor no ombro 11/10", "dor fora da escala ignorada");
-  T.ok(/Aura/.test(first("?posso comer pizza")), "? pergunta para a Aura");
-  T.ok(/Lente Corpo/.test(first("corpo")) && /Arena/.test(first("treino")) && /backup/i.test(first("backup")), "comandos e lentes");
+  T.ok(/Coach/.test(first("?posso comer pizza")), "? pergunta para o Coach");
+  T.ok(/Corpo/.test(first("corpo")) && /Arena/.test(first("treino")) && /fome/i.test(first("fome")) && /Agenda/.test(first("agenda")) && /backup/i.test(first("backup")), "comandos e lentes");
   T.ok(/rua/i.test(first("rua")), "atalho para comer na rua");
   T.ok(!a.errors.length, "sem erros de script"); a.close();
 };

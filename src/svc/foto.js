@@ -24,7 +24,7 @@ function fotoDownscale(file, max = 1024) {
   });
 }
 function fotoStart(meal) {
-  if (!SEC.gemKey) { toast("Cole sua chave do Gemini na lente Aura para usar a foto."); return openLens("aura"); }
+  if (!SEC.gemKey) { toast("Cole sua chave do Gemini no Coach para usar a foto."); return openPage("coach"); }
   if (!S.settings.gemAck) {
     if (!confirm("A foto do prato será enviada ao Google (Gemini) para análise. Continuar?")) return;
     S.settings.gemAck = true; save();

@@ -6,6 +6,7 @@ const moved = (e, g) => [e.clientX - g.x, e.clientY - g.y];
 function gStart(e) {
   const t = e.target, base = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false };
   let el;
+  if ((el = t.closest("[data-agdrag]"))) return Object.assign(base, { type: "agdrag", el, row: el.closest(".ag-row") });
   if ((el = t.closest("[data-grip]"))) return Object.assign(base, { type: "grip", el, row: el.closest("[data-row]") });
   if ((el = t.closest("[data-dial]"))) return Object.assign(base, { type: "dial", el, acc: 0 });
   if ((el = t.closest(".swipe-in"))) return Object.assign(base, { type: "del", el });
@@ -30,6 +31,7 @@ document.addEventListener("pointermove", e => {
     const horiz = Math.abs(dx) > Math.abs(dy);
     if (["del", "done", "arena"].includes(G.type) && !horiz) { G = null; return; }
     if (G.type === "done" && dx < 0) { G = null; return; }
+    if (G.type === "agdrag" && horiz) { G = null; return; }
     if (G.type === "dial" && document.activeElement === G.el.querySelector("input")) { G = null; return; }
     G.on = true; try { G.el.setPointerCapture(e.pointerId); } catch (x) { }
   }
@@ -40,6 +42,7 @@ function gMove(e, dx, dy) {
   if (g.type === "dial") { const n = Math.trunc((-dy - g.acc) / 22); if (n) { g.acc += n * 22; wkAdjFocus(g.el.dataset.dial, n * num(g.el.dataset.step)); G = Object.assign(g, { el: $(`[data-dial="${g.el.dataset.dial}"]`) || g.el }); } e.preventDefault(); return; }
   if (g.type === "del") { snap(g.el, dx, 0); g.el.parentNode.classList.toggle("armed", Math.abs(dx) > Math.min(120, g.el.offsetWidth * 0.35)); return; }
   if (g.type === "done") { snap(g.body, Math.min(dx, 160), 0); g.el.classList.toggle("armed", dx > 90); return; }
+  if (g.type === "agdrag") { const at = dragAt(g, dy); g.row.style.transform = `translateY(${dy}px)`; g.row.classList.add("dragging"); let lb = g.row.querySelector(".drag-t"); if (!lb) { lb = document.createElement("span"); lb.className = "drag-t"; g.row.appendChild(lb); } lb.textContent = "→ " + at; e.preventDefault(); return; }
   if (g.type === "grip") { g.row.style.transform = `translateY(${dy}px)`; g.row.classList.add("dragging"); }
 }
 function gEnd(e) {
@@ -51,7 +54,10 @@ function gEnd(e) {
   if (g.type === "done") { snap(g.body, 0, 220); g.el.classList.remove("armed"); if (ok && dx > 90) { const [act, id] = g.el.dataset.swipe.split(/:(.+)/); ACT[act]({ dataset: { id } }); } }
   if (g.type === "arena" && ok && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) arenaSwipe(dx > 0 ? 1 : -1);
   if (g.type === "grip") gripDrop(g, e);
+  if (g.type === "agdrag") { g.row.style.transform = ""; g.row.classList.remove("dragging"); const at = dragAt(g, dy); if (ok && at !== hhmm(new Date(0, 0, 0, 0, +g.el.dataset.min))) instMove(g.el.dataset.agdrag, at); else render(); }
 }
+// arrastar a alça de um item da agenda: 2 px = 1 min, encaixa de 15 em 15
+const dragAt = (g, dy) => { const m = clamp(Math.round((+g.el.dataset.min + dy / 2) / 15) * 15, 0, 23 * 60 + 45); return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
 function gripDrop(g, e) {
   g.row.style.transform = ""; g.row.classList.remove("dragging");
   g.row.style.pointerEvents = "none"; const under = document.elementFromPoint(e.clientX, e.clientY); g.row.style.pointerEvents = "";

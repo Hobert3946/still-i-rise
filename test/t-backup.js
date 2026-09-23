@@ -25,6 +25,6 @@ module.exports = async T => {
   T.ok(a.ev("SEC.gemKey") === "AIza-SEGREDO-1" && a.ev("SEC.ghToken") === "ghp_SEGREDO_2", "restaurar preserva as chaves locais");
   a.ev("profileCreate('Irmão', {startWeight: 80})"); const v2 = a.ev("JSON.stringify(safeState())");
   a.ev("importObject(JSON.parse(" + JSON.stringify(v2) + "))"); T.ok(a.ev("Object.keys(R.profiles).length") === 2, "importar v2 traz todos os perfis");
-  a.ev("S.settings.lastBackup = addDays(today(), -30); render()"); T.ok(/Backup atrasado/.test(a.q("#river").textContent), "alerta de backup com mais de 21 dias");
+  a.ev("S.settings.lastBackup = addDays(today(), -30)"); T.ok(a.ev("candidates().some(c => c.id === 'backup')"), "alerta de backup com mais de 21 dias");
   T.ok(!a.errors.length, "sem erros de script"); a.close();
 };

@@ -18,7 +18,7 @@ function profileNewSheet() {
   <p class="muted xs">Começa com os hábitos e suplementos padrão. Ajuste tudo na lente Sistema.</p>
   <button class="btn solid full" data-act="profile-create">CRIAR E ENTRAR</button>`);
 }
-ACT.profiles = () => openSheet(`<h3 class="h3">Perfis</h3><div class="list">${profileRows()}</div><div class="grid2"><button class="btn" data-act="profile-new">${ic("plus")} Novo</button><button class="btn" data-act="lens" data-l="sistema">${ic("edit")} Editar</button></div>`);
+ACT.profiles = () => openSheet(`<h3 class="h3">Perfis</h3><div class="list">${profileRows()}</div><div class="grid2"><button class="btn" data-act="profile-new">${ic("plus")} Novo</button><button class="btn" data-act="page" data-p="ajustes">${ic("edit")} Editar</button></div>`);
 ACT["profile-use"] = b => { if (STACK.includes("sheet")) closeSheet(); switchProfile(b.dataset.id); };
 ACT["profile-new"] = () => profileNewSheet();
 ACT["profile-create"] = () => {

@@ -3,7 +3,7 @@ const { boot, baseState, keyOf } = require("./helpers");
 module.exports = async T => {
   const a = await boot({ v1: baseState() }), k = keyOf(0);
   a.ev("S.habits.forEach(h => DW(today()).h[h.id] = false)");
-  a.click('.rule1[data-act=habit]'); T.ok(a.ev("D(today()).h.acucar") === true, "tocar na Regra nº 1 marca o hábito");
+  a.click(".align"); a.click('#sheet [data-act=habit][data-id=acucar]'); T.ok(a.ev("D(today()).h.acucar") === true && /Regra nº 1/.test(a.q("#sheet").textContent), "detalhe do alinhamento marca a Regra nº 1");
   a.ev("DW(today()).h.proteina = true"); T.ok(a.ev("isActive(today())") === false, "Regra nº 1 + 1 não é dia ativo");
   a.ev("DW(today()).h.sono = true"); T.ok(a.ev("isActive(today())") === true, "Regra nº 1 + 2 é dia ativo");
   a.ev("DW(today()).h.acucar = false"); T.ok(a.ev("isActive(today())") === false, "sem a Regra nº 1 nunca é ativo");
@@ -11,18 +11,16 @@ module.exports = async T => {
   a.ev("S.settings.needOthers = 3"); T.ok(a.ev("isActive(today())") === false, "N outros hábitos configurável");
   a.ev("S.settings.rule1 = 'acucar'; S.settings.needOthers = 2");
   // editor: novo hábito com horário aparece no rio; sem horário, no trilho
-  a.ev("openLens('sistema','habitos')"); a.click("[data-act=li-new][data-k=habits]");
-  a.q("#hi").value = "🧘"; a.q("#ht").value = "Alongar 10 min"; a.q("#ha").value = "06:30"; a.click("[data-act=li-save]");
-  T.ok(a.ev("S.habits.length") === 7 && a.ev("S.habits[6].at") === "06:30", "adiciona hábito com ícone e horário");
-  a.ev("dropLayer('lens')"); await a.wait(20);
-  T.ok(/Alongar 10 min/.test(a.q(".timeline").textContent), "hábito com horário aparece como nó no rio");
+  a.ev("closeAll(); UI.openFold = 'habitos'; openPage('ajustes')"); await a.wait(20); a.click("[data-act=li-new][data-k=habits]");
+  a.q("#hi").value = "🧘"; a.q("#ht").value = "Alongar 10 min"; a.click("[data-act=li-save]");
+  T.ok(a.ev("S.habits.length") === 7 && a.ev("S.habits[6].icon") === "🧘", "adiciona hábito com ícone");
   a.ev("listMove('habits', 6, 0)"); T.ok(a.ev("S.habits[0].t") === "Alongar 10 min", "reordena");
   a.ev("ACT['li-del']({dataset:{k:'habits', i:'0'}})"); T.ok(a.ev("S.habits.length") === 6, "remove");
   const r1i = a.ev("S.habits.findIndex(h => h.id === 'acucar')");
   a.ev(`ACT['li-del']({dataset:{k:'habits', i:'${r1i}'}})`); T.ok(a.ev("S.habits.length") === 6, "não remove a Regra nº 1");
   // suplementos customizáveis
-  a.ev("S.supps.push({id:'b12', n:'B12', tip:'Com o café', type:'S', at:'07:00'}); render()");
-  T.ok(/B12|Suplementos/.test(a.q(".timeline").textContent) && a.ev("S.supps.filter(s=>s.type==='M').length") === 1, "suplemento novo entra no rio e remédios ficam separados");
+  a.ev("go('saude','suplementos')"); a.click("[data-act=li-new][data-k=supps]"); a.q("#sn").value = "B12"; a.q("#st").value = "Com o café"; a.q("#sa").value = "07:00"; a.click("[data-act=li-save]");
+  T.ok(a.ev("instances(today()).some(x => x.it.type === 'suplemento' && x.it.title === 'B12' && x.at === '07:00')") && a.ev("S.supps.every(s => s.type === 'S')"), "suplemento novo entra na agenda; remédios ficam em área própria");
   // semanas: 5 ativos = verde; 4 não quebra; 2 ruins seguidas zeram
   const on = off => a.ev(`DW("${keyOf(off)}").h = {acucar:true, proteina:true, sono:true}`);
   a.ev("S.days = {}; S.settings.start = addDays(mondayOf(today()), -35)");

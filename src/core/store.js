@@ -9,13 +9,31 @@ const baseSettings = () => ({
   start: today(), logMode: "set", rotate: true, rotateWeeks: 4, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000,
   deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false
 });
-const newProfile = (name, p = {}) => ({
+const rawProfile = (name, p = {}) => ({
   id: uid("p"), profile: Object.assign({ name, startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
   weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [], favs: {},
   habits: defHabits(), supps: defSupps(), settings: baseSettings()
 });
+const newProfile = (name, p) => upgradeProfile(rawProfile(name, p));
+// v3: remédios saem da lista de suplementos (com o histórico), horários fixos viram rotina editável
+function medsFromSupps(p) {
+  p.meds = [];
+  p.supps.filter(s => s.type === "M").forEach(s => p.meds.push({ id: s.id, n: s.n, dose: "", withMeal: /refei/i.test(s.tip), doctor: "", start: "", notes: s.tip, times: [s.at || "12:00"] }));
+  p.supps = p.supps.filter(s => s.type !== "M");
+}
+function upgradeProfile(p) {
+  if (!Array.isArray(p.meds)) medsFromSupps(p);
+  if (!p.sched || !Array.isArray(p.sched.items)) {
+    p.sched = defaultSched(p);
+    p.meds.forEach(m => { const it = p.sched.items.find(x => x.type === "remedio" && x.ref === m.id); if (!it) return;
+      Object.values(p.days).forEach(d => { if (d.s && d.s[m.id]) { d.med = d.med || {}; d.med[it.id] = "—"; } }); });
+  }
+  p.meds.forEach(m => delete m.times);
+  ["hunger", "questions", "photos", "goals"].forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
+  return p;
+}
 function mergeProfile(o) {
-  const d = newProfile("Hobert"), s = Object.assign(d, o || {});
+  const d = rawProfile("Hobert"), s = Object.assign(d, o || {});
   s.profile = Object.assign(d.profile, (o || {}).profile);
   s.settings = Object.assign(baseSettings(), (o || {}).settings);
   if (!Array.isArray(s.habits) || !s.habits.length) s.habits = defHabits();
@@ -23,7 +41,7 @@ function mergeProfile(o) {
   if (!s.habits.some(h => h.id === s.settings.rule1)) s.settings.rule1 = s.habits[0].id;
   if (!(o && o.settings && o.settings.calcWeight)) s.settings.calcWeight = s.profile.startWeight;
   SECRET_KEYS.forEach(k => delete s.settings[k]);
-  return s;
+  return upgradeProfile(s);
 }
 // v1 (um perfil só, segredos dentro de settings) → v2
 function migrateV1(o, keepSecrets = true) {
@@ -43,7 +61,8 @@ const rootFrom = o => o && o.v === 2 && o.profiles ? mergeRoot(o) : o && o.profi
 const useProfile = id => { R.active = id; S = R.profiles[id]; };
 
 const IDB = {
-  open() { return new Promise((res, rej) => { const r = indexedDB.open("sir-db", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  // v2 do banco: "kv" (espelho do estado) + "photos" (fotos de progresso, só no aparelho)
+  open() { return new Promise((res, rej) => { const r = indexedDB.open("sir-db", 2); r.onupgradeneeded = () => ["kv", "photos"].forEach(n => { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
   async put(v, k = "state2") { try { const db = await this.open(); db.transaction("kv", "readwrite").objectStore("kv").put(v, k); } catch (e) { } },
   async get(k = "state2") { try { const db = await this.open(); return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch (e) { return null; } }
 };

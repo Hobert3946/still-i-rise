@@ -8,7 +8,7 @@ const focusOf = dd => dd.f != null && dd.sets[dd.f] ? dd.f : Math.max(0, dd.sets
 function warmBody(step, dd) {
   return `<span class="pill acc">AQUECIMENTO DE MANGUITO</span><h2 class="ar-name">${step.c.name}</h2><p class="how">${step.c.how}</p>
     <div class="lbl">${step.c.sets} séries de ${step.c.reps[0]} repetições, carga leve</div>
-    <div class="stack">${dd.sets.map((s, i) => `<button class="chk big ${s.done ? "on" : ""}" data-act="wk-warmset" data-i="${i}" aria-pressed="${s.done}"><span class="box">${ic("check")}</span><span class="grow"><b>Série ${i + 1}</b></span></button>`).join("")}</div>`;
+    <div class="stack">${dd.sets.map((s, i) => `<button class="chk lg ${s.done ? "on" : ""}" data-act="wk-warmset" data-i="${i}" aria-pressed="${s.done}"><span class="box">${ic("check")}</span><span class="grow"><b>Série ${i + 1}</b></span></button>`).join("")}</div>`;
 }
 function dialHTML(slot, dd, fi) {
   const s = dd.sets[fi], ks = slot.inc ? Math.min(slot.inc, 5) : 0, rs = slot.unit ? 5 : 1, unit = slot.unit ? "seg" : "reps";

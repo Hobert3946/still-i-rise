@@ -1,7 +1,7 @@
 /* ============ INICIALIZAÇÃO ============ */
 // a cada minuto: relógio, linha AGORA, maré e virada do dia
 function tick() {
-  if (!STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("orb")) { applyTheme(); render(); }
+  if (!STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) { applyTheme(); render(); }
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
 }
 function registerSW() {
@@ -13,12 +13,13 @@ function registerSW() {
 (async function init() {
   await loadState();
   Object.values(R.profiles).forEach(p => { if (!GEM_MODELS.some(m => m[0] === p.settings.gemModel)) p.settings.gemModel = GEM_DEFAULT; });
+  save();
   applyTheme();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
   registerSW();
   try { history.replaceState({ layer: null }, ""); } catch (e) { }
-  render(); orbSync();
+  render();
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
-  if (S.cur) toast("Treino em andamento. Toque no nó do treino para continuar.");
+  if (S.cur) toast("Treino em andamento. Continue pelo card Agora.");
   setTimeout(maybeReview, 1000);
 })();

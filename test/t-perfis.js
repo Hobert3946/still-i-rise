@@ -3,8 +3,8 @@ const { boot, baseState } = require("./helpers");
 module.exports = async T => {
   const a = await boot({ v1: baseState() });
   a.ev("waterAdd(500)");
-  a.click("[data-act=profiles]"); T.ok(/Hobert/.test(a.q("#sheet").textContent), "header abre a lista de perfis");
-  a.click("#sheet [data-act=profile-new]");
+  a.click(".who"); T.ok(/Hobert/.test(a.q("#page").textContent) && /Perfis/.test(a.q("#page").textContent), "avatar abre Perfil e ajustes com a lista de perfis");
+  a.click("#page [data-act=profile-new]");
   a.q("#nn").value = "Mãe"; a.q("#ns").value = "90"; a.q("#ng").value = "75"; a.q("#nh").value = "160"; a.q("#na").value = "55";
   a.click("[data-act=profile-create]"); await a.wait(30);
   T.ok(a.ev("S.profile.name") === "Mãe" && a.ev("Object.keys(R.profiles).length") === 2, "cria e entra no novo perfil");
@@ -14,7 +14,7 @@ module.exports = async T => {
   a.ev("waterAdd(300)");
   a.ev("switchProfile('p1')"); T.ok(a.ev("S.profile.name") === "Hobert" && a.ev("D(today()).water") === 500, "trocar de volta traz a água do Hobert (500), não a da Mãe");
   // editar metas parametrizáveis
-  a.ev("openLens('sistema', 'metas')");
+  a.ev("UI.openFold = 'metas'; openPage('ajustes')");
   a.q("#pdef").value = "500"; a.q("#pact").value = "1,55"; a.q("#pfloor").value = "2000"; a.q("#pwater").value = "3500";
   a.click("[data-act=profile-save]");
   const exp = Math.max(2000, Math.round(((10 * 140 + 6.25 * 179 - 5 * 24 + 5) * 1.55 - 500) / 50) * 50);

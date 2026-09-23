@@ -13,7 +13,7 @@ module.exports = async T => {
   T.ok(ev("DAY_ORDER.every(L => PLAN[L].ex.every(e => e.v.every(v => v[2] && v[2].length > 10)))"), "toda variação tem 'como fazer'");
   T.ok(ev("PLAN.A.ex[0].rest") === 120 && ev("PLAN.C.ex[0].inc") === 10 && ev("PLAN.D.ex[0].inc") === 1, "descanso e incrementos preservados");
   T.ok(ev("S.habits.map(h => h.id).join()") === "treino,acucar,proteina,caminhada,agua,sono", "6 hábitos padrão do Hobert");
-  T.ok(ev("S.supps.map(s => s.id).join()") === "metformina,creatina,d3,psyllium,omega3,magnesio" && ev("S.supps[0].type") === "M", "6 suplementos padrão (metformina como remédio)");
+  T.ok(ev("S.supps.map(s => s.id).join()") === "creatina,d3,psyllium,omega3,magnesio" && ev("S.meds.map(m => m.n).join()") === "Metformina", "5 suplementos padrão e a metformina como remédio");
   T.ok(ev("SUPP_CATALOG.length") >= 17 && ev("SUPP_CATALOG.every(x => x.price && x.help && x.risk)"), "catálogo com custo, ajuda e risco");
   T.ok(ev("FRASES.length") === 14 && ev("TIPS.length") === 12, "14 frases e 12 dicas");
   T.ok(ev("STREET.length") === 7 && ev("MILESTONES.length") === 6 && ev("ABSENCE.map(x => x.min).join()") === "8,4,2", "comer na rua (7), marcos (6), ausência (2, 4, 8+)");
@@ -23,6 +23,6 @@ module.exports = async T => {
   const miss = fns.filter(f => ev(`typeof ${f}`) !== "function");
   T.ok(!miss.length, "todas as funções de domínio existem" + (miss.length ? ": faltam " + miss.join(", ") : ""));
   ev("S.days = {}; S.weights = [{d: addDays(today(), -9), kg: 130}]; S.logs = {}; render()");
-  T.ok(/9 dias sem registro/.test(a.q("#river").textContent) && /menor degrau/.test(a.q("#river").textContent), "alerta de ausência de 8+ dias");
+  T.ok(/9 dias sem registro/.test(a.q(".agora").textContent) && /menor degrau/.test(a.q(".agora").textContent), "alerta de ausência de 8+ dias vira o card Agora");
   T.ok(!a.errors.length, "sem erros de script"); a.close();
 };

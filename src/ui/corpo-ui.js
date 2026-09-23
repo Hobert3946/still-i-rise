@@ -1,4 +1,4 @@
-/* ============ LENTE CORPO: peso, marcos, pescoço, ritmo, cargas, sequências e recaída ============ */
+/* ============ SAÚDE › CORPO: peso, medidas, marcos, pescoço, ritmo, fotos, recaída ============ */
 // o último marco segue a meta do perfil (padrão 105 kg)
 function milestone(m) {
   const s = S.profile.startWeight, g = S.profile.goal, minW = Math.min(s, ...S.weights.map(w => w.kg)), fin = m.id === 6;
@@ -21,6 +21,7 @@ function weightSec() {
   const w = curWeight(), s = S.profile.startWeight, g = S.profile.goal, prog = clamp((s - w) / (s - g || 1), 0, 1), dv = r1(w - s);
   return sec("", `<div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${r1(w)}<small class="unit"> kg</small></div></div><div class="right"><div class="lbl">Desde o início</div><div class="h3 tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${dv > 0 ? "+" : ""}${dv} kg</div></div></div>
     <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${s} kg</span><span class="lbl">Meta ${g} kg · faltam ${r1(Math.max(0, w - g))}</span></div>
+    <p class="muted small">IMC ${String(r1(w / (S.profile.height / 100) ** 2)).replace(".", ",")} · altura ${S.profile.height} cm</p>
     ${chartSVG()}<button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
     <p class="muted small">Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
     ${S.weights.length ? `<div class="list">${S.weights.slice(-6).reverse().map(x => `<div class="li"><b class="tabnum grow">${x.kg} kg${x.waist ? `<span class="muted"> · cintura ${x.waist} cm</span>` : ""}</b><span class="muted small">${dispDate(x.d)}</span></div>`).join("")}</div>` : ""}`);
@@ -40,13 +41,12 @@ function neckSec() {
     <div class="seg neck">${[1, 2, 3, 4, 5].map(v => `<button class="${last && last.v === v && last.d === today() ? "on" : ""}" data-act="neck" data-v="${v}" style="--n:${v}">${v}</button>`).join("")}</div>
     ${S.neck.length ? `<p class="muted small">${S.neck.slice(-6).map(n => `${dispDate(n.d)}: ${n.v}`).join(" · ")}${diffDays(today(), last.d) >= 14 ? " · hora de uma nova leitura" : ""}</p>` : ""}`);
 }
-LENS_R.corpo = () => {
+function corpoView() {
   const ms = MILESTONES.map(milestone).map(m => `<div class="li ${m.ok ? "ok" : ""}"><span class="ms-box">${ic("check")}</span><div class="grow"><b>${m.nm} · ${m.lbl}</b><small class="muted">${m.txt}</small></div></div>`).join("");
-  const recs = maxLoads();
   return `${weightSec()}${rhythmSec()}${sec("Marcos", `<div class="list">${ms}</div>`)}${neckSec()}
-    ${recs.length ? sec("Maiores cargas registradas", `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div>`) : ""}
-    ${sec("", fold("Protocolo de recaída", `<p class="small"><b>Furou uma refeição:</b> a próxima é normal. Não compensa pulando nem treina dobrado.<br><br><b>Furou um dia:</b> entra como dia ruim e amanhã segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda é déficit.<br><br><b>Furou uma semana:</b> volte pelo menor degrau: só a Regra nº 1. Os outros hábitos voltam depois.<br><br><b>Nunca se pese após furar.</b></p>`, UI.lensSub === "recaida", "recaida"))}`;
-};
+    ${photosSec()}
+    ${sec("", fold("Protocolo de recaída", `<p class="small"><b>Furou uma refeição:</b> a próxima é normal. Não compensa pulando nem treina dobrado.<br><br><b>Furou um dia:</b> entra como dia ruim e amanhã segue o plano. Um dia de 4.000 kcal numa semana de 2.000 ainda é déficit.<br><br><b>Furou uma semana:</b> volte pelo menor degrau: só a Regra nº 1. Os outros hábitos voltam depois.<br><br><b>Nunca se pese após furar.</b></p>`, UI.openFold === "recaida", "recaida"))}`;
+}
 /* ---- registros: peso, pescoço, cardio, resumo semanal ---- */
 function weighSheet() {
   const k = today(), y = !isActive(addDays(k, -1)) && S.weights.length;

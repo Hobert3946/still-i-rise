@@ -1,4 +1,4 @@
-/* ============ LENTE NUTRIÇÃO: metas, motor metabólico, fibras, 5 refeições e comer na rua ============ */
+/* ============ NUTRIÇÃO: Refeições · Água · Apetite ============ */
 function nutriTop(k) {
   const tg = TG(), tot = dayTotals(k), rem = tg.kcal - tot.k;
   return sec("", `<div class="row around">${ring(tot.k / tg.kcal, 120, 10, "grad", `<div class="h3 tabnum">${fmtInt(tot.k)}</div><div class="lbl">de ${fmtInt(tg.kcal)} kcal</div>`)}${ring(tot.p / tg.prot, 120, 10, "var(--ok)", `<div class="h3 tabnum">${Math.round(tot.p)}</div><div class="lbl">de ${tg.prot} g prot</div>`)}</div>
@@ -18,12 +18,13 @@ function fiberSec(k) {
 }
 function mealsSec(k) {
   return MEALS.map(([m, hint]) => { const it = mealItems(m, k), t = sumItems(it);
-    return `<section class="card meal"><details class="fold" data-fold="m-${normTxt(m).replace(/\s/g, "")}" ${UI.meal === m ? "open" : ""}><summary><span class="grow"><b class="h3">${m}</b><small class="muted">${it.length ? `${Math.round(t.k)} kcal · ${Math.round(t.p)} g` : esc(hint)}</small></span>${ic("down")}</summary>
+    return `<section class="card meal"><details class="fold" data-fold="m-${normTxt(m).replace(/\s/g, "")}" ${UI.openMeal === m ? "open" : ""}><summary><span class="grow"><b class="h3">${m}</b><small class="muted">${it.length ? `${Math.round(t.k)} kcal · ${Math.round(t.p)} g` : esc(hint)}</small></span>${ic("down")}</summary>
       <div class="body"><p class="muted small">${esc(hint)}</p>${keyboardHTML(m, k)}</div></details></section>`; }).join("");
 }
 function streetSec() {
   return sec("", fold("Comer na rua · 7 situações", `<p class="muted small">Toque no cartão para ver a armadilha.</p><div class="street">${STREET.map((s, i) => `<button class="flip" data-act="flip" aria-label="${esc(s.t)}: ver escolha certa e armadilha">
-    <span class="face ok"><span class="lbl">${esc(s.t)} · escolha certa</span><b>${esc(s.ok.d)}</b></span><span class="face bad"><span class="lbl">${esc(s.t)} · armadilha</span><b>${esc(s.bad.d)}</b></span></button>`).join("")}</div>`, UI.lensSub === "rua", "rua"));
+    <span class="face ok"><span class="lbl">${esc(s.t)} · escolha certa</span><b>${esc(s.ok.d)}</b></span><span class="face bad"><span class="lbl">${esc(s.t)} · armadilha</span><b>${esc(s.bad.d)}</b></span></button>`).join("")}</div>`, UI.openFold === "rua", "rua"));
 }
-LENS_R.nutri = () => { const k = dayK(); return `${k !== today() ? `<div class="pastnote">${ic("info")} Editando ${dispDate(k)}.</div>` : ""}${nutriTop(k)}${adviceSec(k)}${fiberSec(k)}${mealsSec(k)}${streetSec()}`; };
+const nutriRefeicoes = () => { const k = dayK(); return `${nutriTop(k)}${adviceSec(k)}${mealsSec(k)}${fiberSec(k)}${streetSec()}`; };
+VIEWS.nutri = () => `${segBar("nutri", [["refeicoes", "Refeições"], ["agua", "Água"], ["apetite", "Apetite"]])}${pastNote()}${UI.seg.nutri === "agua" ? aguaView() : UI.seg.nutri === "apetite" ? apetiteView() : nutriRefeicoes()}`;
 ACT.flip = b => { b.classList.toggle("on"); haptic(); };

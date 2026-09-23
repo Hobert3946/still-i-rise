@@ -1,6 +1,6 @@
 /* ============ INTERPRETADOR DA PALETA: texto livre → ações ============ */
 // Entende: "água 500", "500", "garrafa", "peso 118,4 cintura 121", "cardio 30 6,5 5", "fibra 5", "dor 3", "pescoço 4",
-// "repetir almoço", "frango 150 @almoço" (refeição pelo horário se omitida), "?pergunta" para a Aura, e comandos/lentes.
+// "repetir almoço", "frango 150 @almoço" (refeição pelo horário se omitida), "?pergunta" para o Coach, e comandos/lentes.
 const MEAL_ALIAS = { cafe: "Café da manhã", "cafe da manha": "Café da manhã", manha: "Café da manhã", almoco: "Almoço", alm: "Almoço", lanche: "Lanche", jantar: "Jantar", janta: "Jantar", ceia: "Ceia" };
 const cmd = (icon, label, sub, run) => ({ icon, label, sub, run });
 function mealIn(t) {
@@ -34,7 +34,7 @@ function parseFood(t) {
     return cmd("fork", `${shortName(f[0])} · ${gg} g`, `${m} · ${Math.round(f[1] * gg / 100)} kcal · ${r1(f[2] * gg / 100)} g prot`, () => { foodAdd(i, gg, m, dayK()); toast(`Adicionado em ${m}.`); if (isSugarDrink(f)) toast("Bebida com açúcar: quebra a Regra nº 1 de hoje."); }); });
 }
 function staticCommands() {
-  const L = (l, n, icon) => cmd(icon, "Lente " + n, "Abrir", () => openLens(l));
+  const L = (n, icon, fn) => cmd(icon, n, "Abrir", fn);
   return [
     [["treino", "arena", "academia"], cmd("dumb", S.cur ? "Continuar treino na Arena" : "Entrar na Arena", "Modo Treino", () => S.cur ? wkOpen() : wkStart(planLetter(today()) || seqNext()))],
     [["peso", "pesagem", "balanca"], cmd("scale", "Registrar peso", "Pesagem semanal", () => weighSheet())],
@@ -45,19 +45,22 @@ function staticCommands() {
     [["backup", "exportar"], cmd("download", "Exportar backup .json", "Camada 3", () => exportData())],
     [["importar", "restaurar"], cmd("upload", "Importar backup .json", "Substitui os dados", () => $("#file").click())],
     [["nuvem", "gist", "sync"], cmd("cloud", "Enviar para a nuvem agora", "GitHub Gist", () => syncToCloud(true))],
-    [["rua", "restaurante", "comer fora"], cmd("fork", "Comer na rua", "7 situações: boa × armadilha", () => openLens("nutri", "rua"))],
+    [["rua", "restaurante", "comer fora"], cmd("fork", "Comer na rua", "7 situações: boa × armadilha", () => { UI.openFold = "rua"; go("nutri", "refeicoes"); })],
     [["lembrete", "alarme", "calendario"], cmd("download", "Lembretes no calendário", ".ics", () => remSheet())],
     [["resumo", "semana"], cmd("trend", "Resumo da semana", "Últimos 7 dias", () => reviewOpen())],
-    [["recaida", "furei", "furou"], cmd("leaf", "Protocolo de recaída", "Refeição, dia, semana", () => openLens("corpo", "recaida"))],
-    [["tema"], cmd("moon", "Alternar tema", "Claro / escuro", () => ACT["theme-flip"]())],
-    [["corpo", "evolucao", "marcos"], L("corpo", "Corpo", "trend")], [["nutri", "comida", "comer", "dieta"], L("nutri", "Nutrição", "fork")],
-    [["agua", "hidrat"], L("agua", "Água", "drop")], [["plano", "treino"], L("treino", "Treino", "dumb")],
-    [["aura", "ia", "chat"], L("aura", "Aura (IA)", "sparkles")], [["sistema", "config", "ajuste", "perfil", "habito", "suplemento", "catalogo"], L("sistema", "Sistema", "gear")]
+    [["recaida", "furei", "furou"], cmd("leaf", "Protocolo de recaída", "Refeição, dia, semana", () => { UI.openFold = "recaida"; go("saude", "corpo"); })],
+    [["tema"], cmd("moon", "Alternar tema", "Claro / escuro", () => { R.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; save(); applyTheme(); })],
+    [["fome", "apetite", "vontade"], cmd("smile", "Registrar fome", "Apetite", () => hungerSheet())], [["sono", "dormi"], cmd("moon", "Registrar sono", "Horas dormidas", () => sleepSheet())],
+    [["agenda", "rotina", "horario"], L("Agenda", "cal", () => openPage("agenda"))], [["remedio", "dose", "metformina"], L("Remédios", "pill", () => go("saude", "remedios"))],
+    [["suplemento", "creatina"], L("Suplementos", "leaf", () => go("saude", "suplementos"))], [["tratamento", "glp", "obesidade"], L("Tratamento da obesidade", "info", () => go("saude", "tratamento"))],
+    [["corpo", "evolucao", "marcos", "foto"], L("Corpo e evolução", "trend", () => go("saude", "corpo"))], [["nutri", "comida", "comer", "dieta"], L("Nutrição", "fork", () => go("nutri", "refeicoes"))],
+    [["agua", "hidrat"], L("Água", "drop", () => go("nutri", "agua"))], [["plano", "treino"], L("Treino", "dumb", () => go("treino"))],
+    [["coach", "aura", "ia", "chat"], L("Coach", "sparkles", () => openPage("coach"))], [["ajuste", "config", "perfil", "habito", "backup", "tema"], L("Perfil e ajustes", "gear", () => openPage("ajustes"))]
   ];
 }
 function parseCommand(raw) {
   const t = normTxt(raw.trim()).replace(/\s+/g, " "); if (!t) return [];
-  if (t.startsWith("?")) return [cmd("sparkles", "Perguntar à Aura", raw.trim().slice(1), () => { openLens("aura"); askAura(raw.trim().slice(1).trim()); })];
+  if (t.startsWith("?")) return [cmd("sparkles", "Perguntar ao Coach", raw.trim().slice(1), () => { openPage("coach"); askAura(raw.trim().slice(1).trim()); })];
   const direct = [...parseWater(t), ...parseNumbers(t)];
   const pm = t.match(/^perfil\s+(.+)$/), prof = pm ? Object.values(R.profiles).filter(p => normTxt(p.profile.name).includes(pm[1])).map(p => cmd("user", "Trocar para " + p.profile.name, "Perfil", () => switchProfile(p.id))) : [];
   const stat = staticCommands().filter(([ks]) => ks.some(k => k.startsWith(t) || t.startsWith(k))).map(x => x[1]);

@@ -2,10 +2,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;background:var(--bg)}
 body{font:400 16px/1.45 var(--f-body);color:var(--text);background:var(--bg);min-height:100dvh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;transition:background var(--t3) var(--ease)}
-body::before{content:"";position:fixed;inset:-20% -10% auto;height:70vh;background:radial-gradient(60% 50% at 30% 20%,rgba(217,137,79,.13),transparent 70%),radial-gradient(50% 40% at 85% 10%,rgba(108,196,224,.08),transparent 70%);pointer-events:none;z-index:0}
+body::before{content:"";position:fixed;inset:-20% -10% auto;height:70vh;background:radial-gradient(60% 50% at 30% 20%,rgba(139,124,246,.13),transparent 70%),radial-gradient(50% 40% at 85% 10%,rgba(86,182,247,.08),transparent 70%);pointer-events:none;z-index:0}
 body.lock{overflow:hidden}
-body[data-hour="morning"]::before{background:radial-gradient(60% 50% at 30% 20%,rgba(242,178,122,.2),transparent 70%),radial-gradient(50% 40% at 85% 10%,rgba(230,176,75,.1),transparent 70%)}
-body[data-hour="night"]::before{background:radial-gradient(60% 50% at 30% 20%,rgba(169,155,224,.12),transparent 70%),radial-gradient(50% 40% at 85% 10%,rgba(108,196,224,.07),transparent 70%)}
+body[data-hour="morning"]::before{background:radial-gradient(60% 50% at 30% 20%,rgba(180,168,255,.2),transparent 70%),radial-gradient(50% 40% at 85% 10%,rgba(91,140,255,.1),transparent 70%)}
+body[data-hour="night"]::before{background:radial-gradient(60% 50% at 30% 20%,rgba(169,155,224,.12),transparent 70%),radial-gradient(50% 40% at 85% 10%,rgba(86,182,247,.07),transparent 70%)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 button:disabled{opacity:.35;pointer-events:none}

@@ -12,7 +12,7 @@ module.exports = async T => {
   T.ok(a.ev("S.logs.a1_halt[0].sets[0].kg") === 20 && a.ev("S.pain.length") === 1 && a.ev("S.neck.length") === 1, "cargas, dor e pescoço preservados");
   T.ok(a.ev("S.favs['Almoço'][0]") === "Arroz branco cozido" && a.ev("S.chat.length") === 2, "favoritos e conversa preservados");
   T.ok(a.ev(`isActive("${keyOf(-1)}")`) === true, "dia antigo continua ativo (Regra nº 1 + 2)");
-  T.ok(a.ev("S.habits.length") === 6 && a.ev("S.supps.length") === 6 && a.ev("S.settings.rule1") === "acucar", "ganha os 6 hábitos e 6 suplementos padrão");
+  T.ok(a.ev("S.habits.length") === 6 && a.ev("S.supps.length") === 5 && a.ev("S.meds.length") === 1 && a.ev("S.settings.rule1") === "acucar", "ganha 6 hábitos, 5 suplementos e a metformina como remédio");
   T.ok(a.ev("S.settings.deficit") === 1000 && a.ev("S.settings.activity") === 1.375 && a.ev("S.settings.floor") === 1800 && a.ev("S.settings.needOthers") === 2 && a.ev("S.settings.rotateWeeks") === 4, "parâmetros novos com os valores de antes");
   T.ok(a.ev("R.theme") === "light", "tema vai para a raiz");
   T.ok(a.ev("SEC.gemKey") === "AIza-X" && a.ev("SEC.ghToken") === "ghp_Y" && a.ev("SEC.ghGistId") === "gist1", "segredos migram para sir_secrets");

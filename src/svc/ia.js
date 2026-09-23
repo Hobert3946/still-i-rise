@@ -8,7 +8,7 @@ const GEM_DEFAULT = GEM_MODELS[0][0];
 const gemModel = () => GEM_MODELS.some(m => m[0] === S.settings.gemModel) ? S.settings.gemModel : GEM_DEFAULT;
 const GEM_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
 function gemErro(status, msg) {
-  if (status === 400 && /API key/i.test(msg)) return "Chave inválida. Confira a chave na lente Aura.";
+  if (status === 400 && /API key/i.test(msg)) return "Chave inválida. Confira a chave no Coach.";
   if (status === 401 || status === 403) return "A chave foi recusada ou não tem permissão.";
   if (status === 404) return "Modelo indisponível para esta chave. Toque em \"Verificar modelos\".";
   if (status === 429) return "Limite de uso da chave atingido. Tente de novo em alguns minutos.";
@@ -38,7 +38,7 @@ function weekMemory() {
 function buildAuraContext() {
   const k = today(), d = D(k), tg = TG(), tot = dayTotals(k), L = planLetter(k) || "descanso";
   const hab = S.habits.map(h => `${h.t}${d.h[h.id] ? " (feito)" : ""}`).join("; ");
-  return `Você é a Aura, uma assistente de IA integrada ao app Still I Rise (treino, dieta e hábitos para manter o peso). Seja direta, objetiva e encorajadora, em português do Brasil.
+  return `Você é o Coach, um assistente de IA integrado ao app Still I Rise (treino, dieta, saúde e hábitos para manter o peso). Seja direta, objetiva e encorajadora, em português do Brasil.
 Dados do usuário hoje:
 - Nome: ${S.profile.name || "Usuário"}
 - Calorias: ${Math.round(tot.k)} de ${tg.kcal} kcal (restam ${Math.max(0, Math.round(tg.kcal - tot.k))})
@@ -47,6 +47,9 @@ Dados do usuário hoje:
 - Treino do dia: ${L}${d.wk ? " (concluído)" : ""}; cardio hoje: ${cardioMin(k)} min
 - Fibras registradas: ${d.fiber || 0} g de ${FIBER_GOAL} g
 - Hábitos: ${hab}
+- Sono de hoje: ${d.sleep != null ? d.sleep + " h" : "não registrado"}; fome registrada hoje: ${hungerOn(k).map(x => `${x.fome}/10${x.perda ? " (perda de controle)" : ""}`).join(", ") || "nenhum registro"}
+- Remédios de hoje: ${(S.meds || []).map(m => `${m.n}: ${medToday(m.id).filter(x => x.taken).length}/${medToday(m.id).length} doses`).join("; ") || "nenhum cadastrado"}
+- Padrões observados nos registros: ${hungerInsights().join(" ") || "ainda sem dados suficientes"}
 - Horário: ${new Date().toLocaleTimeString("pt-BR")}
 - ${weekMemory()}
 Regras:
@@ -54,7 +57,7 @@ Regras:
 2. Em fotos de comida, estime os macros como aproximação e diga como encaixar no que resta do dia.
 3. Se perguntarem se podem comer algo, use os macros restantes para responder.
 4. Você tem o histórico desta conversa: use o que já foi dito e não peça de novo o que o usuário já informou.
-5. Você é uma IA e pode errar. Não faça diagnóstico nem ajuste medicação. Para dor, sintomas, glicemia alterada ou dúvida clínica, oriente a procurar um profissional de saúde.`;
+5. Você é uma IA e pode errar. Não faça diagnóstico, não sugira nem ajuste medicação ou dose, não prometa perda de peso. Para dor, sintomas, glicemia alterada ou dúvida clínica, oriente a procurar um profissional de saúde.`;
 }
 /* histórico no formato do Gemini (papéis user/model, sem erros, sem turnos repetidos) */
 function chatContents() {
@@ -70,7 +73,7 @@ function chatContents() {
 }
 const IA_STATE = { busy: false };
 async function askAura(text, file = null) {
-  if (!SEC.gemKey) return toast("Configure a chave do Gemini na lente Aura primeiro.");
+  if (!SEC.gemKey) return toast("Configure a chave do Gemini no Coach primeiro.");
   const img = file ? await fotoDownscale(file) : null;
   S.chat = S.chat || []; S.chat.push({ role: "user", text, img }); IA_STATE.busy = true; render();
   try { S.chat.push({ role: "ai", text: await gemPost({ systemInstruction: { parts: [{ text: buildAuraContext() }] }, contents: chatContents() }) }); }

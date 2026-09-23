@@ -2,7 +2,7 @@
 const { boot, baseState } = require("./helpers");
 module.exports = async T => {
   const a = await boot({ v1: baseState() });
-  a.ev("openLens('sistema')"); a.click("[data-act=rem-open]"); T.ok(a.qa("[data-rem]").length === 11, "folha lista 11 lembretes");
+  a.ev("openPage('ajustes')"); a.click("[data-act=rem-open]"); T.ok(a.qa("[data-rem]").length === 11, "folha lista 11 lembretes");
   a.q('[data-remt="treino"]').value = "05:00"; a.click("[data-act=rem-gen]"); T.ok(a.w.__dl === "still-i-rise-lembretes.ics", "baixa o .ics");
   const t = await new Promise(r => { const fr = new a.w.FileReader(); fr.onload = () => r(fr.result); fr.readAsText(a.w.__blob); });
   T.ok(t.startsWith("BEGIN:VCALENDAR\r\n") && t.trim().endsWith("END:VCALENDAR"), "estrutura VCALENDAR com CRLF");

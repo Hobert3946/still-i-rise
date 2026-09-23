@@ -29,7 +29,7 @@ function lastSession() {
 // a sequência não quebra: se faltar um dia, o próximo treino continua de onde parou
 function seqNext() { const l = lastSession(); return l ? DAY_ORDER[(DAY_ORDER.indexOf(l.day) + 1) % DAY_ORDER.length] : "A"; }
 function planLetter(k) {
-  const w = parseKey(k).getDay(); if (w < 1 || w > 5) return null;
+  if (!hasTrainItem(k)) return null;   // dias de treino vêm da agenda (padrão seg–sex)
   const l = lastSession(); if (!l) return "A";
   return l.date === k ? l.day : seqNext();
 }

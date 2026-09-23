@@ -35,7 +35,7 @@ module.exports = async T => {
   T.ok(ev("D(today()).h.treino") === true && ev("D(today()).wk") === "A", "hábito 'Treinei às 5h' marcado sozinho");
   a.click("[data-act=sum-next]"); T.ok(/Dor no ombro/.test(sheet()) && a.qa(".painscale button").length === 11, "treino A pergunta a dor (0 a 10)");
   a.click(".painscale button[data-v='5']"); T.ok(ev("S.pain.length") === 1 && ev("S.pain[0].v") === 5, "dor registrada");
-  ev("S.pain.push({d:today(),v:5},{d:today(),v:4}); render()"); T.ok(/Dor no ombro em alta/.test(a.q("#river").textContent), "média ≥ 4 vira sinal no rio");
+  ev("S.pain.push({d:today(),v:5},{d:today(),v:4}); render()"); T.ok(a.ev("candidates().some(c => c.id === 'pain')") && /Dor no ombro em alta/.test((a.ev("go('treino')"), a.q("#view").textContent)), "média ≥ 4 vira alerta (Agora e Treino)");
   ev("wkBegin('A'); S.cur.i = stepsOf('A').findIndex(function(x){ return x.t === 'ex' && x.e.id === 'a1' })");
   T.ok(ev("wkData(curStep()).sets.every(function(s){ return s.kg === 22.5 })"), "próximo supino já vem com 22,5 kg");
   ev("S.cur = null; save()");
@@ -46,6 +46,6 @@ module.exports = async T => {
   T.ok(ev("stagnant(PLAN.A.ex[0], 'a1_halt')") === "Chest press na máquina", "3 treinos iguais sem progredir sugerem outra variação");
   ev("S.logs = {}; S.settings.start = addDays(mondayOf(today()), -7*6); S.settings.rotateWeeks = 2");
   T.ok(ev("varId(PLAN.A.ex[0])") === ev("PLAN.A.ex[0].v[Math.floor((weekNo()-3)/2) % 2][0]"), "rodízio de variações segue o intervalo configurado");
-  ev("DW(today()).skipWk = true; delete DW(today()).wk; render()"); T.ok(/foco na dieta/.test(a.q(".timeline").textContent), "'Não consegui ir hoje' não quebra a sequência");
+  ev("DW(today()).skipWk = true; delete DW(today()).wk; render()"); T.ok(/foco hoje é a dieta/.test(a.q("#view").textContent) && a.ev("seqNext()") === "A", "'Não consegui ir hoje' não quebra a sequência");
   T.ok(!a.errors.length, "sem erros de script " + (a.errors[0] || "")); a.close();
 };

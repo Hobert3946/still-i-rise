@@ -1,4 +1,4 @@
-/* ============ LENTE ÁGUA: garrafa com onda, ritmo por hora, tamanhos, semana, histórico e meta ============ */
+/* ============ ÁGUA: garrafa com onda, ritmo por hora, tamanhos, semana, histórico e meta ============ */
 function bottleSVG(p, from) {
   const top = 46, bot = 312, y = bot - (bot - top) * p, y0 = bot - (bot - top) * from;
   const body = "M78 14h44v26c0 14 38 26 38 60v190a24 24 0 0 1-24 24H64a24 24 0 0 1-24-24V100c0-34 38-46 38-60z";
@@ -11,11 +11,10 @@ function bottleSVG(p, from) {
       <circle class="bub" cx="80" cy="330" r="4" fill="#fff" opacity=".5"/><circle class="bub d2" cx="118" cy="330" r="3" fill="#fff" opacity=".5"/><circle class="bub d3" cx="98" cy="330" r="2.5" fill="#fff" opacity=".5"/></g></g>
     <path d="${body}" fill="none" stroke="var(--water)" stroke-width="3" stroke-linejoin="round"/><rect x="76" y="4" width="48" height="12" rx="4" fill="var(--water)"/>${ticks}</svg>`;
 }
-LENS_R.agua = () => {
+function aguaView() {
   const k = dayK(), d = D(k), goal = S.settings.waterGoal, w = d.water || 0, p = Math.min(1, w / goal), from = UI.wLast == null ? 0 : UI.wLast; UI.wLast = p;
   const [pc, pt] = waterPace(w), ws = waterStreak(), log = (d.wlog || []).slice().reverse();
   const bars = waterWeek().map(x => { const f = Math.min(1, x.v / goal); return `<div class="d ${x.k === today() ? "t" : ""}"><i style="height:${Math.max(6, f * 100)}%;background:${x.v >= goal ? "var(--ok)" : x.v ? "var(--water)" : "var(--surface3)"}"></i><span>${DOW[parseKey(x.k).getDay()][0]}</span></div>`; }).join("");
-  requestAnimationFrame(() => requestAnimationFrame(() => { const g = $("#lens .wlevel"); if (g) g.style.transform = `translateY(${g.dataset.to}px)`; }));
   return `<section class="card water-hero"><div class="bottle-wrap">${bottleSVG(p, from)}<div class="bottle-txt"><div class="big tabnum">${fmtL(w, 2)}<small> L</small></div><div class="lbl">${Math.round(p * 100)}% de ${fmtL(goal)} L</div></div></div>
     ${k === today() ? `<div class="banner ${pc}">${ic("info")}<div class="grow">${pt}</div></div>` : ""}</section>
   ${sec("Beber agora", `<div class="grid3">${WSIZES.map(([n, ml]) => `<button class="wbtn" data-act="w-add" data-ml="${ml}"><small>${n}</small><b>+${ml}</b></button>`).join("")}</div>
@@ -25,7 +24,9 @@ LENS_R.agua = () => {
   ${sec(`Hoje · ${log.length} ${log.length === 1 ? "registro" : "registros"}`, log.length ? `<div class="list">${log.map(l => `<div class="li"><span class="wdrop">${ic("drop")}</span><span class="grow tabnum">${l.t}</span><b class="tabnum">+${l.ml} ml</b></div>`).join("")}</div>` : `<p class="muted">Nada registrado ainda. Comece com um copo grande ao acordar.</p>`)}
   ${sec("Meta diária", `<div class="row between"><button class="icon-btn lg" data-act="w-goal" data-d="-250" aria-label="Diminuir meta">${ic("minus")}</button><div class="h2 tabnum">${fmtL(goal, 2)} L</div><button class="icon-btn lg" data-act="w-goal" data-d="250" aria-label="Aumentar meta">${ic("plus")}</button></div>
     <p class="muted small">Referência comum: 35 ml por kg, cerca de ${fmtL(35 * (S.settings.calcWeight || 100))} L para ${S.settings.calcWeight || 100} kg. Se tiver dúvida sobre o seu caso (fígado, rins), pergunte ao médico.</p>`)}`;
-};
+}
+// a água sobe na garrafa depois de desenhada
+const waterAnim = () => requestAnimationFrame(() => requestAnimationFrame(() => { const g = $("#view .wlevel"); if (g) g.style.transform = `translateY(${g.dataset.to}px)`; }));
 function waterDo(ml) { if (waterAdd(ml, dayK())) toast("Meta de água batida. Sua garrafa está cheia."); else toast(`+${ml} ml`, () => { waterUndo(dayK()); render(); }); }
 ACT["w-add"] = b => { waterDo(num(b.dataset.ml)); render(); };
 ACT["w-custom"] = () => { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); waterDo(v); render(); };
