@@ -1,7 +1,7 @@
-// Progressão automática de carga e sequência de treinos A→E.
+// Progressão automática de carga, sequência A→E, Arena (toques), dor e rodízio.
 const { boot, baseState } = require("./helpers");
 module.exports = async T => {
-  const a = await boot({ state: baseState() }), ev = a.ev;
+  const a = await boot({ v1: baseState() }), ev = a.ev;
   const nl = (slot, sets, adapt) => JSON.parse(ev(`JSON.stringify(nextLoad(${slot}, ${JSON.stringify(sets)}${adapt === undefined ? "" : ", " + adapt}))`));
   ev("var A1 = PLAN.A.ex[0], slotLeg = PLAN.C.ex[0], slotPl = PLAN.A.ex[4]");
   const S4 = kg => [10, 10, 10, 10].map(reps => ({ kg, reps }));
@@ -12,25 +12,40 @@ module.exports = async T => {
   r = nl("A1", S4(20), true); T.ok(r.dir === "hold", "na adaptação não sobe");
   r = nl("slotLeg", [12, 12, 12, 12].map(reps => ({ kg: 100, reps })), false); T.ok(r.dir === "up" && r.kg === 110, "perna sobe +10");
   r = nl("slotPl", [45, 45, 45].map(reps => ({ kg: 0, reps })), false); T.ok(r.dir === "hold", "prancha só mantém");
+  // arena por toques: aquecimento, séries e descanso
   ev("S.settings.start = addDays(today(), -28); save()");
-  ev("go('treino'); wkStart('A')");
-  ev(`(function(){ stepsOf(S.cur.day).forEach(function(s){ var dd = wkData(s); if (s.t === 'warm') { dd.sets.forEach(function(x){ x.done = true }); return } dd.sets.forEach(function(x){ x.kg = (s.e.id === 'a1') ? 20 : 10; x.reps = s.e.reps[1]; x.done = true }) }) })()`);
+  ev("wkStart('A')");
+  a.click("[data-act=wk-warmset][data-i='0']"); T.ok(ev("wkData(curStep()).sets[0].done") === true, "marca série do aquecimento");
+  ev("S.cur.i = 2; arenaRender()");
+  const kg = a.q("#arena-in input[data-f=kg]"); kg.value = "20"; kg.dispatchEvent(new a.w.Event("input", { bubbles: true }));
+  a.click("[data-act=wk-adj][data-f=kg][data-d='2.5']"); T.ok(ev("wkData(curStep()).sets[0].kg") === 22.5 && ev("wkData(curStep()).sets[3].kg") === 22.5, "±kg ajusta a série atual e as seguintes");
+  a.click("[data-act=wk-adj][data-f=kg][data-d='-2.5']");
+  a.click("[data-act=wk-set]"); T.ok(ev("wkData(curStep()).sets[0].done") && a.q("#rest").classList.contains("on"), "série feita abre o descanso");
+  T.ok(/1:59|2:00/.test(a.q("#rest-in").textContent), "descanso do supino = 120 s");
+  a.click("[data-act=rest-adj][data-s='15']"); T.ok(/2:1[45]/.test(a.q("#rest-in").textContent), "+15 s no descanso");
+  a.click("[data-act=rest-skip]"); T.ok(!a.q("#rest").classList.contains("on"), "pular fecha o descanso");
+  a.click("[data-act=wk-focus][data-i='0']"); T.ok(ev("wkData(curStep()).sets[0].done") === false, "tocar numa série feita desfaz para corrigir");
+  a.click("[data-act=wk-mode]"); T.ok(ev("S.cur.mode") === "end" && a.qa(".setrow").length === 4, "modo 'registrar ao final' mostra todas as séries");
+  a.click("[data-act=wk-mode]");
+  ev(`stepsOf('A').forEach(function(s, i){ S.cur.i = i; var dd = wkData(s); dd.sets.forEach(function(x){ x.done = true; if (s.t === 'ex') { x.kg = s.e.id === 'a1' ? 20 : 10; x.reps = s.e.reps[1]; } }) })`);
   ev("wkFinish()");
-  const sheet = () => a.q(".sheet").textContent;
-  T.ok(/Treino A registrado/.test(sheet()) && /↑ 22.5 kg/.test(sheet()), "resumo do treino mostra supino subindo para 22,5 kg");
+  const sheet = () => a.q("#sheet").textContent;
+  T.ok(/Treino A registrado/.test(sheet()) && /↑ 22.5 kg/.test(sheet()), "resumo mostra supino subindo para 22,5 kg");
   T.ok(/Próximo treino[\s\S]*B · Costas/.test(sheet()), "resumo indica próximo treino B");
-  a.q("[data-act=sum-next]").click(); T.ok(/Dor no ombro/.test(sheet()), "depois pergunta a dor do ombro (dia A)");
-  a.q("[data-act=close]").click();
-  ev("wkStart('A'); (function(){ var st = stepsOf('A'); S.cur.i = st.findIndex(function(x){ return x.t === 'ex' && x.e.id === 'a1' }); wkRender() })()");
-  T.ok(a.qa('#wk-body input[data-f=kg]').every(i => i.value === "22.5"), "próximo supino já vem com 22,5 kg");
-  ev("wkClose(); S.cur = null; save()");
+  T.ok(ev("D(today()).h.treino") === true && ev("D(today()).wk") === "A", "hábito 'Treinei às 5h' marcado sozinho");
+  a.click("[data-act=sum-next]"); T.ok(/Dor no ombro/.test(sheet()) && a.qa(".painscale button").length === 11, "treino A pergunta a dor (0 a 10)");
+  a.click(".painscale button[data-v='5']"); T.ok(ev("S.pain.length") === 1 && ev("S.pain[0].v") === 5, "dor registrada");
+  ev("S.pain.push({d:today(),v:5},{d:today(),v:4}); render()"); T.ok(/Dor no ombro em alta/.test(a.q("#river").textContent), "média ≥ 4 vira sinal no rio");
+  ev("wkBegin('A'); S.cur.i = stepsOf('A').findIndex(function(x){ return x.t === 'ex' && x.e.id === 'a1' })");
+  T.ok(ev("wkData(curStep()).sets.every(function(s){ return s.kg === 22.5 })"), "próximo supino já vem com 22,5 kg");
+  ev("S.cur = null; save()");
   T.ok(ev("seqNext()") === "B", "sequência: depois do A vem o B");
-  ev("go('deck')"); const dk = a.q("#v-deck").textContent;
-  T.ok(/A · Peito concluído/.test(dk) && /B · Costas/.test(dk), "Deck mostra treino concluído e o próximo");
-  ev("go('treino')"); T.ok(/Treino B/.test(a.q("#v-treino").textContent), "aba Treino abre no próximo (B)");
-  ev("S.logs = { zz: [{date: addDays(today(), -1), day: 'E', sets: [{kg:1,reps:1}]}] }; S.days = {}");
+  ev("S.logs = { zz: [{date: addDays(today(), -1), day: 'E', sets: [{kg:1,reps:1}]}] }");
   T.ok(ev("seqNext()") === "A", "depois do E volta ao A");
   ev("S.logs = {}; S.logs.a1_halt = [1,2,3].map(function(i){ return { date: addDays(today(), -i*3), day: 'A', sets: [9,9,8,8].map(function(r){ return { kg: 20, reps: r } }) } })");
   T.ok(ev("stagnant(PLAN.A.ex[0], 'a1_halt')") === "Chest press na máquina", "3 treinos iguais sem progredir sugerem outra variação");
-  T.ok(!a.errors.length, "sem erros de script"); a.close();
+  ev("S.logs = {}; S.settings.start = addDays(mondayOf(today()), -7*6); S.settings.rotateWeeks = 2");
+  T.ok(ev("varId(PLAN.A.ex[0])") === ev("PLAN.A.ex[0].v[Math.floor((weekNo()-3)/2) % 2][0]"), "rodízio de variações segue o intervalo configurado");
+  ev("DW(today()).skipWk = true; delete DW(today()).wk; render()"); T.ok(/foco na dieta/.test(a.q(".timeline").textContent), "'Não consegui ir hoje' não quebra a sequência");
+  T.ok(!a.errors.length, "sem erros de script " + (a.errors[0] || "")); a.close();
 };

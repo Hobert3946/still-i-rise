@@ -9,27 +9,22 @@ Este app já quebrou duas vezes (tela em branco e "syntax error") porque várias
 3. **Rode `npm test` antes de dar push.** O push é bloqueado automaticamente (hook `.githooks/pre-push`, ativado por `git config core.hooksPath .githooks`) se o build ou algum teste falhar, ou se `docs/` não estiver commitado em dia.
 4. **Não empilhe remendos.** Não crie `orig_algo`, não reatribua `rDeck = function...`, não injete HTML com `insertBefore` por cima de outra tela. Edite a função que já existe.
 5. **Um único ouvinte de clique.** Para uma nova ação, registre `ACT["nome-da-acao"] = (botao, evento) => {...}` no módulo e use `data-act="nome-da-acao"` no HTML. Sem `onclick` inline.
-6. **Segredos nunca saem do aparelho.** `gemKey` e `ghToken` ficam só no localStorage. Todo backup e toda cópia na nuvem passam por `safeState()`.
+6. **Segredos nunca saem do aparelho.** `gemKey`, `ghToken` e `ghGistId` ficam só em `sir_secrets` (localStorage), fora do estado. Todo backup e toda cópia na nuvem passam por `safeState()`.
 7. **Não escreva na tela o que o app não sabe.** Sem alertas inventados (ex.: "pico glicêmico" sem medir glicose) e sem números fixos disfarçados de dados.
 8. **Mudou o app? Suba o cache.** Altere `V` em `src/sw.js` a cada release, senão o celular pode continuar com a versão antiga.
 
 ## Estrutura
 
-| Arquivo | Função |
+| Pasta | Função |
 |---|---|
-| `src/base.js` | registro de ações `ACT` |
-| `src/foods.js`, `src/plan.js` | tabela de alimentos; plano de treino, hábitos, suplementos |
-| `src/progressao.js` | progressão automática de carga e sequência A a E |
-| `src/agua.js` | aba Água e frase do dia |
-| `src/comer.js` | aba Comer: refeições, favoritos, arrastar para excluir |
-| `src/metabolico.js` | dica de proteína e água para o resto do dia |
-| `src/deck.js` | Deck, cabeçalho, Aura, cardio, resumo semanal |
-| `src/lembretes.js` | lembretes em arquivo .ics |
-| `src/ia.js`, `src/foto.js` | A.I. (Gemini) |
-| `src/nuvem.js` | cópia dos dados em gist e `safeState()` |
-| `src/app.js` | estado, treino, evolução, mais, ações e inicialização |
+| `src/core/` | `util` (utilidades e registro `ACT`), `store` (perfis, migração v1→v2, localStorage + IndexedDB, segredos), `rules` (dia ativo, sequências, metas), `init` |
+| `src/data/` | `foods` (189 alimentos), `plan` (treino, hábitos, suplementos, catálogo, marcos, rua), `content` (frases, refeições), `defaults` (ícones, horários no rio) |
+| `src/domain/` | regras sem tela: `progressao`, `treino`, `agua`, `comida`, `metabolico` |
+| `src/svc/` | `backup` (`safeState()`), `nuvem` (gist), `ia` (Gemini), `foto` (foto do prato), `lembretes` (.ics) |
+| `src/ui/` | `shell` (camadas e voltar), `river` + `nodes` (rio), `orb` + `parser` (paleta), `keyboard` (teclado de alimentos), `arena` + `rest` (Modo Treino), `lens-*` (lentes), `profiles`, `list-editor`, `events` (o único ouvinte de clique), `gestures` |
+| `src/css/` | `tokens` (cores/tipo), `base`, `river`, `orb`, `keyboard`, `arena`, `lenses` |
 
-A ordem de junção está em `build.js`.
+A ordem de junção está em `build.js`. Arquivos com menos de 250 linhas (o teste de fumaça confere).
 
 ## Testes
 

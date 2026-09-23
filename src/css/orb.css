@@ -1,0 +1,35 @@
+/* ============ ORBE E PALETA ============ */
+.orb{position:fixed;left:50%;bottom:calc(var(--sab) + 18px);width:var(--orb);height:var(--orb);margin-left:calc(var(--orb) / -2);border-radius:50%;z-index:60;display:grid;place-items:center;transition:transform var(--t2) var(--spring)}
+.orb:active{transform:scale(.9)}
+.orb-core{position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6 0,transparent 32%),conic-gradient(from 200deg,var(--accent),var(--accent-hi),var(--water),var(--accent));box-shadow:0 10px 30px -6px rgba(217,137,79,.7),inset 0 -6px 14px rgba(0,0,0,.25);animation:orbspin 9s linear infinite}
+.orb-ring{position:absolute;inset:0;border-radius:50%;border:1px solid var(--glass-line);background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:-1;box-shadow:var(--shadow)}
+.orb::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:orbpulse 3.2s var(--ease) infinite}
+.orb[data-aura="fed"] .orb-core{filter:saturate(1.2) brightness(1.08)}
+.orb[data-aura="overdrive"] .orb-core{filter:saturate(1.5) brightness(1.15);box-shadow:0 0 40px 4px rgba(242,178,122,.75)}
+.orb[data-aura="overdrive"]::after{opacity:.6}
+body.lock .orb{transform:scale(0);pointer-events:none}
+@keyframes orbspin{to{transform:rotate(360deg)}}
+@keyframes orbpulse{0%{transform:scale(.9);opacity:.5}80%,100%{transform:scale(1.35);opacity:0}}
+.palette{position:fixed;left:0;right:0;bottom:0;z-index:220;padding:0 10px calc(var(--sab) + 10px);opacity:0;transform:translateY(30px) scale(.98);pointer-events:none;transition:opacity var(--t2) var(--ease),transform var(--t2) var(--spring)}
+.palette.on{opacity:1;transform:none;pointer-events:auto}
+.pal-in{max-width:600px;margin:0 auto;display:flex;flex-direction:column;background:var(--glass);backdrop-filter:blur(28px) saturate(1.6);-webkit-backdrop-filter:blur(28px) saturate(1.6);border:1px solid var(--glass-line);border-radius:var(--r-l);box-shadow:var(--shadow);overflow:hidden;max-height:min(78dvh,640px)}
+.pal-res{overflow-y:auto;overscroll-behavior:contain;padding:16px 14px 8px;display:flex;flex-direction:column;gap:10px}
+.pal-bar{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 16px;border-top:1px solid var(--glass-line)}
+.pal-bar>.icon{color:var(--accent)}
+.pal-bar input{flex:1;min-width:0;min-height:48px;background:none;border:0;outline:none;font-size:17px}
+.pal-aura{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--accent-ink)}.pal-aura .icon{width:16px;height:16px}
+.pal-water{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pw{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50px;border-radius:14px;background:rgba(108,196,224,.1);border:1px solid rgba(108,196,224,.22);color:var(--water)}
+.pw b{font:700 14px var(--f-display)}.pw small{font-size:9.5px;color:var(--muted);white-space:nowrap}
+.pw:active{transform:scale(.92)}
+.pal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pq{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;border-radius:14px;background:var(--surface2);font-size:12.5px;font-weight:600}
+.pq .icon{color:var(--accent)}.pq:active{transform:scale(.95)}
+.pal-lens{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.pl{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;border-radius:12px;font-size:11px;color:var(--muted);min-height:56px}
+.pl .icon{color:var(--text)}.pl:active{background:var(--surface2)}
+.pr{display:flex;align-items:center;gap:12px;text-align:left;min-height:56px;padding:8px 12px;border-radius:14px;background:var(--surface2);animation:rise var(--t2) var(--ease) both}
+.pr small{display:block;font-size:12.5px;color:var(--muted)}
+.pr .icon{color:var(--accent)}
+.pr.first{background:linear-gradient(135deg,rgba(217,137,79,.18),var(--surface2));box-shadow:inset 0 0 0 1px rgba(217,137,79,.35)}
+kbd{font:600 12px var(--f-body);padding:3px 7px;border-radius:6px;background:var(--surface3);color:var(--muted)}

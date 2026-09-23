@@ -19,9 +19,9 @@ const DAYCODE = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
 function remSaved(id, def) { const r = (S.settings.rem || {})[id]; return r || { on: !!REM_DEF_ON[id], t: def }; }
 function remSheet() {
-  openSheet(`<h3 class="mid">Lembretes no calendário</h3>
+  openSheet(`<h3 class="h3">Lembretes no calendário</h3>
   <p class="muted">Marque o que quer e ajuste o horário. O app cria um arquivo que o calendário do celular importa e passa a tocar todo dia, mesmo com o app fechado.</p>
-  <div class="list">${REMS.map(([id, nm, def, days]) => { const r = remSaved(id, def); return `<div class="li"><label class="grow" style="display:flex;align-items:center;gap:12px"><input type="checkbox" data-rem="${id}" ${r.on ? "checked" : ""} style="width:22px;height:22px;accent-color:var(--accent)"><span>${nm}</span></label><input type="time" class="winput" style="flex:none;width:112px" data-remt="${id}" value="${r.t}" aria-label="Horário: ${nm}"></div>`; }).join("")}</div>
+  <div class="list">${REMS.map(([id, nm, def, days]) => { const r = remSaved(id, def); return `<div class="li"><label class="grow row"><input type="checkbox" data-rem="${id}" ${r.on ? "checked" : ""} class="cbx"><span>${nm}</span></label><input type="time" class="field time" data-remt="${id}" value="${r.t}" aria-label="Horário: ${nm}"></div>`; }).join("")}</div>
   <p class="muted" style="font-size:14px">O som e a vibração vêm das configurações do calendário. Se quiser tocar como despertador, deixe o volume de notificações do calendário alto.</p>
   <button class="btn solid full" data-act="rem-gen">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>`);
 }
@@ -54,8 +54,6 @@ ACT["rem-gen"] = () => {
   });
   S.settings.rem = cfg; save();
   if (!sel.length) return toast("Marque pelo menos um lembrete.");
-  const blob = new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "still-i-rise-lembretes.ics";
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  download(new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" }), "still-i-rise-lembretes.ics");
   closeSheet(); toast(`${sel.length} lembretes gerados. Abra o arquivo para adicionar.`);
 };

@@ -1,0 +1,29 @@
+/* ============ TECLADO DE ALIMENTOS ============ */
+.kb{display:flex;flex-direction:column;gap:10px}
+.kb-sum{display:flex;justify-content:space-between;font:600 13px var(--f-body);padding:8px 12px;border-radius:12px;background:var(--surface2)}
+.tray{display:flex;flex-direction:column;gap:6px}
+.swipe{position:relative;border-radius:14px;overflow:hidden}
+.swipe-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--bad);color:#fff;font-weight:600;font-size:14px;opacity:.55;transition:opacity var(--t1)}
+.swipe.armed .swipe-bg{opacity:1}
+.swipe-in{position:relative;display:flex;align-items:center;gap:8px;padding:8px 4px 8px 14px;background:var(--surface2);touch-action:pan-y;min-height:56px}
+.swipe-in b{font-weight:600;font-size:14.5px;display:block}.swipe-in small{font-size:12.5px}
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.fkey{display:flex;flex-direction:column;justify-content:center;gap:2px;text-align:left;min-height:62px;padding:8px 10px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);-webkit-touch-callout:none;transition:transform var(--t1) var(--ease),background var(--t1)}
+.fkey b{font-size:13.5px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fkey small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fkey.fav{border-color:rgba(217,137,79,.35);background:linear-gradient(135deg,rgba(217,137,79,.12),var(--surface2))}
+.fkey:active{transform:scale(.94);background:var(--surface3)}
+.fkey.pop{animation:kpop 420ms var(--spring)}
+@keyframes kpop{30%{transform:scale(1.08);box-shadow:0 0 0 3px var(--ok)}}
+.kb-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper .field{text-align:center;font:700 26px var(--f-display);flex:1}
+.stepper.sm{gap:4px}.stepper.sm b{min-width:56px;text-align:center}
+.food{display:flex;align-items:center;gap:10px;text-align:left;padding:12px 4px;border-bottom:1px solid var(--line);min-height:56px;width:100%}
+.food b{display:block;font-weight:600;font-size:15px}.food small{font-size:12.5px}.food .icon{color:var(--accent)}
+.street{display:grid;gap:8px}
+.flip{position:relative;display:grid;text-align:left;perspective:900px;min-height:108px}
+.flip .face{grid-area:1/1;display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;background:var(--surface2);border-left:3px solid var(--ok);backface-visibility:hidden;-webkit-backface-visibility:hidden;transition:transform 500ms var(--ease)}
+.flip .face b{font-weight:500;font-size:14.5px}
+.flip .face.bad{border-color:var(--bad);transform:rotateY(180deg)}
+.flip.on .face.ok{transform:rotateY(-180deg)}.flip.on .face.bad{transform:none}
