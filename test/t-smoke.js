@@ -13,7 +13,7 @@ module.exports = async T => {
   T.ok(a.qa("#tabbar .tb").every(b => b.textContent.trim().length > 3), "cada seção da barra tem nome escrito");
   const parts = [["treino"], ["nutri", "refeicoes"], ["nutri", "agua"], ["nutri", "apetite"], ["saude", "corpo"], ["saude", "remedios"], ["saude", "suplementos"], ["saude", "tratamento"], ["hoje"]];
   for (const [t, s] of parts) { a.click(`#tabbar [data-tab=${t}]`); if (s) a.click(`.segbar [data-seg=${s}]`); T.ok(v().trim().length > 150 && !lixo(v()) && a.ev("UI.tab") === t, `${t}${s ? " › " + s : ""} renderiza sem lixo`); }
-  for (const p of ["agenda", "coach", "ajustes"]) { a.ev(`openPage("${p}")`); T.ok(a.q("#page").classList.contains("on") && !lixo(a.q("#page-body").textContent) && a.q("#page-body").textContent.length > 150, `página ${p} abre sem lixo`); a.click("[data-act=page-close]"); await a.wait(20); }
+  for (const p of ["agenda", "coach", "ajustes"]) { a.ev(`openPage("${p}")`); T.ok(a.q("#page").classList.contains("on") && !lixo(a.q("#page-body").textContent) && a.q("#page-body").textContent.length > 150, `página ${p} abre sem lixo`); if (p === "ajustes") T.ok(/Versão \d+\.\d+\.\d+/.test(a.q("#page-body").textContent), "Ajustes mostra a versão do app"); a.click("[data-act=page-close]"); await a.wait(20); }
   T.ok(!a.q("#page").classList.contains("on"), "voltar fecha a página");
   a.click(".tb-logo"); T.ok(a.q("#actions").classList.contains("on") && a.qa(".act-tile").length === 8 && a.qa(".act-tile").every(t => t.querySelector("b").textContent.length > 3), "logo abre Registrar com 8 ações grandes e com nome");
   a.click("[data-act=act-go][data-k=water]"); a.ev("go('saude','suplementos'); openActions('water')");

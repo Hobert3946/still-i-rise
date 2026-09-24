@@ -3,7 +3,7 @@
 PWA pessoal de treino, alimentação, saúde e hábitos para manter o peso depois de uma grande perda. JavaScript puro, sem backend, sem framework. Feita para o celular (instalada na tela inicial).
 
 - Código-fonte: `src/` · Gerar o app: `node build.js` (saída em `docs/`, servida pelo GitHub Pages)
-- Testes: `npm test` (jsdom) · Ao publicar, suba a versão `V` em `src/sw.js`
+- Testes: `npm test` (jsdom) · Ao publicar, suba `V` em `src/sw.js` e `APP_VERSION` em `src/ui/ajustes-ui.js` (aparece no fim de Ajustes)
 
 ## Princípio
 **A complexidade fica no sistema, não na tela.** O app responde primeiro "o que eu faço agora?". O resto aparece quando você toca.

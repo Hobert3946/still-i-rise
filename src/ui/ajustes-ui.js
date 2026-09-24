@@ -30,11 +30,12 @@ function backupFold() {
     <div class="grid2"><button class="btn" data-act="export">${ic("download")} Exportar</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
     <button class="btn danger full" data-act="reset">Apagar os dados do perfil ${esc(S.profile.name)}</button>`, UI.openFold === "backup", "backup");
 }
+const APP_VERSION = "3.2.0"; // suba junto com V em src/sw.js ao publicar
 PAGES.ajustes = { t: "Perfil e ajustes", r: () => {
   setTimeout(() => { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { const e = $("#persist"); if (e) e.textContent = p ? "Armazenamento persistente ativo." : "Armazenamento persistente não concedido: exporte backups."; }); }, 0);
   return `${sec("", profilesListHTML())}${sec("", goalsFold() + habitsFold() + prefsFold() + cloudFold() + backupFold())}
     <section class="card logo-card"><img src="%%LOGO%%" alt="Still I Rise, por Hobert Silva Santos, Salvador BR" width="200" height="200"></section>
-    <p class="powered">Powered by Hobert Silva</p>`;
+    <p class="powered">Powered by Hobert Silva</p><p class="powered small">Versão ${APP_VERSION}</p>`;
 } };
 ACT.notif = () => {
   if (S.settings.notif) { S.settings.notif = false; save(); return render(); }
