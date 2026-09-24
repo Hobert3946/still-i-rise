@@ -80,6 +80,7 @@ function applyTheme() {
   const t = R.theme; const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   const m = $("meta[name=theme-color]"); if (m) m.content = dark ? "#0D0D0F" : "#F5F5FA";
+  applyLook();
   const hr = new Date().getHours();
   document.body.dataset.hour = hr >= 4 && hr < 10 ? "morning" : hr >= 19 || hr < 4 ? "night" : "day";
 }

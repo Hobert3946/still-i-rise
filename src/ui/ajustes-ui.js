@@ -10,6 +10,7 @@ function goalsFold() {
 function prefsFold() {
   const s = S.settings;
   return fold("Aparência, notificações e lembretes", `<div class="lbl">Tema</div><div class="seg">${[["auto", "Auto"], ["light", "Claro"], ["dark", "Escuro"]].map(([v, n]) => `<button class="${R.theme === v ? "on" : ""}" data-act="theme" data-v="${v}">${n}</button>`).join("")}</div>
+    ${lookHTML()}
     ${wallHTML()}
     <div class="row between set-row"><span class="grow">Avisar fim do descanso e próximo exercício</span>${tog(s.notif, "notif", "Notificações")}</div>
     ${banner("warn", "info", "Com o app fechado", "Um app web não consegue disparar alarme sozinho (05:00, água). Por isso o app gera lembretes para o calendário do seu celular, que tocam mesmo com ele fechado. O aviso de fim de descanso só funciona com o app aberto.")}

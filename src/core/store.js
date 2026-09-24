@@ -51,7 +51,7 @@ function migrateV1(o, keepSecrets = true) {
   return { v: 2, active: "p1", theme: st.theme || "auto", profiles: { p1: p } };
 }
 function mergeRoot(o) {
-  const r = { v: 2, active: o.active, theme: o.theme || "auto", wall: o.wall || "none", profiles: {} };
+  const r = { v: 2, active: o.active, theme: o.theme || "auto", wall: o.wall || "none", accent: o.accent || "padrao", font: o.font || "padrao", profiles: {} };
   Object.entries(o.profiles || {}).forEach(([id, p]) => { r.profiles[id] = mergeProfile(p); r.profiles[id].id = id; });
   if (!Object.keys(r.profiles).length) { const p = newProfile("Hobert"); p.id = "p1"; r.profiles.p1 = p; }
   if (!r.profiles[r.active]) r.active = Object.keys(r.profiles)[0];
