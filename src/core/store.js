@@ -64,7 +64,19 @@ const useProfile = id => { R.active = id; S = R.profiles[id]; };
 
 const IDB = {
   // v2 do banco: "kv" (espelho do estado) + "photos" (fotos de progresso, só no aparelho)
-  open() { return new Promise((res, rej) => { const r = indexedDB.open("sir-db", 2); r.onupgradeneeded = () => ["kv", "photos"].forEach(n => { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  // uma conexão só, reaproveitada; se falhar ou o navegador fechar, a próxima chamada abre de novo
+  db: null,
+  open() {
+    if (this.db) return this.db;
+    const p = this.db = new Promise((res, rej) => {
+      const r = indexedDB.open("sir-db", 2);
+      r.onupgradeneeded = () => ["kv", "photos"].forEach(n => { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); });
+      r.onsuccess = () => { const db = r.result; db.onversionchange = () => { db.close(); if (IDB.db === p) IDB.db = null; }; db.onclose = () => { if (IDB.db === p) IDB.db = null; }; res(db); };
+      r.onerror = () => rej(r.error);
+    });
+    p.catch(() => { if (IDB.db === p) IDB.db = null; });
+    return p;
+  },
   async put(v, k = "state2") { try { const db = await this.open(); db.transaction("kv", "readwrite").objectStore("kv").put(v, k); } catch (e) { } },
   async get(k = "state2") { try { const db = await this.open(); return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch (e) { return null; } }
 };

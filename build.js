@@ -1,5 +1,5 @@
 // Junta src/ num único docs/index.html (GitHub Pages). A ordem dos arquivos importa: dados e regras antes das telas.
-const fs = require("fs"), path = require("path");
+const fs = require("fs"), path = require("path"), crypto = require("crypto");
 const src = f => fs.readFileSync(path.join(__dirname, "src", f), "utf8");
 const asset = f => path.join(__dirname, "src", "assets", f);
 const out = path.join(__dirname, "docs"); fs.mkdirSync(out, { recursive: true });
@@ -19,6 +19,16 @@ let html = src("template.html")
   .replace("/*CSS*/", () => CSS.map(src).join("\n"))
   .replace("/*JS*/", () => JS.map(src).join("\n"));
 html = html.split("%%AVATAR%%").join(b64("avatar.jpg")).split("%%LOGO%%").join(b64("logo-256.jpg")).split("%%MARK%%").join(b64("logo-mark.png"));
+// CSP: só rodam os scripts deste arquivo (hash de cada um, sem 'unsafe-inline') e a rede só fala com o Gemini,
+// o GitHub (nuvem), a Wikipédia (foto do autor da frase) e o Google Fonts. Novo serviço externo? Inclua aqui.
+const scriptHashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => `'sha256-${crypto.createHash("sha256").update(m[1], "utf8").digest("base64")}'`);
+const CSP = [
+  "default-src 'self'", `script-src 'self' ${scriptHashes.join(" ")}`, "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org",
+  "connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org",
+  "worker-src 'self'", "manifest-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'self'"
+].join("; ");
+html = html.replace("%%CSP%%", CSP);
 fs.writeFileSync(path.join(out, "index.html"), html, "utf8");
 ["sw.js", "manifest.json"].forEach(f => fs.copyFileSync(path.join(__dirname, "src", f), path.join(out, f)));
 ["icon-192.png", "icon-512.png", "icon-180.png"].forEach(f => fs.copyFileSync(asset(f), path.join(out, f)));

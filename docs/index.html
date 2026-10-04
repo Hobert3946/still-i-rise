@@ -2,6 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-AsvRaDzapPjjp7Bf5P9BXbWQ6zBjrKJMe1U5nNsHJyo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -1091,7 +1092,19 @@ const useProfile = id => { R.active = id; S = R.profiles[id]; };
 
 const IDB = {
   // v2 do banco: "kv" (espelho do estado) + "photos" (fotos de progresso, só no aparelho)
-  open() { return new Promise((res, rej) => { const r = indexedDB.open("sir-db", 2); r.onupgradeneeded = () => ["kv", "photos"].forEach(n => { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  // uma conexão só, reaproveitada; se falhar ou o navegador fechar, a próxima chamada abre de novo
+  db: null,
+  open() {
+    if (this.db) return this.db;
+    const p = this.db = new Promise((res, rej) => {
+      const r = indexedDB.open("sir-db", 2);
+      r.onupgradeneeded = () => ["kv", "photos"].forEach(n => { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); });
+      r.onsuccess = () => { const db = r.result; db.onversionchange = () => { db.close(); if (IDB.db === p) IDB.db = null; }; db.onclose = () => { if (IDB.db === p) IDB.db = null; }; res(db); };
+      r.onerror = () => rej(r.error);
+    });
+    p.catch(() => { if (IDB.db === p) IDB.db = null; });
+    return p;
+  },
   async put(v, k = "state2") { try { const db = await this.open(); db.transaction("kv", "readwrite").objectStore("kv").put(v, k); } catch (e) { } },
   async get(k = "state2") { try { const db = await this.open(); return await new Promise(res => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch (e) { return null; } }
 };
