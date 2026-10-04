@@ -1039,7 +1039,7 @@ const baseSettings = () => ({
   deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false
 });
 const rawProfile = (name, p = {}) => ({
-  id: uid("p"), profile: Object.assign({ name, startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
+  id: uid("p"), profile: Object.assign({ name, sex: "", startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
   weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [], favs: {},
   habits: defHabits(), supps: defSupps(), settings: baseSettings()
 });
@@ -1159,11 +1159,14 @@ function daysAbsent() {
 const weekNo = () => Math.floor(diffDays(mondayOf(today()), mondayOf(S.settings.start)) / 7) + 1;
 const inAdapt = () => weekNo() <= 2;
 
-/* ---- metas nutricionais: TMB = 10×peso + 6,25×altura − 5×idade + 5; gasto = TMB × fator; meta = gasto − déficit (piso) ---- */
+/* ---- metas nutricionais: TMB = 10×peso + 6,25×altura − 5×idade + 5 (homens) ou − 161 (mulheres); gasto = TMB × fator; meta = gasto − déficit (piso) ---- */
+// sexo não informado (perfis antigos) usa a fórmula masculina, como antes
+const SEXES = [["", "Não informado"], ["M", "Masculino"], ["F", "Feminino"]];
+const sexAdj = sx => sx === "F" ? -161 : 5;
 const curWeight = () => S.weights.length ? S.weights[S.weights.length - 1].kg : S.profile.startWeight;
 function targets(w) {
   const p = S.profile, s = S.settings;
-  const tmb = 10 * w + 6.25 * p.height - 5 * p.age + 5;
+  const tmb = 10 * w + 6.25 * p.height - 5 * p.age + sexAdj(p.sex);
   const tdee = tmb * s.activity;
   const kcal = Math.max(s.floor, Math.round((tdee - s.deficit) / 50) * 50);
   return { tmb: Math.round(tmb), tdee: Math.round(tdee), kcal, prot: Math.round(1.2 * w / 5) * 5 };
@@ -3176,8 +3179,8 @@ function iaFoto(f) { const i = $("#ia-input"), t = i ? i.value.trim() : ""; if (
 function goalsFold() {
   const p = S.profile, s = S.settings, tg = TG(), f = (id, l, v, mode = "decimal") => `<div><label class="lbl" for="${id}">${l}</label><input class="field" id="${id}" inputmode="${mode}" value="${esc(v)}"></div>`;
   return fold("Perfil e metas", `<div class="grid2 tiles4"><div class="tile"><div class="lbl">TMB</div><div class="h3 tabnum">${fmtInt(tg.tmb)}</div></div><div class="tile"><div class="lbl">Gasto total</div><div class="h3 tabnum">${fmtInt(tg.tdee)}</div></div><div class="tile"><div class="lbl">Meta diária</div><div class="h3 tabnum">${fmtInt(tg.kcal)} kcal</div></div><div class="tile"><div class="lbl">Proteína</div><div class="h3 tabnum">${tg.prot} g</div></div></div>
-    <p class="muted small">Mifflin-St Jeor para ${r1(s.calcWeight)} kg: TMB × ${s.activity}, déficit de ${fmtInt(s.deficit)} kcal, piso de ${fmtInt(s.floor)}. Proteína 1,2 g/kg. Recalcula sozinho a cada 4 kg de variação.</p>
-    ${f("pn", "Nome", p.name, "text")}<div class="grid2">${f("ps", "Peso inicial (kg)", p.startWeight)}${f("pg", "Meta (kg)", p.goal)}${f("ph", "Altura (cm)", p.height, "numeric")}${f("pa", "Idade", p.age, "numeric")}
+    <p class="muted small">Mifflin-St Jeor (${p.sex === "F" ? "feminina" : p.sex === "M" ? "masculina" : "masculina: informe o sexo abaixo"}) para ${r1(s.calcWeight)} kg: TMB × ${s.activity}, déficit de ${fmtInt(s.deficit)} kcal, piso de ${fmtInt(s.floor)}. Proteína 1,2 g/kg. Recalcula sozinho a cada 4 kg de variação.</p>
+    ${f("pn", "Nome", p.name, "text")}<label class="lbl" for="psex">Sexo biológico (muda o cálculo do gasto)</label>${sexSelect("psex", p.sex)}<div class="grid2">${f("ps", "Peso inicial (kg)", p.startWeight)}${f("pg", "Meta (kg)", p.goal)}${f("ph", "Altura (cm)", p.height, "numeric")}${f("pa", "Idade", p.age, "numeric")}
     ${f("pdef", "Déficit (kcal)", s.deficit, "numeric")}${f("pact", "Fator de atividade", s.activity)}${f("pfloor", "Piso calórico (kcal)", s.floor, "numeric")}${f("pwater", "Meta de água (ml)", s.waterGoal, "numeric")}</div>
     <button class="btn solid full" data-act="profile-save">SALVAR PERFIL E METAS</button>`, UI.openFold === "metas", "metas");
 }
@@ -3309,6 +3312,7 @@ function profileRows() {
     <button class="grow row" data-act="profile-use" data-id="${p.id}" aria-pressed="${p.id === R.active}">${avatarHTML(p)}<span class="grow"><b>${esc(p.profile.name)}</b><small class="muted">${r1(p.weights.length ? p.weights[p.weights.length - 1].kg : p.profile.startWeight)} kg · meta ${p.profile.goal} kg</small></span>${p.id === R.active ? `<span class="pill ok">ativo</span>` : ""}</button>
     ${Object.keys(R.profiles).length > 1 ? `<button class="icon-btn bad" data-act="profile-del" data-id="${p.id}" aria-label="Excluir perfil ${esc(p.profile.name)}">${ic("trash")}</button>` : ""}</div>`).join("");
 }
+const sexSelect = (id, v, ask) => `<select class="field" id="${id}">${(ask ? [["", "Escolha"], ...SEXES.slice(1)] : SEXES).map(([k, n]) => `<option value="${k}" ${k === (v || "") ? "selected" : ""}>${n}</option>`).join("")}</select>`;
 const profilesListHTML = () => `<div class="lbl sec-t">Perfis</div><div class="list">${profileRows()}</div><button class="btn full" data-act="profile-new">${ic("plus")} Novo perfil</button>`;
 function switchProfile(id) {
   if (!R.profiles[id] || id === R.active) return;
@@ -3318,6 +3322,7 @@ function switchProfile(id) {
 function profileNewSheet() {
   openSheet(`<h3 class="h3">Novo perfil</h3><p class="muted small">Cada perfil tem os próprios dias, treinos, pesos, hábitos, suplementos, favoritos e conversa com a Aura.</p>
   <label class="lbl" for="nn">Nome</label><input class="field" id="nn" placeholder="Ex.: Mãe" autocomplete="off">
+  <label class="lbl" for="nsx">Sexo biológico (muda o cálculo do gasto)</label>${sexSelect("nsx", "", true)}
   <div class="grid2"><div><label class="lbl" for="ns">Peso atual (kg)</label><input class="field" id="ns" inputmode="decimal" placeholder="90"></div><div><label class="lbl" for="ng">Meta (kg)</label><input class="field" id="ng" inputmode="decimal" placeholder="75"></div>
   <div><label class="lbl" for="nh">Altura (cm)</label><input class="field" id="nh" inputmode="numeric" placeholder="165"></div><div><label class="lbl" for="na">Idade</label><input class="field" id="na" inputmode="numeric" placeholder="50"></div></div>
   <p class="muted xs">Começa com os hábitos e suplementos padrão. Ajuste tudo na lente Sistema.</p>
@@ -3328,10 +3333,11 @@ ACT["profile-use"] = b => { if (STACK.includes("sheet")) closeSheet(); switchPro
 ACT["profile-new"] = () => profileNewSheet();
 ACT["profile-create"] = () => {
   const name = $("#nn").value.trim(); if (!name) return toast("Informe o nome.");
-  const sw = num($("#ns").value, 0), g = num($("#ng").value, 0), h = num($("#nh").value, 0), a = num($("#na").value, 0);
+  const sw = num($("#ns").value, 0), g = num($("#ng").value, 0), h = num($("#nh").value, 0), a = num($("#na").value, 0), sex = $("#nsx").value;
+  if (!["M", "F"].includes(sex)) return toast("Escolha o sexo biológico: ele muda o cálculo do gasto.");
   if (!(sw >= 30 && sw <= 300) || !(g >= 30 && g <= 300) || !(h >= 100 && h <= 250) || !(a >= 10 && a <= 110)) return toast("Confira peso, meta, altura e idade.");
   if (S.cur && STACK.includes("arena")) dropLayer("arena");
-  const p = profileCreate(name, { startWeight: sw, goal: g, height: h, age: a }); p.settings.calcWeight = sw; save();
+  const p = profileCreate(name, { sex, startWeight: sw, goal: g, height: h, age: a }); p.settings.calcWeight = sw; save();
   closeAll(); UI.day = null; render(); toast(`Perfil ${name} criado.`);
 };
 ACT["profile-del"] = b => {
@@ -3344,7 +3350,7 @@ ACT["profile-save"] = () => {
   const vals = { sw: v("ps", p.startWeight), g: v("pg", p.goal), h: v("ph", p.height), a: v("pa", p.age), def: v("pdef", s.deficit), act: v("pact", s.activity), fl: v("pfloor", s.floor), w: v("pwater", s.waterGoal) };
   if (!(vals.sw >= 30 && vals.sw <= 300 && vals.g >= 30 && vals.g <= 300 && vals.h >= 100 && vals.h <= 250 && vals.a >= 10 && vals.a <= 110)) return toast("Confira peso, meta, altura e idade.");
   if (!(vals.def >= 0 && vals.def <= 1500 && vals.act >= 1.1 && vals.act <= 2 && vals.fl >= 1000 && vals.fl <= 4000 && vals.w >= 1000 && vals.w <= 8000)) return toast("Déficit 0–1500, fator 1,1–2, piso 1000–4000, água 1000–8000 ml.");
-  p.name = $("#pn").value.trim() || p.name; p.startWeight = vals.sw; p.goal = vals.g; p.height = vals.h; p.age = vals.a;
+  p.name = $("#pn").value.trim() || p.name; p.sex = SEXES.some(x => x[0] === $("#psex").value) ? $("#psex").value : p.sex; p.startWeight = vals.sw; p.goal = vals.g; p.height = vals.h; p.age = vals.a;
   Object.assign(s, { deficit: vals.def, activity: vals.act, floor: vals.fl, waterGoal: Math.round(vals.w) });
   if (!S.weights.length) s.calcWeight = p.startWeight;
   setLinked(today(), "agua", (D(today()).water || 0) >= s.waterGoal);

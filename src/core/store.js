@@ -12,7 +12,7 @@ const baseSettings = () => ({
   deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false
 });
 const rawProfile = (name, p = {}) => ({
-  id: uid("p"), profile: Object.assign({ name, startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
+  id: uid("p"), profile: Object.assign({ name, sex: "", startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
   weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [], favs: {},
   habits: defHabits(), supps: defSupps(), settings: baseSettings()
 });

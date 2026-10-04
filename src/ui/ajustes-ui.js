@@ -2,8 +2,8 @@
 function goalsFold() {
   const p = S.profile, s = S.settings, tg = TG(), f = (id, l, v, mode = "decimal") => `<div><label class="lbl" for="${id}">${l}</label><input class="field" id="${id}" inputmode="${mode}" value="${esc(v)}"></div>`;
   return fold("Perfil e metas", `<div class="grid2 tiles4"><div class="tile"><div class="lbl">TMB</div><div class="h3 tabnum">${fmtInt(tg.tmb)}</div></div><div class="tile"><div class="lbl">Gasto total</div><div class="h3 tabnum">${fmtInt(tg.tdee)}</div></div><div class="tile"><div class="lbl">Meta diária</div><div class="h3 tabnum">${fmtInt(tg.kcal)} kcal</div></div><div class="tile"><div class="lbl">Proteína</div><div class="h3 tabnum">${tg.prot} g</div></div></div>
-    <p class="muted small">Mifflin-St Jeor para ${r1(s.calcWeight)} kg: TMB × ${s.activity}, déficit de ${fmtInt(s.deficit)} kcal, piso de ${fmtInt(s.floor)}. Proteína 1,2 g/kg. Recalcula sozinho a cada 4 kg de variação.</p>
-    ${f("pn", "Nome", p.name, "text")}<div class="grid2">${f("ps", "Peso inicial (kg)", p.startWeight)}${f("pg", "Meta (kg)", p.goal)}${f("ph", "Altura (cm)", p.height, "numeric")}${f("pa", "Idade", p.age, "numeric")}
+    <p class="muted small">Mifflin-St Jeor (${p.sex === "F" ? "feminina" : p.sex === "M" ? "masculina" : "masculina: informe o sexo abaixo"}) para ${r1(s.calcWeight)} kg: TMB × ${s.activity}, déficit de ${fmtInt(s.deficit)} kcal, piso de ${fmtInt(s.floor)}. Proteína 1,2 g/kg. Recalcula sozinho a cada 4 kg de variação.</p>
+    ${f("pn", "Nome", p.name, "text")}<label class="lbl" for="psex">Sexo biológico (muda o cálculo do gasto)</label>${sexSelect("psex", p.sex)}<div class="grid2">${f("ps", "Peso inicial (kg)", p.startWeight)}${f("pg", "Meta (kg)", p.goal)}${f("ph", "Altura (cm)", p.height, "numeric")}${f("pa", "Idade", p.age, "numeric")}
     ${f("pdef", "Déficit (kcal)", s.deficit, "numeric")}${f("pact", "Fator de atividade", s.activity)}${f("pfloor", "Piso calórico (kcal)", s.floor, "numeric")}${f("pwater", "Meta de água (ml)", s.waterGoal, "numeric")}</div>
     <button class="btn solid full" data-act="profile-save">SALVAR PERFIL E METAS</button>`, UI.openFold === "metas", "metas");
 }

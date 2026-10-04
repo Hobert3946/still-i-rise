@@ -5,11 +5,14 @@ module.exports = async T => {
   a.ev("waterAdd(500)");
   a.click(".who"); T.ok(/Hobert/.test(a.q("#page").textContent) && /Perfis/.test(a.q("#page").textContent), "avatar abre Perfil e ajustes com a lista de perfis");
   a.click("#page [data-act=profile-new]");
-  a.q("#nn").value = "Mãe"; a.q("#ns").value = "90"; a.q("#ng").value = "75"; a.q("#nh").value = "160"; a.q("#na").value = "55";
+  a.q("#nn").value = "Mãe"; a.q("#ns").value = "90"; a.click("[data-act=profile-create]");
+  T.ok(a.ev("Object.keys(R.profiles).length") === 1 && /sexo/.test(a.q("#toast").textContent), "novo perfil exige o sexo biológico");
+  a.q("#nsx").value = "F"; a.q("#ng").value = "75"; a.q("#nh").value = "160"; a.q("#na").value = "55";
   a.click("[data-act=profile-create]"); await a.wait(30);
   T.ok(a.ev("S.profile.name") === "Mãe" && a.ev("Object.keys(R.profiles).length") === 2, "cria e entra no novo perfil");
   T.ok(a.ev("D(today()).water") === 0 && a.ev("S.weights.length") === 0 && a.ev("S.habits.length") === 6, "novo perfil começa vazio, com hábitos padrão");
   T.ok(a.ev("TG().kcal") === 1800 && a.ev("TG().prot") === 110, "metas calculadas para os dados dela (piso 1.800, 1,2 g/kg)");
+  T.ok(a.ev("S.profile.sex") === "F" && a.ev("TG().tmb") === Math.round(10 * 90 + 6.25 * 160 - 5 * 55 - 161), "fórmula feminina de Mifflin-St Jeor (−161)");
   T.ok(/Mãe/.test(a.q("#top").textContent), "header mostra o perfil ativo");
   a.ev("waterAdd(300)");
   a.ev("switchProfile('p1')"); T.ok(a.ev("S.profile.name") === "Hobert" && a.ev("D(today()).water") === 500, "trocar de volta traz a água do Hobert (500), não a da Mãe");
@@ -19,6 +22,8 @@ module.exports = async T => {
   a.click("[data-act=profile-save]");
   const exp = Math.max(2000, Math.round(((10 * 140 + 6.25 * 179 - 5 * 24 + 5) * 1.55 - 500) / 50) * 50);
   T.ok(a.ev("TG().kcal") === exp && a.ev("S.settings.waterGoal") === 3500, `déficit, fator, piso e água editáveis (${exp} kcal)`);
+  a.ev("render()"); a.q("#psex").value = "F"; a.click("[data-act=profile-save]");
+  T.ok(a.ev("S.profile.sex") === "F" && a.ev("TG().tmb") === Math.round(10 * 140 + 6.25 * 179 - 5 * 24 - 161), "Ajustes: trocar o sexo recalcula a TMB");
   a.q("#pa").value = "5"; a.click("[data-act=profile-save]"); T.ok(a.ev("S.profile.age") === 24, "idade inválida é recusada");
   const other = a.ev("Object.keys(R.profiles).find(id => id !== 'p1')");
   a.ev(`ACT['profile-del']({dataset:{id:'${other}'}})`);

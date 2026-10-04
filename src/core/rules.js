@@ -35,11 +35,14 @@ function daysAbsent() {
 const weekNo = () => Math.floor(diffDays(mondayOf(today()), mondayOf(S.settings.start)) / 7) + 1;
 const inAdapt = () => weekNo() <= 2;
 
-/* ---- metas nutricionais: TMB = 10×peso + 6,25×altura − 5×idade + 5; gasto = TMB × fator; meta = gasto − déficit (piso) ---- */
+/* ---- metas nutricionais: TMB = 10×peso + 6,25×altura − 5×idade + 5 (homens) ou − 161 (mulheres); gasto = TMB × fator; meta = gasto − déficit (piso) ---- */
+// sexo não informado (perfis antigos) usa a fórmula masculina, como antes
+const SEXES = [["", "Não informado"], ["M", "Masculino"], ["F", "Feminino"]];
+const sexAdj = sx => sx === "F" ? -161 : 5;
 const curWeight = () => S.weights.length ? S.weights[S.weights.length - 1].kg : S.profile.startWeight;
 function targets(w) {
   const p = S.profile, s = S.settings;
-  const tmb = 10 * w + 6.25 * p.height - 5 * p.age + 5;
+  const tmb = 10 * w + 6.25 * p.height - 5 * p.age + sexAdj(p.sex);
   const tdee = tmb * s.activity;
   const kcal = Math.max(s.floor, Math.round((tdee - s.deficit) / 50) * 50);
   return { tmb: Math.round(tmb), tdee: Math.round(tdee), kcal, prot: Math.round(1.2 * w / 5) * 5 };
