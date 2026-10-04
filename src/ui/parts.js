@@ -33,7 +33,7 @@ function rHeader() {
 }
 const VIEWS = {};   // cada seção registra VIEWS.nome = () => html
 function render() {
-  rHeader(); $("#view").innerHTML = VIEWS[UI.tab](); rTabbar();
+  rHeader(); keepFields($("#view"), () => { $("#view").innerHTML = VIEWS[UI.tab](); }); rTabbar();
   if (UI.page && STACK.includes("page")) rPage();
   if (S.cur && STACK.includes("arena")) arenaRender();
   if (UI.tab === "nutri" && UI.seg.nutri === "agua") waterAnim();

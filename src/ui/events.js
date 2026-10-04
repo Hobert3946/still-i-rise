@@ -24,7 +24,7 @@ document.addEventListener("submit", e => {
   e.preventDefault();
   if (e.target.dataset.form === "chat") auraSend();
   if (e.target.dataset.form === "pal") palRun(0);
-  if (e.target.dataset.form === "q") { const i = $("#q-new"); if (i && questionAdd(i.value)) { render(); toast("Pergunta guardada."); } }
+  if (e.target.dataset.form === "q") { const i = $("#q-new"); if (i && questionAdd(i.value)) { i.value = ""; render(); toast("Pergunta guardada."); } }
 });
 document.addEventListener("input", e => {
   const t = e.target;
@@ -50,5 +50,5 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden || !R) return;
   if (RT.iv) restTick();
   if (S.cur && STACK.includes("arena")) lockScreen();
-  applyTheme(); if (!STACK.includes("arena")) render();
+  applyTheme(); if (!STACK.includes("arena") && !typing()) render();
 });

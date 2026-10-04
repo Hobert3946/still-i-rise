@@ -43,6 +43,23 @@ function rTabbar() {
 }
 const segBar = (tab, opts) => `<div class="segbar" role="tablist" aria-label="Partes">${opts.map(([k, n]) => `<button role="tab" class="${UI.seg[tab] === k ? "on" : ""}" aria-selected="${UI.seg[tab] === k}" data-act="seg" data-seg="${k}">${n}</button>`).join("")}</div>`;
 
+/* ---- redesenhar sem perder o que a pessoa digitou ---- */
+// guarda os campos alterados (valor ≠ o de quando foram desenhados) e o foco, redesenha e devolve tudo,
+// a não ser que o valor salvo por trás do campo tenha mudado (aí vale o novo)
+const fieldDef = e => e.tagName === "SELECT" ? ([...e.options].find(o => o.defaultSelected) || e.options[0] || {}).value : /^(checkbox|radio)$/.test(e.type) ? e.defaultChecked : e.defaultValue;
+const fieldVal = e => /^(checkbox|radio)$/.test(e.type) ? e.checked : e.value;
+function keepFields(root, draw) {
+  if (!root) return draw();
+  const a = document.activeElement, kept = $$("input[id],textarea[id],select[id]", root).filter(e => e.type !== "file" && fieldVal(e) !== fieldDef(e)).map(e => ({ id: e.id, def: fieldDef(e), val: fieldVal(e) }));
+  const focus = a && a.id && root.contains(a) ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
+  draw();
+  kept.forEach(k => { const e = document.getElementById(k.id); if (!e || !root.contains(e) || fieldDef(e) !== k.def) return; if (/^(checkbox|radio)$/.test(e.type)) e.checked = k.val; else e.value = k.val; });
+  const f = focus && document.getElementById(focus.id);
+  if (f && root.contains(f) && document.activeElement !== f) { f.focus({ preventScroll: true }); try { f.setSelectionRange(focus.s, focus.e); } catch (x) { } }
+}
+// alguém digitando num campo da tela ou de uma página: o redesenho automático (relógio, voltar ao app) espera
+const typing = () => { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!a.closest("#view,#page"); };
+
 /* ---- páginas cheias (agenda, coach, ajustes) ---- */
 const PAGES = {};   // cada página registra PAGES.nome = { t: "Título", r: () => html, right: () => html }
 function openPage(name) { if (STACK.includes("sheet")) dropLayer("sheet"); if (STACK.includes("actions")) dropLayer("actions"); UI.page = name; $("#page").classList.add("on"); pushLayer("page"); rPage(true); }
@@ -50,7 +67,8 @@ HIDE.page = () => { $("#page").classList.remove("on"); UI.page = null; };
 function rPage(first) {
   const p = PAGES[UI.page], body = $("#page-body"), y = body && !first ? body.scrollTop : 0;
   const opened = first ? [] : $$("#page details[data-fold][open]").map(e => e.dataset.fold);
-  $("#page").innerHTML = `<div class="page-in"><header class="page-top"><button class="icon-btn" data-act="page-close" aria-label="Voltar">${ic("left")}</button><h2 class="h2 grow" id="page-t" tabindex="-1">${p.t}</h2>${p.right ? p.right() : ""}</header><div class="page-body" id="page-body">${p.r()}</div></div>`;
+  const html = `<div class="page-in"><header class="page-top"><button class="icon-btn" data-act="page-close" aria-label="Voltar">${ic("left")}</button><h2 class="h2 grow" id="page-t" tabindex="-1">${p.t}</h2>${p.right ? p.right() : ""}</header><div class="page-body" id="page-body">${p.r()}</div></div>`;
+  if (first) $("#page").innerHTML = html; else keepFields($("#page"), () => { $("#page").innerHTML = html; });
   opened.forEach(f => { const e = $(`#page details[data-fold="${f}"]`); if (e) e.open = true; });
   $("#page-body").scrollTop = y;
   if (first) { const t = $("#page-t"); if (t) t.focus({ preventScroll: true }); }

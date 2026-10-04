@@ -12,7 +12,7 @@ function actionsHome() {
 function actionsWater() {
   return `<button class="act-back" data-act="act-go" data-k="">${ic("left")} Voltar</button><h3 class="h2">Quanto você bebeu?</h3>
     <div class="water-grid">${WSIZES.map(([n, ml]) => `<button class="wbtn lg" data-act="act-water" data-ml="${ml}"><b>+${ml} ml</b><small>${n}</small></button>`).join("")}</div>
-    <div class="row"><input id="wcust" class="field" type="number" inputmode="numeric" placeholder="Outro valor em ml" aria-label="Quantidade em ml"><button class="btn solid" data-act="w-custom">Adicionar</button></div>
+    <div class="row"><input id="wcust-act" class="field" type="number" inputmode="numeric" placeholder="Outro valor em ml" aria-label="Quantidade em ml"><button class="btn solid" data-act="w-custom">Adicionar</button></div>
     <p class="muted small center">${fmtL(D(dayK()).water || 0, 2)} de ${fmtL(S.settings.waterGoal)} L hoje</p>`;
 }
 function actionsMeal() {

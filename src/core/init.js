@@ -1,7 +1,7 @@
 /* ============ INICIALIZAÇÃO ============ */
-// a cada minuto: relógio, linha AGORA, maré e virada do dia
+// a cada minuto: relógio, card Agora e virada do dia (espera se a pessoa estiver digitando)
 function tick() {
-  if (!STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) { applyTheme(); render(); }
+  if (!typing() && !STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) { applyTheme(); render(); }
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
 }
 function registerSW() {

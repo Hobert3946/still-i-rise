@@ -2082,6 +2082,23 @@ function rTabbar() {
 }
 const segBar = (tab, opts) => `<div class="segbar" role="tablist" aria-label="Partes">${opts.map(([k, n]) => `<button role="tab" class="${UI.seg[tab] === k ? "on" : ""}" aria-selected="${UI.seg[tab] === k}" data-act="seg" data-seg="${k}">${n}</button>`).join("")}</div>`;
 
+/* ---- redesenhar sem perder o que a pessoa digitou ---- */
+// guarda os campos alterados (valor ≠ o de quando foram desenhados) e o foco, redesenha e devolve tudo,
+// a não ser que o valor salvo por trás do campo tenha mudado (aí vale o novo)
+const fieldDef = e => e.tagName === "SELECT" ? ([...e.options].find(o => o.defaultSelected) || e.options[0] || {}).value : /^(checkbox|radio)$/.test(e.type) ? e.defaultChecked : e.defaultValue;
+const fieldVal = e => /^(checkbox|radio)$/.test(e.type) ? e.checked : e.value;
+function keepFields(root, draw) {
+  if (!root) return draw();
+  const a = document.activeElement, kept = $$("input[id],textarea[id],select[id]", root).filter(e => e.type !== "file" && fieldVal(e) !== fieldDef(e)).map(e => ({ id: e.id, def: fieldDef(e), val: fieldVal(e) }));
+  const focus = a && a.id && root.contains(a) ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
+  draw();
+  kept.forEach(k => { const e = document.getElementById(k.id); if (!e || !root.contains(e) || fieldDef(e) !== k.def) return; if (/^(checkbox|radio)$/.test(e.type)) e.checked = k.val; else e.value = k.val; });
+  const f = focus && document.getElementById(focus.id);
+  if (f && root.contains(f) && document.activeElement !== f) { f.focus({ preventScroll: true }); try { f.setSelectionRange(focus.s, focus.e); } catch (x) { } }
+}
+// alguém digitando num campo da tela ou de uma página: o redesenho automático (relógio, voltar ao app) espera
+const typing = () => { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!a.closest("#view,#page"); };
+
 /* ---- páginas cheias (agenda, coach, ajustes) ---- */
 const PAGES = {};   // cada página registra PAGES.nome = { t: "Título", r: () => html, right: () => html }
 function openPage(name) { if (STACK.includes("sheet")) dropLayer("sheet"); if (STACK.includes("actions")) dropLayer("actions"); UI.page = name; $("#page").classList.add("on"); pushLayer("page"); rPage(true); }
@@ -2089,7 +2106,8 @@ HIDE.page = () => { $("#page").classList.remove("on"); UI.page = null; };
 function rPage(first) {
   const p = PAGES[UI.page], body = $("#page-body"), y = body && !first ? body.scrollTop : 0;
   const opened = first ? [] : $$("#page details[data-fold][open]").map(e => e.dataset.fold);
-  $("#page").innerHTML = `<div class="page-in"><header class="page-top"><button class="icon-btn" data-act="page-close" aria-label="Voltar">${ic("left")}</button><h2 class="h2 grow" id="page-t" tabindex="-1">${p.t}</h2>${p.right ? p.right() : ""}</header><div class="page-body" id="page-body">${p.r()}</div></div>`;
+  const html = `<div class="page-in"><header class="page-top"><button class="icon-btn" data-act="page-close" aria-label="Voltar">${ic("left")}</button><h2 class="h2 grow" id="page-t" tabindex="-1">${p.t}</h2>${p.right ? p.right() : ""}</header><div class="page-body" id="page-body">${p.r()}</div></div>`;
+  if (first) $("#page").innerHTML = html; else keepFields($("#page"), () => { $("#page").innerHTML = html; });
   opened.forEach(f => { const e = $(`#page details[data-fold="${f}"]`); if (e) e.open = true; });
   $("#page-body").scrollTop = y;
   if (first) { const t = $("#page-t"); if (t) t.focus({ preventScroll: true }); }
@@ -2160,7 +2178,7 @@ function rHeader() {
 }
 const VIEWS = {};   // cada seção registra VIEWS.nome = () => html
 function render() {
-  rHeader(); $("#view").innerHTML = VIEWS[UI.tab](); rTabbar();
+  rHeader(); keepFields($("#view"), () => { $("#view").innerHTML = VIEWS[UI.tab](); }); rTabbar();
   if (UI.page && STACK.includes("page")) rPage();
   if (S.cur && STACK.includes("arena")) arenaRender();
   if (UI.tab === "nutri" && UI.seg.nutri === "agua") waterAnim();
@@ -2396,7 +2414,7 @@ function actionsHome() {
 function actionsWater() {
   return `<button class="act-back" data-act="act-go" data-k="">${ic("left")} Voltar</button><h3 class="h2">Quanto você bebeu?</h3>
     <div class="water-grid">${WSIZES.map(([n, ml]) => `<button class="wbtn lg" data-act="act-water" data-ml="${ml}"><b>+${ml} ml</b><small>${n}</small></button>`).join("")}</div>
-    <div class="row"><input id="wcust" class="field" type="number" inputmode="numeric" placeholder="Outro valor em ml" aria-label="Quantidade em ml"><button class="btn solid" data-act="w-custom">Adicionar</button></div>
+    <div class="row"><input id="wcust-act" class="field" type="number" inputmode="numeric" placeholder="Outro valor em ml" aria-label="Quantidade em ml"><button class="btn solid" data-act="w-custom">Adicionar</button></div>
     <p class="muted small center">${fmtL(D(dayK()).water || 0, 2)} de ${fmtL(S.settings.waterGoal)} L hoje</p>`;
 }
 function actionsMeal() {
@@ -2865,7 +2883,8 @@ function aguaView() {
 const waterAnim = () => requestAnimationFrame(() => requestAnimationFrame(() => { const g = $("#view .wlevel"); if (g) g.style.transform = `translateY(${g.dataset.to}px)`; }));
 function waterDo(ml) { if (waterAdd(ml, dayK())) toast("Meta de água batida. Sua garrafa está cheia."); else toast(`+${ml} ml`, () => { waterUndo(dayK()); render(); }); }
 ACT["w-add"] = b => { waterDo(num(b.dataset.ml)); render(); };
-ACT["w-custom"] = () => { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); waterDo(v); render(); };
+// o campo existe na aba Água e no Registrar: lê o que está ao lado do botão tocado
+ACT["w-custom"] = b => { const i = b.parentNode.querySelector("input"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); i.value = ""; i.blur(); waterDo(v); render(); };
 ACT["w-undo"] = () => { const l = waterUndo(dayK()); render(); toast(l ? `Removido: ${l.ml} ml.` : "Nada para desfazer."); };
 ACT["w-goal"] = b => { waterGoalAdj(num(b.dataset.d)); render(); };
 
@@ -3407,7 +3426,7 @@ document.addEventListener("submit", e => {
   e.preventDefault();
   if (e.target.dataset.form === "chat") auraSend();
   if (e.target.dataset.form === "pal") palRun(0);
-  if (e.target.dataset.form === "q") { const i = $("#q-new"); if (i && questionAdd(i.value)) { render(); toast("Pergunta guardada."); } }
+  if (e.target.dataset.form === "q") { const i = $("#q-new"); if (i && questionAdd(i.value)) { i.value = ""; render(); toast("Pergunta guardada."); } }
 });
 document.addEventListener("input", e => {
   const t = e.target;
@@ -3433,7 +3452,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden || !R) return;
   if (RT.iv) restTick();
   if (S.cur && STACK.includes("arena")) lockScreen();
-  applyTheme(); if (!STACK.includes("arena")) render();
+  applyTheme(); if (!STACK.includes("arena") && !typing()) render();
 });
 
 /* ============ GESTOS DE TOQUE (celular primeiro) ============ */
@@ -3506,9 +3525,9 @@ document.addEventListener("pointerup", gEnd); document.addEventListener("pointer
 document.addEventListener("contextmenu", e => { if (e.target.closest("[data-hold]")) e.preventDefault(); });
 
 /* ============ INICIALIZAÇÃO ============ */
-// a cada minuto: relógio, linha AGORA, maré e virada do dia
+// a cada minuto: relógio, card Agora e virada do dia (espera se a pessoa estiver digitando)
 function tick() {
-  if (!STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) { applyTheme(); render(); }
+  if (!typing() && !STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) { applyTheme(); render(); }
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
 }
 function registerSW() {

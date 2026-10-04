@@ -29,6 +29,7 @@ function aguaView() {
 const waterAnim = () => requestAnimationFrame(() => requestAnimationFrame(() => { const g = $("#view .wlevel"); if (g) g.style.transform = `translateY(${g.dataset.to}px)`; }));
 function waterDo(ml) { if (waterAdd(ml, dayK())) toast("Meta de água batida. Sua garrafa está cheia."); else toast(`+${ml} ml`, () => { waterUndo(dayK()); render(); }); }
 ACT["w-add"] = b => { waterDo(num(b.dataset.ml)); render(); };
-ACT["w-custom"] = () => { const i = $("#wcust"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); waterDo(v); render(); };
+// o campo existe na aba Água e no Registrar: lê o que está ao lado do botão tocado
+ACT["w-custom"] = b => { const i = b.parentNode.querySelector("input"), v = i ? num(i.value) : 0; if (v <= 0 || v > 3000) return toast("Digite um valor entre 1 e 3000 ml."); i.value = ""; i.blur(); waterDo(v); render(); };
 ACT["w-undo"] = () => { const l = waterUndo(dayK()); render(); toast(l ? `Removido: ${l.ml} ml.` : "Nada para desfazer."); };
 ACT["w-goal"] = b => { waterGoalAdj(num(b.dataset.d)); render(); };
