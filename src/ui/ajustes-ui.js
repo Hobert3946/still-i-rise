@@ -59,7 +59,8 @@ function backupFold() {
   return fold(
     "Dados e backup",
     `<p class="muted small">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(today(), bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
-    <div class="grid2"><button class="btn" data-act="export">${ic("download")} Exportar</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
+    ${shareFiles() ? `<button class="btn solid full" data-act="export" data-m="share">${ic("upload")} Compartilhar backup</button><p class="muted xs">Mande para você mesmo no WhatsApp ou salve no Drive.</p>` : ""}
+    <div class="grid2"><button class="btn" data-act="export" data-m="file">${ic("download")} ${shareFiles() ? "Baixar arquivo" : "Exportar"}</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
     <button class="btn danger full" data-act="reset">Apagar os dados do perfil ${esc(S.profile.name)}</button>`,
     UI.openFold === "backup",
     "backup"
@@ -98,7 +99,7 @@ ACT.notif = () => {
     toast(p === "granted" ? "Notificações ativadas." : "Permissão negada.");
   });
 };
-ACT.export = () => exportData();
+ACT.export = b => exportData(b && b.dataset && b.dataset.m === "file" ? "file" : "share");
 ACT.import = () => $("#file").click();
 ACT.reset = () =>
   askConfirm(

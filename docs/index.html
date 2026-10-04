@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-4MgiXyC4YMIrxkRS6+WnndyXfIeIN9wvn3SJ9EDwv50='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-RfomS9VQf7vP3+haDgXTiIv4reIs8O5AUYJkv5qDCtA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -3779,14 +3779,42 @@ function download(blob, name) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
-function exportData() {
-  download(
+// no celular, compartilhar entrega o arquivo direto ao WhatsApp, Drive ou Calendário (baixar, num app
+// instalado no iPhone, costuma só abrir um visualizador). Sem suporte, ou se a pessoa pedir, baixa.
+// cada navegador aceita tipos diferentes (o Chrome do Android não compartilha .json nem .ics; o Safari aceita)
+function shareFiles(name = "x.json", type = "application/json") {
+  try {
+    return !!(
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({ files: [new File(["x"], name, { type })] })
+    );
+  } catch (e) {
+    return false;
+  }
+}
+async function deliverFile(blob, name, mode = "share") {
+  if (mode === "share" && shareFiles(name, blob.type)) {
+    try {
+      await navigator.share({ files: [new File([blob], name, { type: blob.type })], title: name });
+      return "shared";
+    } catch (e) {
+      if (e && e.name === "AbortError") return null; // a pessoa fechou o menu
+    }
+  }
+  download(blob, name);
+  return "downloaded";
+}
+async function exportData(mode = "share") {
+  const how = await deliverFile(
     new Blob([JSON.stringify(safeState(), null, 1)], { type: "application/json" }),
-    `still-i-rise-backup-${today()}.json`
+    `still-i-rise-backup-${today()}.json`,
+    mode
   );
+  if (!how) return;
   Object.values(R.profiles).forEach(p => (p.settings.lastBackup = today()));
   save();
-  toast("Backup exportado.");
+  toast(how === "shared" ? "Backup compartilhado." : "Backup baixado.");
   render();
 }
 // aceita backup v2 (todos os perfis) ou v1 (um perfil: substitui o perfil ativo)
@@ -4511,7 +4539,8 @@ function remSheet() {
   <div class="lbl">Fora da agenda</div><div class="list">${REM_EXTRA.map(exRow).join("")}</div>
   <label class="lbl" for="rem-lead">Avisar</label><select class="field" id="rem-lead">${REM_LEADS.map(([v, n]) => `<option value="${v}" ${v === lead ? "selected" : ""}>${n}</option>`).join("")}</select>
   <p class="muted" style="font-size:14px">O som e a vibração vêm das configurações do calendário. Ao importar de novo, apague os eventos antigos para não duplicar.</p>
-  <button class="btn solid full" data-act="rem-gen">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>`);
+  <button class="btn solid full" data-act="rem-gen" data-m="file">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>
+  ${shareFiles("x.ics", "text/calendar") ? `<button class="btn ghost full" data-act="rem-gen" data-m="share">${ic("upload")} Compartilhar o arquivo (e-mail, Arquivos...)</button>` : ""}`);
 }
 // primeira ocorrência a partir de agora (ou do primeiro dia da rotina), nos dias da semana pedidos
 function nextStart(days, hhmm, from) {
@@ -4630,7 +4659,7 @@ function buildICS(keys, lead = 0) {
   };
 }
 ACT["rem-open"] = remSheet;
-ACT["rem-gen"] = () => {
+ACT["rem-gen"] = async b => {
   const cfg = {},
     sel = [];
   $$("#sheet [data-rem]").forEach(c => {
@@ -4646,9 +4675,18 @@ ACT["rem-gen"] = () => {
   save();
   if (!sel.length) return toast("Marque pelo menos um lembrete.");
   const ics = buildICS(sel, S.settings.remLead);
-  download(new Blob([ics.txt], { type: "text/calendar;charset=utf-8" }), "still-i-rise-lembretes.ics");
+  const how = await deliverFile(
+    new Blob([ics.txt], { type: "text/calendar" }),
+    "still-i-rise-lembretes.ics",
+    b.dataset.m === "share" ? "share" : "file"
+  );
+  if (!how) return;
   closeSheet();
-  toast(`${ics.n} lembretes gerados. Abra o arquivo para adicionar.`);
+  toast(
+    how === "shared"
+      ? `${ics.n} lembretes compartilhados.`
+      : `${ics.n} lembretes gerados. Abra o arquivo para adicionar.`
+  );
 };
 
 /* ============ CASCA: 4 seções + barra com a logo, páginas, painéis, voltar do Android, toast, tema ============ */
@@ -7395,7 +7433,8 @@ function backupFold() {
   return fold(
     "Dados e backup",
     `<p class="muted small">Camada 1: localStorage. Camada 2: espelho em IndexedDB. Camada 3: arquivo .json, o único que sobrevive à troca de celular. ${bk ? `Último backup: ${dispDate(bk)} (${diffDays(today(), bk)} dias).` : "Nenhum backup exportado ainda."} <span id="persist"></span></p>
-    <div class="grid2"><button class="btn" data-act="export">${ic("download")} Exportar</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
+    ${shareFiles() ? `<button class="btn solid full" data-act="export" data-m="share">${ic("upload")} Compartilhar backup</button><p class="muted xs">Mande para você mesmo no WhatsApp ou salve no Drive.</p>` : ""}
+    <div class="grid2"><button class="btn" data-act="export" data-m="file">${ic("download")} ${shareFiles() ? "Baixar arquivo" : "Exportar"}</button><button class="btn" data-act="import">${ic("upload")} Importar</button></div>
     <button class="btn danger full" data-act="reset">Apagar os dados do perfil ${esc(S.profile.name)}</button>`,
     UI.openFold === "backup",
     "backup"
@@ -7434,7 +7473,7 @@ ACT.notif = () => {
     toast(p === "granted" ? "Notificações ativadas." : "Permissão negada.");
   });
 };
-ACT.export = () => exportData();
+ACT.export = b => exportData(b && b.dataset && b.dataset.m === "file" ? "file" : "share");
 ACT.import = () => $("#file").click();
 ACT.reset = () =>
   askConfirm(

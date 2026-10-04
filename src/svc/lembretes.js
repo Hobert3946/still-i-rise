@@ -56,7 +56,8 @@ function remSheet() {
   <div class="lbl">Fora da agenda</div><div class="list">${REM_EXTRA.map(exRow).join("")}</div>
   <label class="lbl" for="rem-lead">Avisar</label><select class="field" id="rem-lead">${REM_LEADS.map(([v, n]) => `<option value="${v}" ${v === lead ? "selected" : ""}>${n}</option>`).join("")}</select>
   <p class="muted" style="font-size:14px">O som e a vibração vêm das configurações do calendário. Ao importar de novo, apague os eventos antigos para não duplicar.</p>
-  <button class="btn solid full" data-act="rem-gen">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>`);
+  <button class="btn solid full" data-act="rem-gen" data-m="file">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>
+  ${shareFiles("x.ics", "text/calendar") ? `<button class="btn ghost full" data-act="rem-gen" data-m="share">${ic("upload")} Compartilhar o arquivo (e-mail, Arquivos...)</button>` : ""}`);
 }
 // primeira ocorrência a partir de agora (ou do primeiro dia da rotina), nos dias da semana pedidos
 function nextStart(days, hhmm, from) {
@@ -175,7 +176,7 @@ function buildICS(keys, lead = 0) {
   };
 }
 ACT["rem-open"] = remSheet;
-ACT["rem-gen"] = () => {
+ACT["rem-gen"] = async b => {
   const cfg = {},
     sel = [];
   $$("#sheet [data-rem]").forEach(c => {
@@ -191,7 +192,16 @@ ACT["rem-gen"] = () => {
   save();
   if (!sel.length) return toast("Marque pelo menos um lembrete.");
   const ics = buildICS(sel, S.settings.remLead);
-  download(new Blob([ics.txt], { type: "text/calendar;charset=utf-8" }), "still-i-rise-lembretes.ics");
+  const how = await deliverFile(
+    new Blob([ics.txt], { type: "text/calendar" }),
+    "still-i-rise-lembretes.ics",
+    b.dataset.m === "share" ? "share" : "file"
+  );
+  if (!how) return;
   closeSheet();
-  toast(`${ics.n} lembretes gerados. Abra o arquivo para adicionar.`);
+  toast(
+    how === "shared"
+      ? `${ics.n} lembretes compartilhados.`
+      : `${ics.n} lembretes gerados. Abra o arquivo para adicionar.`
+  );
 };

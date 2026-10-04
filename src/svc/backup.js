@@ -14,14 +14,42 @@ function download(blob, name) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
-function exportData() {
-  download(
+// no celular, compartilhar entrega o arquivo direto ao WhatsApp, Drive ou Calendário (baixar, num app
+// instalado no iPhone, costuma só abrir um visualizador). Sem suporte, ou se a pessoa pedir, baixa.
+// cada navegador aceita tipos diferentes (o Chrome do Android não compartilha .json nem .ics; o Safari aceita)
+function shareFiles(name = "x.json", type = "application/json") {
+  try {
+    return !!(
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({ files: [new File(["x"], name, { type })] })
+    );
+  } catch (e) {
+    return false;
+  }
+}
+async function deliverFile(blob, name, mode = "share") {
+  if (mode === "share" && shareFiles(name, blob.type)) {
+    try {
+      await navigator.share({ files: [new File([blob], name, { type: blob.type })], title: name });
+      return "shared";
+    } catch (e) {
+      if (e && e.name === "AbortError") return null; // a pessoa fechou o menu
+    }
+  }
+  download(blob, name);
+  return "downloaded";
+}
+async function exportData(mode = "share") {
+  const how = await deliverFile(
     new Blob([JSON.stringify(safeState(), null, 1)], { type: "application/json" }),
-    `still-i-rise-backup-${today()}.json`
+    `still-i-rise-backup-${today()}.json`,
+    mode
   );
+  if (!how) return;
   Object.values(R.profiles).forEach(p => (p.settings.lastBackup = today()));
   save();
-  toast("Backup exportado.");
+  toast(how === "shared" ? "Backup compartilhado." : "Backup baixado.");
   render();
 }
 // aceita backup v2 (todos os perfis) ou v1 (um perfil: substitui o perfil ativo)
