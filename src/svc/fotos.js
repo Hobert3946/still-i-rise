@@ -51,7 +51,7 @@ function photosSec() {
   setTimeout(photosHydrate, 0);
   return sec(
     "Fotos de progresso",
-    `<p class="muted small">Ficam só neste aparelho: não vão para o backup .json nem para a nuvem. Tire sempre no mesmo lugar e luz.</p>
+    `${hint("fotos", "As fotos ficam só neste aparelho: não vão para o backup .json nem para a nuvem. Tire sempre no mesmo lugar e com a mesma luz.")}
     ${
       list.length
         ? `<div class="photos">${list

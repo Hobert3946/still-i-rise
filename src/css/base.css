@@ -59,6 +59,10 @@ select.field{appearance:none}
 .li:last-child{border-bottom:0}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--surface2);font-size:12.5px;font-weight:600}
 .pill.ok{color:var(--ok)}.pill.acc{color:var(--accent-ink)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}
+.hint{display:flex;gap:10px;align-items:center;padding:10px 6px 10px 14px;border-radius:var(--r-s);background:color-mix(in srgb,var(--accent) 9%,var(--surface2));font-size:14px;line-height:1.4}
+.hint>.icon{color:var(--accent-ink);align-self:flex-start;margin-top:2px}
+.hint.tip{border:1px dashed color-mix(in srgb,var(--accent) 45%,transparent)}
+.hint-x{flex:none;min-height:44px;padding:0 10px;font-size:13.5px;font-weight:700;color:var(--accent-ink)}
 .banner{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:var(--r-s);background:var(--surface2);border-left:3px solid var(--accent);font-size:14.5px}
 .banner b{display:block;margin-bottom:2px}
 .banner.ok{border-color:var(--ok)}.banner.warn{border-color:var(--warn)}.banner.bad{border-color:var(--bad)}

@@ -41,7 +41,7 @@ function streetSec() {
     "",
     fold(
       "Comer na rua · 7 situações",
-      `<p class="muted small">Toque no cartão para ver a armadilha.</p><div class="street">${STREET.map(
+      `${hint("rua", "Toque no cartão para ver a armadilha.", true)}<div class="street">${STREET.map(
         (s, i) => `<button class="flip" data-act="flip" aria-label="${esc(s.t)}: ver escolha certa e armadilha">
     <span class="face ok"><span class="lbl">${esc(s.t)} · escolha certa</span><b>${esc(s.ok.d)}</b></span><span class="face bad"><span class="lbl">${esc(s.t)} · armadilha</span><b>${esc(s.bad.d)}</b></span></button>`
       ).join("")}</div>`,

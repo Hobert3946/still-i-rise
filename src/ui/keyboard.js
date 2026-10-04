@@ -43,7 +43,7 @@ function keyboardHTML(m, k) {
     ${last.length ? `<button class="btn sm full" data-act="meal-repeat" data-m="${m}">${ic("repeat")} Repetir a última vez (${last.length} ${last.length === 1 ? "item" : "itens"}, ${Math.round(last.reduce((a, x) => a + x.k, 0))} kcal)</button>` : ""}
     <div class="keys" role="group" aria-label="Teclado de alimentos">${fv.map(i => keyBtn(i, m, true)).join("")}${sg.map(i => keyBtn(i, m, false)).join("")}${rec.map(i => keyBtn(i, m, false)).join("")}</div>
     <div class="kb-tools"><button class="btn sm" data-act="find" data-m="${m}">${ic("search")} Buscar</button><button class="btn sm" data-act="quick" data-m="${m}">${ic("tag")} Rótulo</button><button class="btn sm" data-act="foto" data-m="${m}">${ic("camera")} Foto</button></div>
-    <p class="muted xs">Toque = 1 porção (toque de novo para somar). Segure para escolher gramas ou favoritar. Arraste um item para o lado para excluir.</p>
+    ${hint("teclado", "<b>Toque</b> = 1 porção (toque de novo para somar). <b>Segure</b> para escolher os gramas ou favoritar. <b>Arraste</b> um item para o lado para excluir.", true)}
   </div>`;
 }
 ACT.fkey = b => {

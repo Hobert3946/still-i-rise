@@ -51,7 +51,7 @@ PAGES.agenda = {
       all = instances(k),
       timed = all.filter(x => !x.flex),
       flex = all.filter(x => x.flex);
-    return `${weekStrip()}<p class="muted small center">${k === today() ? "Hoje" : dispDate(k)} · toque para editar · arraste pela alça ⋮⋮ para mudar o horário</p>
+    return `${weekStrip()}<p class="muted small center">${k === today() ? "Hoje" : dispDate(k)}</p>${hint("agenda", "Toque num item para editar. Arraste pela alça ⋮⋮ para mudar o horário, de 15 em 15 min, só naquele dia.", true)}
       <section class="ag-list">${timed.map(instRow).join("") || `<p class="muted">Sem itens com horário.</p>`}</section>
       ${flex.length ? `<h3 class="lbl sec-t">Sem horário fixo</h3><section class="ag-list">${flex.map(instRow).join("")}</section>` : ""}
       <section class="block">${goalsHTML(k)}<button class="btn sm ghost full" data-act="goal-new">${ic("plus")} Nova meta diária</button></section>`;

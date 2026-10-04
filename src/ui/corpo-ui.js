@@ -42,7 +42,7 @@ function weightSec() {
     <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${fmtN(s)} kg</span><span class="lbl">Meta ${fmtN(g)} kg · faltam ${fmtN(Math.max(0, w - g))}</span></div>
     <p class="muted small">IMC ${fmtN(w / (S.profile.height / 100) ** 2)} · altura ${S.profile.height} cm</p>
     ${chartSVG()}<button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
-    <p class="muted small">Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
+    ${hint("pesagem", "Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.")}
     ${
       S.weights.length
         ? `<div class="list">${S.weights
@@ -70,7 +70,7 @@ function rhythmSec() {
     "Ritmo",
     `<div class="row">${ring(wk / 5, 104, 9, "var(--ok)", `<div class="h2 tabnum">${wk}<small class="muted">/5</small></div><div class="lbl">ativos</div>`)}
     <div class="grow stack"><div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="h3 tabnum">${ds}</div></div>${ic("flame")}</div><div class="tile row between"><div><div class="lbl">Semanas verdes</div><div class="h3 tabnum">${ws}</div></div>${ic("trend")}</div></div></div>
-    <p class="muted small">Dia ativo = Regra nº 1 + ${S.settings.needOthers} outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
+    ${hint("ritmo", `Dia ativo = Regra nº 1 + ${S.settings.needOthers} outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.`)}
     <div class="lbl">Últimas 8 semanas</div><div class="weeks8">${sq}</div><p class="muted xs">Verde = 5+ dias ativos · amarelo = 4 · vermelho = menos.</p>
     <button class="btn sm full" data-act="review-open">Ver resumo da semana</button>`
   );
@@ -79,7 +79,7 @@ function neckSec() {
   const last = S.neck[S.neck.length - 1];
   return sec(
     "Termômetro do pescoço (acantose)",
-    `<p class="muted small">Compare a mancha com o espelho, a cada 2 semanas. 1 = bem escura, 5 = quase sumiu. O pescoço clareia antes da balança.</p>
+    `${hint("pescoco", "Compare a mancha com o espelho, a cada 2 semanas. 1 = bem escura, 5 = quase sumiu. O pescoço clareia antes da balança.")}
     <div class="seg neck">${[1, 2, 3, 4, 5].map(v => `<button class="${last && last.v === v && last.d === today() ? "on" : ""}" data-act="neck" data-v="${v}" style="--n:${v}">${v}</button>`).join("")}</div>
     ${
       S.neck.length

@@ -56,7 +56,7 @@ function dialHTML(slot, dd, fi) {
     <div class="dial small"><button class="icon-btn" data-act="wk-adj" data-f="reps" data-d="${-rs}" aria-label="Menos ${rs} ${unit}">${ic("minus")}</button>
       <label class="dial-v" data-dial="reps" data-step="${rs}"><input class="tabnum" inputmode="numeric" data-f="reps" data-i="${fi}" value="${s.reps}" aria-label="${unit} da série ${fi + 1}"><span>${unit}</span></label>
       <button class="icon-btn" data-act="wk-adj" data-f="reps" data-d="${rs}" aria-label="Mais ${rs} ${unit}">${ic("plus")}</button></div>
-    <p class="muted xs">Arraste o número para cima ou para baixo, ou toque para digitar.</p></div>`;
+    ${hint("dial", "Arraste o número para cima ou para baixo para ajustar, ou toque nele para digitar.", true)}</div>`;
 }
 function setsEndHTML(dd, unit) {
   return `<div class="setrows">${dd.sets.map((s, i) => `<div class="setrow"><span class="n">${i + 1}</span><input class="field tabnum" inputmode="decimal" data-f="kg" data-i="${i}" value="${s.kg || ""}" placeholder="kg" aria-label="carga série ${i + 1}"><input class="field tabnum" inputmode="numeric" data-f="reps" data-i="${i}" value="${s.reps}" aria-label="${unit} série ${i + 1}"></div>`).join("")}</div>`;

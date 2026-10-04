@@ -32,6 +32,7 @@ function prefsFold() {
     <div class="row between set-row"><span class="grow">Avisar fim do descanso e próximo exercício</span>${tog(s.notif, "notif", "Notificações")}</div>
     ${banner("warn", "info", "Com o app fechado", "Um app web não consegue disparar alarme sozinho (remédios, treino, água). Por isso o app gera lembretes para o calendário do seu celular, com os horários da sua Agenda, que tocam mesmo com ele fechado. O aviso de fim de descanso só funciona com o app aberto.")}
     <button class="btn full" data-act="rem-open">${ic("download")} Criar lembretes no calendário</button>
+    ${Object.keys(R.ui.hints).length ? `<button class="btn sm ghost full" data-act="hints-reset">${ic("info")} Mostrar as dicas de novo</button>` : ""}
     `,
     false,
     "prefs"

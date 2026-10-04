@@ -12,6 +12,23 @@ function ring(p, size, stroke, color, inner = "") {
   }
   return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" aria-hidden="true">${defs}<circle class="trk" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="arc" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="c">${inner}</div></div>`;
 }
+// dica que aparece até a pessoa tocar em "Entendi" (vale para o aparelho; Ajustes mostra todas de novo).
+// tip = dica de gesto (destaque maior). Não use para avisos de saúde ou privacidade: esses ficam sempre.
+const hint = (id, html, tip = false) =>
+  R.ui.hints[id]
+    ? ""
+    : `<div class="hint ${tip ? "tip" : ""}" role="note">${ic(tip ? "sparkles" : "info")}<div class="grow">${html}</div><button class="hint-x" data-act="hint-ok" data-id="${id}">Entendi</button></div>`;
+ACT["hint-ok"] = b => {
+  R.ui.hints[b.dataset.id] = true;
+  save();
+  render();
+};
+ACT["hints-reset"] = () => {
+  R.ui.hints = {};
+  save();
+  render();
+  toast("As dicas vão aparecer de novo.");
+};
 const banner = (cls, icon, title, txt, extra = "") =>
   `<div class="banner ${cls}">${ic(icon)}<div class="grow"><b>${title}</b>${txt}${extra}</div></div>`;
 const mealChips = (cur, act) =>

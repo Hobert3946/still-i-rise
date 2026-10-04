@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-KwE6n1sXPVmWARuFpVaXNRSt6WHw97dEab3InDSVi/I='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-0EZNwwD0fGGw9DlLI6Oy+mG4YDQZVS3C+7lyp0V7iyo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -113,6 +113,10 @@ select.field{appearance:none}
 .li:last-child{border-bottom:0}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--surface2);font-size:12.5px;font-weight:600}
 .pill.ok{color:var(--ok)}.pill.acc{color:var(--accent-ink)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}
+.hint{display:flex;gap:10px;align-items:center;padding:10px 6px 10px 14px;border-radius:var(--r-s);background:color-mix(in srgb,var(--accent) 9%,var(--surface2));font-size:14px;line-height:1.4}
+.hint>.icon{color:var(--accent-ink);align-self:flex-start;margin-top:2px}
+.hint.tip{border:1px dashed color-mix(in srgb,var(--accent) 45%,transparent)}
+.hint-x{flex:none;min-height:44px;padding:0 10px;font-size:13.5px;font-weight:700;color:var(--accent-ink)}
 .banner{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:var(--r-s);background:var(--surface2);border-left:3px solid var(--accent);font-size:14.5px}
 .banner b{display:block;margin-bottom:2px}
 .banner.ok{border-color:var(--ok)}.banner.warn{border-color:var(--warn)}.banner.bad{border-color:var(--bad)}
@@ -4456,7 +4460,7 @@ function photosSec() {
   setTimeout(photosHydrate, 0);
   return sec(
     "Fotos de progresso",
-    `<p class="muted small">Ficam só neste aparelho: não vão para o backup .json nem para a nuvem. Tire sempre no mesmo lugar e luz.</p>
+    `${hint("fotos", "As fotos ficam só neste aparelho: não vão para o backup .json nem para a nuvem. Tire sempre no mesmo lugar e com a mesma luz.")}
     ${
       list.length
         ? `<div class="photos">${list
@@ -4973,6 +4977,23 @@ function ring(p, size, stroke, color, inner = "") {
   }
   return `<div class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" aria-hidden="true">${defs}<circle class="trk" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${stroke}"/><circle class="arc" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="c">${inner}</div></div>`;
 }
+// dica que aparece até a pessoa tocar em "Entendi" (vale para o aparelho; Ajustes mostra todas de novo).
+// tip = dica de gesto (destaque maior). Não use para avisos de saúde ou privacidade: esses ficam sempre.
+const hint = (id, html, tip = false) =>
+  R.ui.hints[id]
+    ? ""
+    : `<div class="hint ${tip ? "tip" : ""}" role="note">${ic(tip ? "sparkles" : "info")}<div class="grow">${html}</div><button class="hint-x" data-act="hint-ok" data-id="${id}">Entendi</button></div>`;
+ACT["hint-ok"] = b => {
+  R.ui.hints[b.dataset.id] = true;
+  save();
+  render();
+};
+ACT["hints-reset"] = () => {
+  R.ui.hints = {};
+  save();
+  render();
+  toast("As dicas vão aparecer de novo.");
+};
 const banner = (cls, icon, title, txt, extra = "") =>
   `<div class="banner ${cls}">${ic(icon)}<div class="grow"><b>${title}</b>${txt}${extra}</div></div>`;
 const mealChips = (cur, act) =>
@@ -5265,7 +5286,7 @@ PAGES.agenda = {
       all = instances(k),
       timed = all.filter(x => !x.flex),
       flex = all.filter(x => x.flex);
-    return `${weekStrip()}<p class="muted small center">${k === today() ? "Hoje" : dispDate(k)} · toque para editar · arraste pela alça ⋮⋮ para mudar o horário</p>
+    return `${weekStrip()}<p class="muted small center">${k === today() ? "Hoje" : dispDate(k)}</p>${hint("agenda", "Toque num item para editar. Arraste pela alça ⋮⋮ para mudar o horário, de 15 em 15 min, só naquele dia.", true)}
       <section class="ag-list">${timed.map(instRow).join("") || `<p class="muted">Sem itens com horário.</p>`}</section>
       ${flex.length ? `<h3 class="lbl sec-t">Sem horário fixo</h3><section class="ag-list">${flex.map(instRow).join("")}</section>` : ""}
       <section class="block">${goalsHTML(k)}<button class="btn sm ghost full" data-act="goal-new">${ic("plus")} Nova meta diária</button></section>`;
@@ -5919,7 +5940,7 @@ function keyboardHTML(m, k) {
     ${last.length ? `<button class="btn sm full" data-act="meal-repeat" data-m="${m}">${ic("repeat")} Repetir a última vez (${last.length} ${last.length === 1 ? "item" : "itens"}, ${Math.round(last.reduce((a, x) => a + x.k, 0))} kcal)</button>` : ""}
     <div class="keys" role="group" aria-label="Teclado de alimentos">${fv.map(i => keyBtn(i, m, true)).join("")}${sg.map(i => keyBtn(i, m, false)).join("")}${rec.map(i => keyBtn(i, m, false)).join("")}</div>
     <div class="kb-tools"><button class="btn sm" data-act="find" data-m="${m}">${ic("search")} Buscar</button><button class="btn sm" data-act="quick" data-m="${m}">${ic("tag")} Rótulo</button><button class="btn sm" data-act="foto" data-m="${m}">${ic("camera")} Foto</button></div>
-    <p class="muted xs">Toque = 1 porção (toque de novo para somar). Segure para escolher gramas ou favoritar. Arraste um item para o lado para excluir.</p>
+    ${hint("teclado", "<b>Toque</b> = 1 porção (toque de novo para somar). <b>Segure</b> para escolher os gramas ou favoritar. <b>Arraste</b> um item para o lado para excluir.", true)}
   </div>`;
 }
 ACT.fkey = b => {
@@ -6224,7 +6245,7 @@ function dialHTML(slot, dd, fi) {
     <div class="dial small"><button class="icon-btn" data-act="wk-adj" data-f="reps" data-d="${-rs}" aria-label="Menos ${rs} ${unit}">${ic("minus")}</button>
       <label class="dial-v" data-dial="reps" data-step="${rs}"><input class="tabnum" inputmode="numeric" data-f="reps" data-i="${fi}" value="${s.reps}" aria-label="${unit} da série ${fi + 1}"><span>${unit}</span></label>
       <button class="icon-btn" data-act="wk-adj" data-f="reps" data-d="${rs}" aria-label="Mais ${rs} ${unit}">${ic("plus")}</button></div>
-    <p class="muted xs">Arraste o número para cima ou para baixo, ou toque para digitar.</p></div>`;
+    ${hint("dial", "Arraste o número para cima ou para baixo para ajustar, ou toque nele para digitar.", true)}</div>`;
 }
 function setsEndHTML(dd, unit) {
   return `<div class="setrows">${dd.sets.map((s, i) => `<div class="setrow"><span class="n">${i + 1}</span><input class="field tabnum" inputmode="decimal" data-f="kg" data-i="${i}" value="${s.kg || ""}" placeholder="kg" aria-label="carga série ${i + 1}"><input class="field tabnum" inputmode="numeric" data-f="reps" data-i="${i}" value="${s.reps}" aria-label="${unit} série ${i + 1}"></div>`).join("")}</div>`;
@@ -6643,7 +6664,7 @@ function streetSec() {
     "",
     fold(
       "Comer na rua · 7 situações",
-      `<p class="muted small">Toque no cartão para ver a armadilha.</p><div class="street">${STREET.map(
+      `${hint("rua", "Toque no cartão para ver a armadilha.", true)}<div class="street">${STREET.map(
         (s, i) => `<button class="flip" data-act="flip" aria-label="${esc(s.t)}: ver escolha certa e armadilha">
     <span class="face ok"><span class="lbl">${esc(s.t)} · escolha certa</span><b>${esc(s.ok.d)}</b></span><span class="face bad"><span class="lbl">${esc(s.t)} · armadilha</span><b>${esc(s.bad.d)}</b></span></button>`
       ).join("")}</div>`,
@@ -6907,7 +6928,7 @@ function weightSec() {
     <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${fmtN(s)} kg</span><span class="lbl">Meta ${fmtN(g)} kg · faltam ${fmtN(Math.max(0, w - g))}</span></div>
     <p class="muted small">IMC ${fmtN(w / (S.profile.height / 100) ** 2)} · altura ${S.profile.height} cm</p>
     ${chartSVG()}<button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
-    <p class="muted small">Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
+    ${hint("pesagem", "Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.")}
     ${
       S.weights.length
         ? `<div class="list">${S.weights
@@ -6935,7 +6956,7 @@ function rhythmSec() {
     "Ritmo",
     `<div class="row">${ring(wk / 5, 104, 9, "var(--ok)", `<div class="h2 tabnum">${wk}<small class="muted">/5</small></div><div class="lbl">ativos</div>`)}
     <div class="grow stack"><div class="tile row between"><div><div class="lbl">Sequência de dias</div><div class="h3 tabnum">${ds}</div></div>${ic("flame")}</div><div class="tile row between"><div><div class="lbl">Semanas verdes</div><div class="h3 tabnum">${ws}</div></div>${ic("trend")}</div></div></div>
-    <p class="muted small">Dia ativo = Regra nº 1 + ${S.settings.needOthers} outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.</p>
+    ${hint("ritmo", `Dia ativo = Regra nº 1 + ${S.settings.needOthers} outros hábitos. Semana verde: 5+ dias. Semana amarela (4) não quebra a sequência. Só 2 semanas ruins seguidas zeram.`)}
     <div class="lbl">Últimas 8 semanas</div><div class="weeks8">${sq}</div><p class="muted xs">Verde = 5+ dias ativos · amarelo = 4 · vermelho = menos.</p>
     <button class="btn sm full" data-act="review-open">Ver resumo da semana</button>`
   );
@@ -6944,7 +6965,7 @@ function neckSec() {
   const last = S.neck[S.neck.length - 1];
   return sec(
     "Termômetro do pescoço (acantose)",
-    `<p class="muted small">Compare a mancha com o espelho, a cada 2 semanas. 1 = bem escura, 5 = quase sumiu. O pescoço clareia antes da balança.</p>
+    `${hint("pescoco", "Compare a mancha com o espelho, a cada 2 semanas. 1 = bem escura, 5 = quase sumiu. O pescoço clareia antes da balança.")}
     <div class="seg neck">${[1, 2, 3, 4, 5].map(v => `<button class="${last && last.v === v && last.d === today() ? "on" : ""}" data-act="neck" data-v="${v}" style="--n:${v}">${v}</button>`).join("")}</div>
     ${
       S.neck.length
@@ -7412,6 +7433,7 @@ function prefsFold() {
     <div class="row between set-row"><span class="grow">Avisar fim do descanso e próximo exercício</span>${tog(s.notif, "notif", "Notificações")}</div>
     ${banner("warn", "info", "Com o app fechado", "Um app web não consegue disparar alarme sozinho (remédios, treino, água). Por isso o app gera lembretes para o calendário do seu celular, com os horários da sua Agenda, que tocam mesmo com ele fechado. O aviso de fim de descanso só funciona com o app aberto.")}
     <button class="btn full" data-act="rem-open">${ic("download")} Criar lembretes no calendário</button>
+    ${Object.keys(R.ui.hints).length ? `<button class="btn sm ghost full" data-act="hints-reset">${ic("info")} Mostrar as dicas de novo</button>` : ""}
     `,
     false,
     "prefs"
@@ -7854,7 +7876,7 @@ function habitsFold() {
     `<div class="list" data-list="habits">${rows}</div><button class="btn full" data-act="li-new" data-k="habits">${ic("plus")} Novo hábito</button>
     <label class="lbl" for="rule1">Regra nº 1 (obrigatória para o dia contar)</label><select class="field" id="rule1" data-change="rule1">${S.habits.map(h => `<option value="${h.id}" ${h.id === s.rule1 ? "selected" : ""}>${esc(h.icon)} ${esc(h.t)}</option>`).join("")}</select>
     <div class="row between set-row"><span class="grow">Outros hábitos necessários para dia ativo</span><div class="stepper sm"><button class="icon-btn" data-act="need" data-d="-1" aria-label="Menos um">${ic("minus")}</button><b class="tabnum">${s.needOthers}</b><button class="icon-btn" data-act="need" data-d="1" aria-label="Mais um">${ic("plus")}</button></div></div>
-    <p class="muted xs">Dia ativo = Regra nº 1 + ${s.needOthers} outros. Arraste pela alça ou use as setas para reordenar. Para dar horário a um hábito, toque em Adicionar na Agenda.</p>`,
+    ${hint("habitos", `Dia ativo = Regra nº 1 + ${s.needOthers} outros. Arraste pela alça ou use as setas para reordenar. Para dar horário a um hábito, toque em Adicionar na Agenda.`, true)}`,
     UI.openFold === "habitos",
     "habitos"
   );

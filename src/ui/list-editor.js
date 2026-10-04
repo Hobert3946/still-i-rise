@@ -18,7 +18,7 @@ function habitsFold() {
     `<div class="list" data-list="habits">${rows}</div><button class="btn full" data-act="li-new" data-k="habits">${ic("plus")} Novo hábito</button>
     <label class="lbl" for="rule1">Regra nº 1 (obrigatória para o dia contar)</label><select class="field" id="rule1" data-change="rule1">${S.habits.map(h => `<option value="${h.id}" ${h.id === s.rule1 ? "selected" : ""}>${esc(h.icon)} ${esc(h.t)}</option>`).join("")}</select>
     <div class="row between set-row"><span class="grow">Outros hábitos necessários para dia ativo</span><div class="stepper sm"><button class="icon-btn" data-act="need" data-d="-1" aria-label="Menos um">${ic("minus")}</button><b class="tabnum">${s.needOthers}</b><button class="icon-btn" data-act="need" data-d="1" aria-label="Mais um">${ic("plus")}</button></div></div>
-    <p class="muted xs">Dia ativo = Regra nº 1 + ${s.needOthers} outros. Arraste pela alça ou use as setas para reordenar. Para dar horário a um hábito, toque em Adicionar na Agenda.</p>`,
+    ${hint("habitos", `Dia ativo = Regra nº 1 + ${s.needOthers} outros. Arraste pela alça ou use as setas para reordenar. Para dar horário a um hábito, toque em Adicionar na Agenda.`, true)}`,
     UI.openFold === "habitos",
     "habitos"
   );
