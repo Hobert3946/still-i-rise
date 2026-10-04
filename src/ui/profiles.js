@@ -101,12 +101,17 @@ ACT["profile-create"] = () => {
 ACT["profile-del"] = b => {
   const p = R.profiles[b.dataset.id];
   if (!p) return;
-  if (!confirm(`Excluir o perfil ${p.profile.name} e TODOS os dados dele? Não dá para desfazer.`)) return;
-  if (profileDelete(p.id)) {
-    closeSheet();
-    render();
-    toast("Perfil excluído.");
-  }
+  askConfirm(
+    `Excluir o perfil ${p.profile.name}?`,
+    "Todos os dados deste perfil neste aparelho serão apagados. Não dá para desfazer.",
+    "Excluir perfil",
+    () => {
+      if (profileDelete(p.id)) {
+        render();
+        toast("Perfil excluído.");
+      }
+    }
+  );
 };
 ACT["profile-save"] = () => {
   const p = S.profile,

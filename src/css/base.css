@@ -33,6 +33,7 @@ button:disabled{opacity:.35;pointer-events:none}
 .btn.solid{background:linear-gradient(135deg,var(--accent-hi),var(--accent));color:var(--on-accent);border-color:transparent;box-shadow:var(--glow)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--accent-ink)}
 .btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.danger.fill{background:var(--bad);color:#fff;border-color:transparent}
 .btn.sm{min-height:40px;padding:0 14px;font-size:14px;border-radius:12px}
 .btn.full{width:100%}
 .icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;flex:none;transition:background var(--t1),transform var(--t1)}

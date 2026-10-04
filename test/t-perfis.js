@@ -71,6 +71,11 @@ module.exports = async T => {
   const other = a.ev("Object.keys(R.profiles).find(id => id !== 'p1')");
   a.ev(`ACT['profile-del']({dataset:{id:'${other}'}})`);
   T.ok(
+    a.ev("Object.keys(R.profiles).length") === 2 && /Excluir o perfil/.test(a.q("#sheet").textContent),
+    "excluir perfil pede confirmação no próprio app"
+  );
+  a.click("[data-act=confirm-ok]");
+  T.ok(
     a.ev("Object.keys(R.profiles).length") === 1 && a.ev("S.profile.name") === "Hobert",
     "excluir perfil (com confirmação)"
   );

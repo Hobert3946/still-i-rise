@@ -47,13 +47,19 @@ function importFile(f) {
     .then(tx => {
       const o = JSON.parse(tx);
       if (!(o && (o.profiles || (o.profile && o.days)))) throw 0;
-      if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return;
-      const what = importObject(o);
-      save();
-      applyTheme();
-      closeAll();
-      render();
-      toast("Backup importado: " + what + ".");
+      askConfirm(
+        "Importar este backup?",
+        "Os dados atuais deste aparelho serão substituídos pelos do arquivo.",
+        "Importar",
+        () => {
+          const what = importObject(o);
+          save();
+          applyTheme();
+          closeAll();
+          render();
+          toast("Backup importado: " + what + ".");
+        }
+      );
     })
     .catch(() => toast("Arquivo inválido."));
 }

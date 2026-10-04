@@ -100,22 +100,27 @@ ACT.notif = () => {
 };
 ACT.export = () => exportData();
 ACT.import = () => $("#file").click();
-ACT.reset = () => {
-  if (!confirm(`Apagar TODOS os dados do perfil ${S.profile.name} neste aparelho? Exporte um backup antes.`)) return;
-  const id = S.id,
-    p = newProfile(S.profile.name, {
-      sex: S.profile.sex,
-      startWeight: S.profile.startWeight,
-      goal: S.profile.goal,
-      height: S.profile.height,
-      age: S.profile.age,
-      avatar: S.profile.avatar
-    });
-  p.id = id;
-  R.profiles[id] = p;
-  useProfile(id);
-  save();
-  closeAll();
-  render();
-  toast("Dados do perfil apagados.");
-};
+ACT.reset = () =>
+  askConfirm(
+    `Apagar os dados de ${S.profile.name}?`,
+    "Todos os registros deste perfil neste aparelho serão apagados. Exporte um backup antes.",
+    "Apagar tudo",
+    () => {
+      const id = S.id,
+        p = newProfile(S.profile.name, {
+          sex: S.profile.sex,
+          startWeight: S.profile.startWeight,
+          goal: S.profile.goal,
+          height: S.profile.height,
+          age: S.profile.age,
+          avatar: S.profile.avatar
+        });
+      p.id = id;
+      R.profiles[id] = p;
+      useProfile(id);
+      save();
+      closeAll();
+      render();
+      toast("Dados do perfil apagados.");
+    }
+  );

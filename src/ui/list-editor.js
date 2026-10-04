@@ -125,13 +125,16 @@ ACT["li-del"] = b => {
   if (k === "habits" && it.id === S.settings.rule1)
     return toast("Escolha outra Regra nº 1 antes de remover este hábito.");
   if (k === "habits" && a.length < 2) return toast("Mantenha pelo menos um hábito.");
-  if (!confirm(`Remover "${it.t || it.n}"? O histórico dos dias passados continua salvo.`)) return;
-  a.splice(i, 1);
+  const before = clone({ list: a, items: S.sched.items });
+  S[k] = a.filter((_, j) => j !== i);
   if (k === "supps") S.sched.items = S.sched.items.filter(x => !(x.type === "suplemento" && x.ref === it.id));
   save();
   closeSheet();
   render();
-  toast("Removido.");
+  undoable(`"${it.t || it.n}" removido. O histórico continua salvo.`, before, c => {
+    S[k] = c.list;
+    S.sched.items = c.items;
+  });
 };
 ACT.need = b => {
   S.settings.needOthers = clamp(S.settings.needOthers + num(b.dataset.d), 0, Math.max(0, S.habits.length - 1));

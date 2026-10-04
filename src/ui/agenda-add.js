@@ -90,10 +90,11 @@ ACT["goal-add"] = b => {
   haptic();
 };
 ACT["goal-del"] = b => {
-  if (!confirm("Excluir esta meta?")) return;
+  const before = clone(S.goals);
   S.goals = S.goals.filter(g => g.id !== b.dataset.id);
   save();
   render();
+  undoable("Meta excluída.", before, c => (S.goals = c));
 };
 /* ---- ações rápidas usadas pelo Hoje e pela agenda ---- */
 ACT["dose-log"] = b => {

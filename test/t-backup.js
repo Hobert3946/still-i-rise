@@ -52,6 +52,7 @@ module.exports = async T => {
   a.ev('SEC.ghGistId = "abc123"');
   await a.ev("syncFromCloud()");
   await a.wait(50);
+  a.click("[data-act=confirm-ok]");
   T.ok(a.ev("S.weights[0].kg") === 120, "restaurar da nuvem (backup v1) traz os dados");
   T.ok(
     a.ev("SEC.gemKey") === "AIza-SEGREDO-1" && a.ev("SEC.ghToken") === "ghp_SEGREDO_2",

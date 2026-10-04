@@ -192,28 +192,6 @@ function closeSheet() {
   dropLayer("sheet");
 }
 ACT.close = () => closeSheet();
-ACT.scrim = () => {
-  const top = STACK[STACK.length - 1];
-  if (top === "sheet" || top === "actions") dropLayer(top);
-};
-
-/* ---- toast (com ação opcional: desfazer, aplicar sempre...) ---- */
-let toastT = null;
-function toast(t, fn, label = "Desfazer") {
-  const e = $("#toast");
-  e.innerHTML = `<span>${esc(t)}</span>${fn ? `<b>${esc(label)}</b>` : ""}`;
-  e.onclick = fn
-    ? () => {
-        clearTimeout(toastT);
-        e.classList.remove("on", "act");
-        fn();
-      }
-    : null;
-  e.classList.toggle("act", !!fn);
-  e.classList.add("on");
-  clearTimeout(toastT);
-  toastT = setTimeout(() => e.classList.remove("on", "act"), fn ? 5500 : 2600);
-}
 
 /* ---- tema: auto / claro / escuro (global) ---- */
 function applyTheme() {

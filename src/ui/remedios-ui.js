@@ -86,10 +86,14 @@ ACT["med-save"] = b => {
   toast("Remédio salvo. Horários na agenda.");
 };
 ACT["med-del"] = b => {
-  if (!confirm("Remover este remédio? As doses já registradas continuam no histórico.")) return;
+  const before = clone({ meds: S.meds, items: S.sched.items });
   medRemove(b.dataset.id);
   closeSheet();
   render();
+  undoable("Remédio removido. As doses registradas continuam no histórico.", before, c => {
+    S.meds = c.meds;
+    S.sched.items = c.items;
+  });
 };
 ACT["q-done"] = b => {
   const q = S.questions.find(x => x.id === b.dataset.id);

@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-BK/fNN5oXqkLM0GCPRsE9y7O668/x+ILat5z5g7Lf2g='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-4MgiXyC4YMIrxkRS6+WnndyXfIeIN9wvn3SJ9EDwv50='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -87,6 +87,7 @@ button:disabled{opacity:.35;pointer-events:none}
 .btn.solid{background:linear-gradient(135deg,var(--accent-hi),var(--accent));color:var(--on-accent);border-color:transparent;box-shadow:var(--glow)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--accent-ink)}
 .btn.danger{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.danger.fill{background:var(--bad);color:#fff;border-color:transparent}
 .btn.sm{min-height:40px;padding:0 14px;font-size:14px;border-radius:12px}
 .btn.full{width:100%}
 .icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;flex:none;transition:background var(--t1),transform var(--t1)}
@@ -568,6 +569,7 @@ const haptic = (ms = 10) => {
   } catch (e) {}
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const clone = o => JSON.parse(JSON.stringify(o));
 
 // [nome, kcal/100g, prot/100g, medida caseira, gramas da porção, categoria, fonte T=TACO 4ª ed. R=estimativa/rótulo]
 const FOODS = [
@@ -3810,13 +3812,19 @@ function importFile(f) {
     .then(tx => {
       const o = JSON.parse(tx);
       if (!(o && (o.profiles || (o.profile && o.days)))) throw 0;
-      if (!confirm("Importar substitui os dados atuais deste aparelho. Continuar?")) return;
-      const what = importObject(o);
-      save();
-      applyTheme();
-      closeAll();
-      render();
-      toast("Backup importado: " + what + ".");
+      askConfirm(
+        "Importar este backup?",
+        "Os dados atuais deste aparelho serão substituídos pelos do arquivo.",
+        "Importar",
+        () => {
+          const what = importObject(o);
+          save();
+          applyTheme();
+          closeAll();
+          render();
+          toast("Backup importado: " + what + ".");
+        }
+      );
     })
     .catch(() => toast("Arquivo inválido."));
 }
@@ -3987,17 +3995,24 @@ async function syncFromCloud() {
     if (!f) throw new Error("arquivo não encontrado no gist");
     const o = await openState(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
     if (!o || !(o.profiles || (o.profile && o.days))) throw new Error("dados inválidos");
-    if (!confirm("Substituir os dados deste aparelho pela cópia da nuvem?")) return;
-    importObject(o);
-    SEC.ghVer = gistVer(j) || (await cloudHead()).ver;
-    SEC.ghConflict = false;
-    CLOUD.sent = JSON.stringify(safeState());
-    saveSec();
-    save();
-    applyTheme();
-    closeAll();
-    render();
-    toast("Dados restaurados da nuvem.");
+    const ver = gistVer(j) || (await cloudHead()).ver;
+    askConfirm(
+      "Baixar a cópia da nuvem?",
+      "Os dados deste aparelho serão substituídos pelos da nuvem.",
+      "Baixar e substituir",
+      () => {
+        importObject(o);
+        SEC.ghVer = ver;
+        SEC.ghConflict = false;
+        CLOUD.sent = JSON.stringify(safeState());
+        saveSec();
+        save();
+        applyTheme();
+        closeAll();
+        render();
+        toast("Dados restaurados da nuvem.");
+      }
+    );
   } catch (e) {
     toast("Falha ao baixar: " + e.message);
   }
@@ -4040,11 +4055,13 @@ function conflictSheet(h = CLOUD.head || {}) {
 ACT["gh-save"] = () => cloudLink();
 ACT["gh-sync"] = () => syncFromCloud();
 ACT["gh-push"] = () => syncToCloud(true);
-ACT["gh-force"] = () => {
-  if (!confirm("Substituir a cópia da nuvem pelos dados deste aparelho?")) return;
-  if (STACK.includes("sheet")) closeSheet();
-  syncToCloud(true, true);
-};
+ACT["gh-force"] = () =>
+  askConfirm(
+    "Enviar deste aparelho?",
+    "A cópia da nuvem será substituída pelos dados deste aparelho. O GitHub guarda a versão anterior.",
+    "Enviar e substituir",
+    () => syncToCloud(true, true)
+  );
 ACT["cloud-resolve"] = () => conflictSheet();
 
 /* ============ AURA (Gemini): chat com contexto do dia e memória de 7 dias ============ */
@@ -4259,13 +4276,19 @@ function fotoStart(meal) {
     toast("Cole sua chave do Gemini no Coach para usar a foto.");
     return openPage("coach");
   }
-  if (!S.settings.gemAck) {
-    if (!confirm("A foto do prato será enviada ao Google (Gemini) para análise. Continuar?")) return;
-    S.settings.gemAck = true;
-    save();
-  }
   FOTO.meal = meal || mealByTime();
-  $("#foto").click();
+  if (S.settings.gemAck) return $("#foto").click();
+  askConfirm(
+    "Enviar a foto ao Google?",
+    "A foto do prato vai para o Gemini analisar. O app não guarda a foto.",
+    "Escolher foto",
+    () => {
+      S.settings.gemAck = true;
+      save();
+      $("#foto").click();
+    },
+    false
+  );
 }
 async function fotoAnalyze(file) {
   openSheet(
@@ -4424,12 +4447,11 @@ function photoSheet(id) {
 }
 ACT["photo-add"] = () => $("#fotoprog").click();
 ACT["photo-open"] = b => photoSheet(b.dataset.id);
-ACT["photo-del"] = b => {
-  if (!confirm("Apagar esta foto deste aparelho?")) return;
-  photoDel(b.dataset.id);
-  closeSheet();
-  render();
-};
+ACT["photo-del"] = b =>
+  askConfirm("Apagar esta foto?", "Ela só existe neste aparelho: não dá para recuperar.", "Apagar", () => {
+    photoDel(b.dataset.id);
+    render();
+  });
 
 /* ============ LEMBRETES: gera um arquivo .ics para o calendário do celular (toca com o app fechado) ============ */
 // Os horários vêm da Agenda: remédios, treino, consultas, suplementos, hábitos, refeições e atividades com hora marcada.
@@ -4823,6 +4845,53 @@ function closeSheet() {
   dropLayer("sheet");
 }
 ACT.close = () => closeSheet();
+
+/* ---- tema: auto / claro / escuro (global) ---- */
+function applyTheme() {
+  const t = R.theme;
+  const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  const m = $("meta[name=theme-color]");
+  if (m) m.content = dark ? "#0D0D0F" : "#F5F5FA";
+  applyLook();
+  const hr = new Date().getHours();
+  document.body.dataset.hour = hr >= 4 && hr < 10 ? "morning" : hr >= 19 || hr < 4 ? "night" : "day";
+}
+ACT.theme = b => {
+  R.theme = b.dataset.v;
+  save();
+  applyTheme();
+  render();
+};
+
+/* ============ AVISOS: confirmar no próprio app, desfazer e toast ============ */
+/* ---- confirmar no próprio app (sem a janela do navegador): o botão diz o que acontece ---- */
+// para o que dá para voltar atrás, prefira fazer e oferecer "Desfazer" no aviso (veja undoable)
+let confirmFn = null;
+function askConfirm(title, text, okLabel, fn, danger = true) {
+  confirmFn = fn;
+  openSheet(`<h3 class="h3" tabindex="-1">${esc(title)}</h3>${text ? `<p class="muted">${esc(text)}</p>` : ""}
+    <div class="grid2"><button class="btn" data-act="confirm-no">Cancelar</button><button class="btn ${danger ? "danger fill" : "solid"}" data-act="confirm-ok">${esc(okLabel)}</button></div>`);
+}
+ACT["confirm-ok"] = () => {
+  const fn = confirmFn;
+  confirmFn = null;
+  closeSheet();
+  if (fn) fn();
+};
+ACT["confirm-no"] = () => {
+  confirmFn = null;
+  closeSheet();
+};
+// depois de mudar, oferece "Desfazer"; snapshot = cópia (clone) tirada ANTES da mudança
+function undoable(msg, snapshot, restore) {
+  toast(msg, () => {
+    restore(snapshot);
+    save();
+    render();
+    toast("Desfeito.");
+  });
+}
 ACT.scrim = () => {
   const top = STACK[STACK.length - 1];
   if (top === "sheet" || top === "actions") dropLayer(top);
@@ -4845,24 +4914,6 @@ function toast(t, fn, label = "Desfazer") {
   clearTimeout(toastT);
   toastT = setTimeout(() => e.classList.remove("on", "act"), fn ? 5500 : 2600);
 }
-
-/* ---- tema: auto / claro / escuro (global) ---- */
-function applyTheme() {
-  const t = R.theme;
-  const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
-  document.documentElement.dataset.theme = dark ? "dark" : "light";
-  const m = $("meta[name=theme-color]");
-  if (m) m.content = dark ? "#0D0D0F" : "#F5F5FA";
-  applyLook();
-  const hr = new Date().getHours();
-  document.body.dataset.hour = hr >= 4 && hr < 10 ? "morning" : hr >= 19 || hr < 4 ? "night" : "day";
-}
-ACT.theme = b => {
-  R.theme = b.dataset.v;
-  save();
-  applyTheme();
-  render();
-};
 
 /* ============ PEÇAS VISUAIS REUTILIZADAS + render geral ============ */
 let RID = 0;
@@ -5281,11 +5332,15 @@ ACT["inst-dup"] = b => {
 ACT["inst-del"] = b => {
   const x = instById(b.dataset.id);
   if (!x) return;
-  if (!x.it.date && !confirm(`Tirar "${x.it.title}" da rotina? Os dias passados continuam registrados.`)) return;
+  const before = clone(S.sched.items);
   schedRemove(dayK(), b.dataset.id, true);
   closeSheet();
   render();
-  toast("Removido.");
+  undoable(
+    x.it.date ? "Removido." : `"${x.it.title}" saiu da rotina. Os dias passados continuam.`,
+    before,
+    c => (S.sched.items = c)
+  );
 };
 ACT["inst-resched"] = b =>
   openSheet(
@@ -5430,10 +5485,11 @@ ACT["goal-add"] = b => {
   haptic();
 };
 ACT["goal-del"] = b => {
-  if (!confirm("Excluir esta meta?")) return;
+  const before = clone(S.goals);
   S.goals = S.goals.filter(g => g.id !== b.dataset.id);
   save();
   render();
+  undoable("Meta excluída.", before, c => (S.goals = c));
 };
 /* ---- ações rápidas usadas pelo Hoje e pela agenda ---- */
 ACT["dose-log"] = b => {
@@ -7045,10 +7101,14 @@ ACT["med-save"] = b => {
   toast("Remédio salvo. Horários na agenda.");
 };
 ACT["med-del"] = b => {
-  if (!confirm("Remover este remédio? As doses já registradas continuam no histórico.")) return;
+  const before = clone({ meds: S.meds, items: S.sched.items });
   medRemove(b.dataset.id);
   closeSheet();
   render();
+  undoable("Remédio removido. As doses registradas continuam no histórico.", before, c => {
+    S.meds = c.meds;
+    S.sched.items = c.items;
+  });
 };
 ACT["q-done"] = b => {
   const q = S.questions.find(x => x.id === b.dataset.id);
@@ -7376,25 +7436,30 @@ ACT.notif = () => {
 };
 ACT.export = () => exportData();
 ACT.import = () => $("#file").click();
-ACT.reset = () => {
-  if (!confirm(`Apagar TODOS os dados do perfil ${S.profile.name} neste aparelho? Exporte um backup antes.`)) return;
-  const id = S.id,
-    p = newProfile(S.profile.name, {
-      sex: S.profile.sex,
-      startWeight: S.profile.startWeight,
-      goal: S.profile.goal,
-      height: S.profile.height,
-      age: S.profile.age,
-      avatar: S.profile.avatar
-    });
-  p.id = id;
-  R.profiles[id] = p;
-  useProfile(id);
-  save();
-  closeAll();
-  render();
-  toast("Dados do perfil apagados.");
-};
+ACT.reset = () =>
+  askConfirm(
+    `Apagar os dados de ${S.profile.name}?`,
+    "Todos os registros deste perfil neste aparelho serão apagados. Exporte um backup antes.",
+    "Apagar tudo",
+    () => {
+      const id = S.id,
+        p = newProfile(S.profile.name, {
+          sex: S.profile.sex,
+          startWeight: S.profile.startWeight,
+          goal: S.profile.goal,
+          height: S.profile.height,
+          age: S.profile.age,
+          avatar: S.profile.avatar
+        });
+      p.id = id;
+      R.profiles[id] = p;
+      useProfile(id);
+      save();
+      closeAll();
+      render();
+      toast("Dados do perfil apagados.");
+    }
+  );
 
 /* ============ PAPEL DE PAREDE: presets ou foto sua (só no aparelho, fora do backup) ============ */
 const WALLS = [
@@ -7662,12 +7727,17 @@ ACT["profile-create"] = () => {
 ACT["profile-del"] = b => {
   const p = R.profiles[b.dataset.id];
   if (!p) return;
-  if (!confirm(`Excluir o perfil ${p.profile.name} e TODOS os dados dele? Não dá para desfazer.`)) return;
-  if (profileDelete(p.id)) {
-    closeSheet();
-    render();
-    toast("Perfil excluído.");
-  }
+  askConfirm(
+    `Excluir o perfil ${p.profile.name}?`,
+    "Todos os dados deste perfil neste aparelho serão apagados. Não dá para desfazer.",
+    "Excluir perfil",
+    () => {
+      if (profileDelete(p.id)) {
+        render();
+        toast("Perfil excluído.");
+      }
+    }
+  );
 };
 ACT["profile-save"] = () => {
   const p = S.profile,
@@ -7846,13 +7916,16 @@ ACT["li-del"] = b => {
   if (k === "habits" && it.id === S.settings.rule1)
     return toast("Escolha outra Regra nº 1 antes de remover este hábito.");
   if (k === "habits" && a.length < 2) return toast("Mantenha pelo menos um hábito.");
-  if (!confirm(`Remover "${it.t || it.n}"? O histórico dos dias passados continua salvo.`)) return;
-  a.splice(i, 1);
+  const before = clone({ list: a, items: S.sched.items });
+  S[k] = a.filter((_, j) => j !== i);
   if (k === "supps") S.sched.items = S.sched.items.filter(x => !(x.type === "suplemento" && x.ref === it.id));
   save();
   closeSheet();
   render();
-  toast("Removido.");
+  undoable(`"${it.t || it.n}" removido. O histórico continua salvo.`, before, c => {
+    S[k] = c.list;
+    S.sched.items = c.items;
+  });
 };
 ACT.need = b => {
   S.settings.needOthers = clamp(S.settings.needOthers + num(b.dataset.d), 0, Math.max(0, S.habits.length - 1));

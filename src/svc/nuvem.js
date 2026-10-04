@@ -159,17 +159,24 @@ async function syncFromCloud() {
     if (!f) throw new Error("arquivo não encontrado no gist");
     const o = await openState(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
     if (!o || !(o.profiles || (o.profile && o.days))) throw new Error("dados inválidos");
-    if (!confirm("Substituir os dados deste aparelho pela cópia da nuvem?")) return;
-    importObject(o);
-    SEC.ghVer = gistVer(j) || (await cloudHead()).ver;
-    SEC.ghConflict = false;
-    CLOUD.sent = JSON.stringify(safeState());
-    saveSec();
-    save();
-    applyTheme();
-    closeAll();
-    render();
-    toast("Dados restaurados da nuvem.");
+    const ver = gistVer(j) || (await cloudHead()).ver;
+    askConfirm(
+      "Baixar a cópia da nuvem?",
+      "Os dados deste aparelho serão substituídos pelos da nuvem.",
+      "Baixar e substituir",
+      () => {
+        importObject(o);
+        SEC.ghVer = ver;
+        SEC.ghConflict = false;
+        CLOUD.sent = JSON.stringify(safeState());
+        saveSec();
+        save();
+        applyTheme();
+        closeAll();
+        render();
+        toast("Dados restaurados da nuvem.");
+      }
+    );
   } catch (e) {
     toast("Falha ao baixar: " + e.message);
   }
@@ -212,9 +219,11 @@ function conflictSheet(h = CLOUD.head || {}) {
 ACT["gh-save"] = () => cloudLink();
 ACT["gh-sync"] = () => syncFromCloud();
 ACT["gh-push"] = () => syncToCloud(true);
-ACT["gh-force"] = () => {
-  if (!confirm("Substituir a cópia da nuvem pelos dados deste aparelho?")) return;
-  if (STACK.includes("sheet")) closeSheet();
-  syncToCloud(true, true);
-};
+ACT["gh-force"] = () =>
+  askConfirm(
+    "Enviar deste aparelho?",
+    "A cópia da nuvem será substituída pelos dados deste aparelho. O GitHub guarda a versão anterior.",
+    "Enviar e substituir",
+    () => syncToCloud(true, true)
+  );
 ACT["cloud-resolve"] = () => conflictSheet();

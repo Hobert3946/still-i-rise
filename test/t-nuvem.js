@@ -42,6 +42,11 @@ module.exports = async T => {
   a.click("#sheet [data-act=gh-sync]");
   await a.wait(50);
   T.ok(
+    /Baixar a cópia da nuvem/.test(a.q("#sheet").textContent),
+    "pede confirmação no próprio app antes de substituir"
+  );
+  a.click("[data-act=confirm-ok]");
+  T.ok(
     a.ev("S.weights[0].kg") === 120 && a.ev("SEC.ghVer") === "v1" && !a.ev("SEC.ghConflict"),
     "baixa os dados da nuvem e liga o aparelho"
   );
@@ -67,6 +72,7 @@ module.exports = async T => {
   await a.wait(20);
   a.ev("conflictSheet()");
   a.click("#sheet [data-act=gh-force]");
+  a.click("[data-act=confirm-ok]");
   await a.wait(50);
   T.ok(
     g.calls.filter(c => c.method === "PATCH").length === 2 && !a.ev("SEC.ghConflict") && /"water":700/.test(g.content),
@@ -92,6 +98,7 @@ module.exports = async T => {
   b.ev("SEC.ghPass = 'senha forte'");
   await b.ev("syncFromCloud()");
   await b.wait(50);
+  b.click("[data-act=confirm-ok]");
   T.ok(b.ev("S.weights[0].kg") === 120 && b.ev("D(today()).water") === 700, "senha certa restaura em outro aparelho");
   T.ok(!b.errors.length, "sem erros de script " + (b.errors[0] || ""));
   b.close();

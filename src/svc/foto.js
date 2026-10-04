@@ -48,13 +48,19 @@ function fotoStart(meal) {
     toast("Cole sua chave do Gemini no Coach para usar a foto.");
     return openPage("coach");
   }
-  if (!S.settings.gemAck) {
-    if (!confirm("A foto do prato será enviada ao Google (Gemini) para análise. Continuar?")) return;
-    S.settings.gemAck = true;
-    save();
-  }
   FOTO.meal = meal || mealByTime();
-  $("#foto").click();
+  if (S.settings.gemAck) return $("#foto").click();
+  askConfirm(
+    "Enviar a foto ao Google?",
+    "A foto do prato vai para o Gemini analisar. O app não guarda a foto.",
+    "Escolher foto",
+    () => {
+      S.settings.gemAck = true;
+      save();
+      $("#foto").click();
+    },
+    false
+  );
 }
 async function fotoAnalyze(file) {
   openSheet(

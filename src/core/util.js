@@ -59,3 +59,4 @@ const haptic = (ms = 10) => {
   } catch (e) {}
 };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const clone = o => JSON.parse(JSON.stringify(o));

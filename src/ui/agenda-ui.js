@@ -162,11 +162,15 @@ ACT["inst-dup"] = b => {
 ACT["inst-del"] = b => {
   const x = instById(b.dataset.id);
   if (!x) return;
-  if (!x.it.date && !confirm(`Tirar "${x.it.title}" da rotina? Os dias passados continuam registrados.`)) return;
+  const before = clone(S.sched.items);
   schedRemove(dayK(), b.dataset.id, true);
   closeSheet();
   render();
-  toast("Removido.");
+  undoable(
+    x.it.date ? "Removido." : `"${x.it.title}" saiu da rotina. Os dias passados continuam.`,
+    before,
+    c => (S.sched.items = c)
+  );
 };
 ACT["inst-resched"] = b =>
   openSheet(

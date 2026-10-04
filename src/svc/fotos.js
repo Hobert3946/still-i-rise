@@ -76,9 +76,8 @@ function photoSheet(id) {
 }
 ACT["photo-add"] = () => $("#fotoprog").click();
 ACT["photo-open"] = b => photoSheet(b.dataset.id);
-ACT["photo-del"] = b => {
-  if (!confirm("Apagar esta foto deste aparelho?")) return;
-  photoDel(b.dataset.id);
-  closeSheet();
-  render();
-};
+ACT["photo-del"] = b =>
+  askConfirm("Apagar esta foto?", "Ela só existe neste aparelho: não dá para recuperar.", "Apagar", () => {
+    photoDel(b.dataset.id);
+    render();
+  });
