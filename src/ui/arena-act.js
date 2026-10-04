@@ -30,7 +30,7 @@ ACT["wk-allset"] = () => { const dd = arenaDD(); dd.sets.forEach(s => s.done = t
 ACT["wk-var"] = b => { const st = curStep(); S.sel[st.e.id] = b.dataset.v; delete S.cur.data[st.e.id]; save(); arenaRender(); };
 ACT["wk-skip"] = () => { DW(today()).skipWk = true; save(); render(); toast("Tudo bem. A sequência não quebra."); };
 ACT["wk-unskip"] = () => { DW(today()).skipWk = false; save(); render(); };
-ACT["sum-next"] = b => { if (PAIN_DAYS.includes(b.dataset.day)) painSheet(b.dataset.day); else closeSheet(); render(); };
+ACT["sum-next"] = b => { if (PAIN_DAYS.includes(b.dataset.day) && S.settings.painAsk !== false) painSheet(b.dataset.day); else closeSheet(); render(); };
 ACT.pain = b => { closeSheet(); painDo(+b.dataset.v, b.dataset.day); render(); };
 // deslizar para os lados na arena troca de exercício
 function arenaSwipe(dir) { const c = S.cur; if (!c) return; if (dir > 0 && c.i > 0) { c.i--; save(); arenaRender(); } else if (dir < 0 && c.i < stepsOf(c.day).length - 1) { c.i++; save(); arenaRender(); } }

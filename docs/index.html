@@ -865,7 +865,7 @@ const TIPS = [
 ];
 
 const HABITS = [
- ["treino","Treinei às 5h"],["acucar","Zero bebida com açúcar"],["proteina","Proteína em toda refeição"],
+ ["treino","Treinei hoje"],["acucar","Zero bebida com açúcar"],["proteina","Proteína em toda refeição"],
  ["caminhada","30 min de caminhada"],["agua","3 litros de água"],["sono","Dormi às 22:00"]
 ];
 // Suplementos base (checklist diário). preço 1-4 ($), ajuda 1-5
@@ -1036,12 +1036,12 @@ let R = null, S = null, SEC = secDefault();
 
 const baseSettings = () => ({
   start: today(), logMode: "set", rotate: true, rotateWeeks: 4, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000,
-  deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false
+  deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false, painAsk: true
 });
 const rawProfile = (name, p = {}) => ({
   id: uid("p"), profile: Object.assign({ name, sex: "", startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
   weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [], favs: {},
-  habits: defHabits(), supps: defSupps(), settings: baseSettings()
+  habits: defHabits(), supps: defSupps().filter(s => s.type !== "M"), settings: baseSettings() // perfil novo começa sem remédio
 });
 const newProfile = (name, p) => upgradeProfile(rawProfile(name, p));
 // v3: remédios saem da lista de suplementos (com o histórico), horários fixos viram rotina editável
@@ -1062,11 +1062,11 @@ function upgradeProfile(p) {
   return p;
 }
 function mergeProfile(o) {
-  const d = rawProfile("Hobert"), dp = d.profile, s = Object.assign(d, o || {});
+  const d = rawProfile("Você"), dp = d.profile, s = Object.assign(d, o || {});
   s.profile = Object.assign(dp, (o || {}).profile); // dp guardado antes: Object.assign(d, o) troca d.profile
   s.settings = Object.assign(baseSettings(), (o || {}).settings);
   if (!Array.isArray(s.habits) || !s.habits.length) s.habits = defHabits();
-  if (!Array.isArray(s.supps)) s.supps = defSupps();
+  if (!(o && Array.isArray(o.supps))) s.supps = defSupps(); // dados do v1: a lista antiga tinha a metformina, que migra para Remédios com o histórico
   if (!s.habits.some(h => h.id === s.settings.rule1)) s.settings.rule1 = s.habits[0].id;
   if (!(o && o.settings && o.settings.calcWeight)) s.settings.calcWeight = s.profile.startWeight;
   SECRET_KEYS.forEach(k => delete s.settings[k]);
@@ -1082,7 +1082,7 @@ function migrateV1(o, keepSecrets = true) {
 function mergeRoot(o) {
   const r = { v: 2, active: o.active, theme: o.theme || "auto", wall: o.wall || "none", accent: o.accent || "padrao", font: o.font || "padrao", profiles: {} };
   Object.entries(o.profiles || {}).forEach(([id, p]) => { r.profiles[id] = mergeProfile(p); r.profiles[id].id = id; });
-  if (!Object.keys(r.profiles).length) { const p = newProfile("Hobert"); p.id = "p1"; r.profiles.p1 = p; }
+  if (!Object.keys(r.profiles).length) { const p = newProfile("Você", { todo: true }); p.id = "p1"; r.profiles.p1 = p; } // todo: pede os dados nas boas-vindas
   if (!r.profiles[r.active]) r.active = Object.keys(r.profiles)[0];
   return r;
 }
@@ -1111,7 +1111,7 @@ async function loadState() {
   if (sv && sv.ghGistId && !("ghVer" in sv)) SEC.ghVer = null; // aparelho ligado à nuvem antes da checagem de versão: confia na cópia atual
   const tries = [() => lsGet(KEY), () => IDB.get("state2"), () => lsGet(KEY_V1), () => IDB.get("state")];
   for (const t of tries) { R = rootFrom(parse(await t())); if (R) break; }
-  if (!R) R = migrateV1({ profile: { name: "Hobert" }, days: {} }, false);
+  if (!R) R = mergeRoot({ profiles: {} }); // instalação nova
   useProfile(R.active); saveSec(); save();
 }
 function profileCreate(name, base) {
@@ -1615,6 +1615,7 @@ function candSignals(k) {
   if (ab) out.push(cand("abs", 95, "Bem-vindo de volta", `${abs} dias sem registro`, ab.txt, "habit", "Marcar a Regra nº 1", { id: S.settings.rule1 }));
   if (pa !== null && pa >= 4) out.push(cand("pain", 45, "Ombro", "Dor em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`, "go", "Ver treino", { tab: "treino" }));
   if (deloadSignal()) out.push(cand("deload", 44, "Treino", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie.", "go", "Ver treino", { tab: "treino" }));
+  if (S.profile.todo) out.push(cand("setup", 99, "Bem-vindo", "Complete seu perfil", "Nome, sexo, peso, meta, altura e idade: o app usa para calcular suas metas.", "profile-setup", "Completar"));
   if (SEC.ghConflict) out.push(cand("cloud", 90, "Nuvem", "Cópia automática parada", "A nuvem tem dados que este aparelho ainda não baixou. Escolha qual versão vale para não perder nada.", "cloud-resolve", "Escolher"));
   if (backupDays() > 21) out.push(cand("backup", 35, "Seus dados", "Backup atrasado", `${S.settings.lastBackup ? `Último backup há ${backupDays()} dias.` : "Você nunca exportou um backup."} O arquivo .json é o único que sobrevive à troca de celular.`, "export", "Exportar agora"));
   if (parseKey(k).getDay() === 1 && !S.weights.some(w => w.d >= mondayOf(k)) && new Date().getHours() < 12) out.push(cand("weigh", 75, "Segunda-feira", "Dia de pesagem", "Ao acordar, depois do banheiro, antes de comer. Meça a cintura junto.", "weigh", "Registrar peso"));
@@ -2774,7 +2775,7 @@ function summarySheet(L, rows) {
   <p class="muted small">Agora, 10 min de esteira inclinada.</p><button class="btn solid full" data-act="sum-next" data-day="${L}">CONTINUAR</button>`);
 }
 function painSheet(L) {
-  openSheet(`<h3 class="h3">Dor no ombro esquerdo</h3><p class="muted">De 0 (nenhuma) a 10 (muito forte), agora, ao final do treino ${L}.</p>
+  openSheet(`<h3 class="h3">Dor no ombro</h3><p class="muted">De 0 (nenhuma) a 10 (muito forte), agora, ao final do treino ${L}.</p>
   <div class="painscale" role="group" aria-label="Escala de dor">${Array.from({ length: 11 }, (_, i) => `<button style="--p:${i / 10}" data-act="pain" data-v="${i}" data-day="${L}">${i}</button>`).join("")}</div>
   <button class="btn ghost full" data-act="close">Pular</button>`);
 }
@@ -2812,7 +2813,7 @@ ACT["wk-allset"] = () => { const dd = arenaDD(); dd.sets.forEach(s => s.done = t
 ACT["wk-var"] = b => { const st = curStep(); S.sel[st.e.id] = b.dataset.v; delete S.cur.data[st.e.id]; save(); arenaRender(); };
 ACT["wk-skip"] = () => { DW(today()).skipWk = true; save(); render(); toast("Tudo bem. A sequência não quebra."); };
 ACT["wk-unskip"] = () => { DW(today()).skipWk = false; save(); render(); };
-ACT["sum-next"] = b => { if (PAIN_DAYS.includes(b.dataset.day)) painSheet(b.dataset.day); else closeSheet(); render(); };
+ACT["sum-next"] = b => { if (PAIN_DAYS.includes(b.dataset.day) && S.settings.painAsk !== false) painSheet(b.dataset.day); else closeSheet(); render(); };
 ACT.pain = b => { closeSheet(); painDo(+b.dataset.v, b.dataset.day); render(); };
 // deslizar para os lados na arena troca de exercício
 function arenaSwipe(dir) { const c = S.cur; if (!c) return; if (dir > 0 && c.i > 0) { c.i--; save(); arenaRender(); } else if (dir < 0 && c.i < stepsOf(c.day).length - 1) { c.i++; save(); arenaRender(); } }
@@ -2840,17 +2841,20 @@ VIEWS.treino = () => {
     <div class="daychips" role="group" aria-label="Escolher treino">${DAY_ORDER.map(x => `<button class="dchip ${x === L ? "on" : ""}" style="--hue:${WK_HUE[x]}" data-act="pickday" data-day="${x}"><b>${x}</b><small>${PLAN[x].name}</small></button>`).join("")}</div>`;
   const main = skip ? sec("", `<h3 class="h3">Tudo bem, o foco hoje é a dieta.</h3><p class="muted">O treino <b>${L} · ${p.name}</b> fica guardado para amanhã. Sua sequência não quebra.</p><button class="btn full" data-act="wk-unskip">Desfazer (vou treinar)</button>`)
     : sec("", `<div class="row between"><div><div class="lbl" style="color:${WK_HUE[L]}">Treino ${L}</div><h3 class="h2">${p.name}</h3></div><span class="pill">≈ ${estMin(L)} min</span></div>
-      <p class="muted small">${p.focus}. Segunda a sexta às 5h, na sequência A a E: se faltar um dia, o treino continua de onde parou. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
+      <p class="muted small">${p.focus}. ${trainWhen()}, na sequência A a E: se faltar um dia, o treino continua de onde parou. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
       ${planList(L)}<button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR NA ARENA" : `ENTRAR NA ARENA · ${L}`}</button>
       ${!S.cur && !UI.pickDay && !kd.wk ? `<button class="btn ghost full" data-act="wk-skip">Não consegui ir hoje</button>` : ""}`);
   const recs = maxLoads();
   return todayTrain(k) + head + main + painSec() + (recs.length ? sec("Maiores cargas registradas", `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div>`) : "") + prefsSec(vol);
 };
+// dias e horário do treino, como estão na agenda
+const trainWhen = () => { const it = S.sched.items.find(x => x.type === "treino" && live(x) && !x.date); if (!it) return "Dias de treino na agenda"; const d = defOn(it, today()); return `${recTxt(d)}${d.at ? " às " + d.at : ""}`; };
 function prefsSec(vol) {
   const s = S.settings;
   return sec("Balanço semanal de séries", `<div class="grid2"><div class="tile"><div class="lbl">Empurrar</div><div class="h2 tabnum">${vol.push}</div></div><div class="tile"><div class="lbl">Puxar</div><div class="h2 tabnum">${vol.pull}</div></div></div>
     <p class="muted small">Puxar ≥ empurrar protege o ombro. Aquecimento de manguito antes de peito, ombro e braço.</p>`) +
   sec("Regras de carga", `<p class="small"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois, ao fim de cada treino:</b> fechou todas as repetições em todas as séries, sobe a carga; falhou na 1ª série ou em 2 ou mais séries, desce um degrau; senão mantém. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
+    <div class="row between set-row"><span class="grow">Perguntar a dor no ombro depois dos treinos ${PAIN_DAYS.join(", ")}</span>${tog(s.painAsk !== false, "tog-pain", "Perguntar a dor no ombro")}</div>
     <div class="row between set-row"><span class="grow">Rodízio automático de variações</span>${tog(s.rotate, "tog-rotate", "Rodízio automático de variações")}</div>
     <div class="row between set-row"><span class="grow">Trocar variação a cada</span><div class="stepper sm"><button class="icon-btn" data-act="rot-weeks" data-d="-1" aria-label="Menos uma semana">${ic("minus")}</button><b class="tabnum">${s.rotateWeeks} sem.</b><button class="icon-btn" data-act="rot-weeks" data-d="1" aria-label="Mais uma semana">${ic("plus")}</button></div></div>
     <div class="lbl">Registro na Arena</div><div class="seg"><button class="${s.logMode === "set" ? "on" : ""}" data-act="logmode" data-v="set">1 toque por série</button><button class="${s.logMode === "end" ? "on" : ""}" data-act="logmode" data-v="end">Ao final</button></div>
@@ -2872,6 +2876,7 @@ function todayTrain(k) {
   return `<section class="hero-card"><div class="kick">Hoje · ${x.flex ? PERIODS[x.period] : x.at}${x.skip ? " · pulado" : ""}</div><h2 class="h2">Próximo: ${planLetter(k) || seqNext()} · ${PLAN[planLetter(k) || seqNext()].name}</h2><button class="btn ghost full" data-act="inst-open" data-id="${x.id}">Mudar horário, pular ou reagendar</button></section>`;
 }
 ACT["sel-var"] = b => { if (b.dataset.v) S.sel[b.dataset.s] = b.dataset.v; else delete S.sel[b.dataset.s]; save(); render(); };
+ACT["tog-pain"] = () => { S.settings.painAsk = S.settings.painAsk === false; save(); render(); };
 ACT["tog-rotate"] = () => { S.settings.rotate = !S.settings.rotate; save(); render(); };
 ACT["rot-weeks"] = b => { S.settings.rotateWeeks = clamp((S.settings.rotateWeeks || 4) + num(b.dataset.d), 1, 12); save(); render(); };
 ACT.logmode = b => { S.settings.logMode = b.dataset.v; save(); render(); };
@@ -3256,7 +3261,7 @@ ACT.export = () => exportData();
 ACT.import = () => $("#file").click();
 ACT.reset = () => {
   if (!confirm(`Apagar TODOS os dados do perfil ${S.profile.name} neste aparelho? Exporte um backup antes.`)) return;
-  const id = S.id, p = newProfile(S.profile.name, { startWeight: S.profile.startWeight, goal: S.profile.goal, height: S.profile.height, age: S.profile.age, avatar: S.profile.avatar });
+  const id = S.id, p = newProfile(S.profile.name, { sex: S.profile.sex, startWeight: S.profile.startWeight, goal: S.profile.goal, height: S.profile.height, age: S.profile.age, avatar: S.profile.avatar });
   p.id = id; R.profiles[id] = p; useProfile(id); save(); closeAll(); render(); toast("Dados do perfil apagados.");
 };
 
@@ -3348,26 +3353,47 @@ function switchProfile(id) {
   if (S.cur && STACK.includes("arena")) dropLayer("arena");
   useProfile(id); UI.day = null; UI.open = null; save(); render(); toast("Perfil: " + S.profile.name + ".");
 }
-function profileNewSheet() {
-  openSheet(`<h3 class="h3">Novo perfil</h3><p class="muted small">Cada perfil tem os próprios dias, treinos, pesos, hábitos, suplementos, favoritos e conversa com a Aura.</p>
-  <label class="lbl" for="nn">Nome</label><input class="field" id="nn" placeholder="Ex.: Mãe" autocomplete="off">
+// campos do perfil: usados no novo perfil e nas boas-vindas
+const profileFields = () => `<label class="lbl" for="nn">Nome</label><input class="field" id="nn" placeholder="Ex.: Mãe" autocomplete="off">
   <label class="lbl" for="nsx">Sexo biológico (muda o cálculo do gasto)</label>${sexSelect("nsx", "", true)}
   <div class="grid2"><div><label class="lbl" for="ns">Peso atual (kg)</label><input class="field" id="ns" inputmode="decimal" placeholder="90"></div><div><label class="lbl" for="ng">Meta (kg)</label><input class="field" id="ng" inputmode="decimal" placeholder="75"></div>
-  <div><label class="lbl" for="nh">Altura (cm)</label><input class="field" id="nh" inputmode="numeric" placeholder="165"></div><div><label class="lbl" for="na">Idade</label><input class="field" id="na" inputmode="numeric" placeholder="50"></div></div>
-  <p class="muted xs">Começa com os hábitos e suplementos padrão. Ajuste tudo na lente Sistema.</p>
+  <div><label class="lbl" for="nh">Altura (cm)</label><input class="field" id="nh" inputmode="numeric" placeholder="165"></div><div><label class="lbl" for="na">Idade</label><input class="field" id="na" inputmode="numeric" placeholder="50"></div></div>`;
+function readProfileFields() {
+  const name = $("#nn").value.trim(), sex = $("#nsx").value, sw = num($("#ns").value, 0), g = num($("#ng").value, 0), h = num($("#nh").value, 0), a = num($("#na").value, 0);
+  if (!name) return toast("Informe o nome."), null;
+  if (!["M", "F"].includes(sex)) return toast("Escolha o sexo biológico: ele muda o cálculo do gasto."), null;
+  if (!(sw >= 30 && sw <= 300) || !(g >= 30 && g <= 300) || !(h >= 100 && h <= 250) || !(a >= 10 && a <= 110)) return toast("Confira peso, meta, altura e idade."), null;
+  return { name, sex, startWeight: sw, goal: g, height: h, age: a };
+}
+function profileNewSheet() {
+  openSheet(`<h3 class="h3">Novo perfil</h3><p class="muted small">Cada perfil tem os próprios dias, treinos, pesos, hábitos, suplementos, remédios, favoritos e conversa com o Coach.</p>
+  ${profileFields()}
+  <p class="muted xs">Começa com os hábitos e suplementos padrão e sem remédios. Ajuste tudo em Perfil e ajustes.</p>
   <button class="btn solid full" data-act="profile-create">CRIAR E ENTRAR</button>`);
 }
+// instalação nova: pede os dados para calcular as metas (ou restaura de outro aparelho)
+function welcomeSheet() {
+  openSheet(`<h3 class="h2">Bem-vindo ao Still I Rise</h3><p class="muted">Conte um pouco sobre você para o app calcular suas metas de calorias, proteína e água. Dá para mudar tudo depois em Perfil e ajustes (toque no seu avatar).</p>
+  ${profileFields()}
+  <button class="btn solid full" data-act="welcome-save">COMEÇAR</button>
+  <p class="muted small center">Já usa o app em outro aparelho?</p>
+  <div class="grid2"><button class="btn sm" data-act="import">${ic("upload")} Backup .json</button><button class="btn sm" data-act="welcome-cloud">${ic("cloud")} Da nuvem</button></div>`);
+}
+ACT["welcome-save"] = () => {
+  const v = readProfileFields(); if (!v) return;
+  Object.assign(S.profile, v); delete S.profile.todo; S.settings.calcWeight = v.startWeight;
+  save(); closeSheet(); render(); toast(`Pronto, ${v.name}. Meta: ${fmtInt(TG().kcal)} kcal e ${TG().prot} g de proteína.`);
+};
+ACT["welcome-cloud"] = () => { UI.openFold = "nuvem"; openPage("ajustes"); };
+ACT["profile-setup"] = () => welcomeSheet();
 ACT.profiles = () => openSheet(`<h3 class="h3">Perfis</h3><div class="list">${profileRows()}</div><div class="grid2"><button class="btn" data-act="profile-new">${ic("plus")} Novo</button><button class="btn" data-act="page" data-p="ajustes">${ic("edit")} Editar</button></div>`);
 ACT["profile-use"] = b => { if (STACK.includes("sheet")) closeSheet(); switchProfile(b.dataset.id); };
 ACT["profile-new"] = () => profileNewSheet();
 ACT["profile-create"] = () => {
-  const name = $("#nn").value.trim(); if (!name) return toast("Informe o nome.");
-  const sw = num($("#ns").value, 0), g = num($("#ng").value, 0), h = num($("#nh").value, 0), a = num($("#na").value, 0), sex = $("#nsx").value;
-  if (!["M", "F"].includes(sex)) return toast("Escolha o sexo biológico: ele muda o cálculo do gasto.");
-  if (!(sw >= 30 && sw <= 300) || !(g >= 30 && g <= 300) || !(h >= 100 && h <= 250) || !(a >= 10 && a <= 110)) return toast("Confira peso, meta, altura e idade.");
+  const v = readProfileFields(); if (!v) return;
   if (S.cur && STACK.includes("arena")) dropLayer("arena");
-  const p = profileCreate(name, { sex, startWeight: sw, goal: g, height: h, age: a }); p.settings.calcWeight = sw; save();
-  closeAll(); UI.day = null; render(); toast(`Perfil ${name} criado.`);
+  const p = profileCreate(v.name, { sex: v.sex, startWeight: v.startWeight, goal: v.goal, height: v.height, age: v.age }); p.settings.calcWeight = v.startWeight; save();
+  closeAll(); UI.day = null; render(); toast(`Perfil ${v.name} criado.`);
 };
 ACT["profile-del"] = b => {
   const p = R.profiles[b.dataset.id]; if (!p) return;
@@ -3605,6 +3631,7 @@ function registerSW() {
   try { history.replaceState({ layer: null }, ""); } catch (e) { }
   render();
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+  if (S.profile.todo) welcomeSheet();
   if (S.cur) toast("Treino em andamento. Continue pelo card Agora.");
   setTimeout(maybeReview, 1000);
 })();

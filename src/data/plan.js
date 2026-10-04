@@ -118,7 +118,7 @@ const TIPS = [
 ];
 
 const HABITS = [
- ["treino","Treinei às 5h"],["acucar","Zero bebida com açúcar"],["proteina","Proteína em toda refeição"],
+ ["treino","Treinei hoje"],["acucar","Zero bebida com açúcar"],["proteina","Proteína em toda refeição"],
  ["caminhada","30 min de caminhada"],["agua","3 litros de água"],["sono","Dormi às 22:00"]
 ];
 // Suplementos base (checklist diário). preço 1-4 ($), ajuda 1-5

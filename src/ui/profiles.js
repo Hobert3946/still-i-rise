@@ -11,26 +11,47 @@ function switchProfile(id) {
   if (S.cur && STACK.includes("arena")) dropLayer("arena");
   useProfile(id); UI.day = null; UI.open = null; save(); render(); toast("Perfil: " + S.profile.name + ".");
 }
-function profileNewSheet() {
-  openSheet(`<h3 class="h3">Novo perfil</h3><p class="muted small">Cada perfil tem os próprios dias, treinos, pesos, hábitos, suplementos, favoritos e conversa com a Aura.</p>
-  <label class="lbl" for="nn">Nome</label><input class="field" id="nn" placeholder="Ex.: Mãe" autocomplete="off">
+// campos do perfil: usados no novo perfil e nas boas-vindas
+const profileFields = () => `<label class="lbl" for="nn">Nome</label><input class="field" id="nn" placeholder="Ex.: Mãe" autocomplete="off">
   <label class="lbl" for="nsx">Sexo biológico (muda o cálculo do gasto)</label>${sexSelect("nsx", "", true)}
   <div class="grid2"><div><label class="lbl" for="ns">Peso atual (kg)</label><input class="field" id="ns" inputmode="decimal" placeholder="90"></div><div><label class="lbl" for="ng">Meta (kg)</label><input class="field" id="ng" inputmode="decimal" placeholder="75"></div>
-  <div><label class="lbl" for="nh">Altura (cm)</label><input class="field" id="nh" inputmode="numeric" placeholder="165"></div><div><label class="lbl" for="na">Idade</label><input class="field" id="na" inputmode="numeric" placeholder="50"></div></div>
-  <p class="muted xs">Começa com os hábitos e suplementos padrão. Ajuste tudo na lente Sistema.</p>
+  <div><label class="lbl" for="nh">Altura (cm)</label><input class="field" id="nh" inputmode="numeric" placeholder="165"></div><div><label class="lbl" for="na">Idade</label><input class="field" id="na" inputmode="numeric" placeholder="50"></div></div>`;
+function readProfileFields() {
+  const name = $("#nn").value.trim(), sex = $("#nsx").value, sw = num($("#ns").value, 0), g = num($("#ng").value, 0), h = num($("#nh").value, 0), a = num($("#na").value, 0);
+  if (!name) return toast("Informe o nome."), null;
+  if (!["M", "F"].includes(sex)) return toast("Escolha o sexo biológico: ele muda o cálculo do gasto."), null;
+  if (!(sw >= 30 && sw <= 300) || !(g >= 30 && g <= 300) || !(h >= 100 && h <= 250) || !(a >= 10 && a <= 110)) return toast("Confira peso, meta, altura e idade."), null;
+  return { name, sex, startWeight: sw, goal: g, height: h, age: a };
+}
+function profileNewSheet() {
+  openSheet(`<h3 class="h3">Novo perfil</h3><p class="muted small">Cada perfil tem os próprios dias, treinos, pesos, hábitos, suplementos, remédios, favoritos e conversa com o Coach.</p>
+  ${profileFields()}
+  <p class="muted xs">Começa com os hábitos e suplementos padrão e sem remédios. Ajuste tudo em Perfil e ajustes.</p>
   <button class="btn solid full" data-act="profile-create">CRIAR E ENTRAR</button>`);
 }
+// instalação nova: pede os dados para calcular as metas (ou restaura de outro aparelho)
+function welcomeSheet() {
+  openSheet(`<h3 class="h2">Bem-vindo ao Still I Rise</h3><p class="muted">Conte um pouco sobre você para o app calcular suas metas de calorias, proteína e água. Dá para mudar tudo depois em Perfil e ajustes (toque no seu avatar).</p>
+  ${profileFields()}
+  <button class="btn solid full" data-act="welcome-save">COMEÇAR</button>
+  <p class="muted small center">Já usa o app em outro aparelho?</p>
+  <div class="grid2"><button class="btn sm" data-act="import">${ic("upload")} Backup .json</button><button class="btn sm" data-act="welcome-cloud">${ic("cloud")} Da nuvem</button></div>`);
+}
+ACT["welcome-save"] = () => {
+  const v = readProfileFields(); if (!v) return;
+  Object.assign(S.profile, v); delete S.profile.todo; S.settings.calcWeight = v.startWeight;
+  save(); closeSheet(); render(); toast(`Pronto, ${v.name}. Meta: ${fmtInt(TG().kcal)} kcal e ${TG().prot} g de proteína.`);
+};
+ACT["welcome-cloud"] = () => { UI.openFold = "nuvem"; openPage("ajustes"); };
+ACT["profile-setup"] = () => welcomeSheet();
 ACT.profiles = () => openSheet(`<h3 class="h3">Perfis</h3><div class="list">${profileRows()}</div><div class="grid2"><button class="btn" data-act="profile-new">${ic("plus")} Novo</button><button class="btn" data-act="page" data-p="ajustes">${ic("edit")} Editar</button></div>`);
 ACT["profile-use"] = b => { if (STACK.includes("sheet")) closeSheet(); switchProfile(b.dataset.id); };
 ACT["profile-new"] = () => profileNewSheet();
 ACT["profile-create"] = () => {
-  const name = $("#nn").value.trim(); if (!name) return toast("Informe o nome.");
-  const sw = num($("#ns").value, 0), g = num($("#ng").value, 0), h = num($("#nh").value, 0), a = num($("#na").value, 0), sex = $("#nsx").value;
-  if (!["M", "F"].includes(sex)) return toast("Escolha o sexo biológico: ele muda o cálculo do gasto.");
-  if (!(sw >= 30 && sw <= 300) || !(g >= 30 && g <= 300) || !(h >= 100 && h <= 250) || !(a >= 10 && a <= 110)) return toast("Confira peso, meta, altura e idade.");
+  const v = readProfileFields(); if (!v) return;
   if (S.cur && STACK.includes("arena")) dropLayer("arena");
-  const p = profileCreate(name, { sex, startWeight: sw, goal: g, height: h, age: a }); p.settings.calcWeight = sw; save();
-  closeAll(); UI.day = null; render(); toast(`Perfil ${name} criado.`);
+  const p = profileCreate(v.name, { sex: v.sex, startWeight: v.startWeight, goal: v.goal, height: v.height, age: v.age }); p.settings.calcWeight = v.startWeight; save();
+  closeAll(); UI.day = null; render(); toast(`Perfil ${v.name} criado.`);
 };
 ACT["profile-del"] = b => {
   const p = R.profiles[b.dataset.id]; if (!p) return;

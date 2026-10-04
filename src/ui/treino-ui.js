@@ -21,17 +21,20 @@ VIEWS.treino = () => {
     <div class="daychips" role="group" aria-label="Escolher treino">${DAY_ORDER.map(x => `<button class="dchip ${x === L ? "on" : ""}" style="--hue:${WK_HUE[x]}" data-act="pickday" data-day="${x}"><b>${x}</b><small>${PLAN[x].name}</small></button>`).join("")}</div>`;
   const main = skip ? sec("", `<h3 class="h3">Tudo bem, o foco hoje é a dieta.</h3><p class="muted">O treino <b>${L} · ${p.name}</b> fica guardado para amanhã. Sua sequência não quebra.</p><button class="btn full" data-act="wk-unskip">Desfazer (vou treinar)</button>`)
     : sec("", `<div class="row between"><div><div class="lbl" style="color:${WK_HUE[L]}">Treino ${L}</div><h3 class="h2">${p.name}</h3></div><span class="pill">≈ ${estMin(L)} min</span></div>
-      <p class="muted small">${p.focus}. Segunda a sexta às 5h, na sequência A a E: se faltar um dia, o treino continua de onde parou. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
+      <p class="muted small">${p.focus}. ${trainWhen()}, na sequência A a E: se faltar um dia, o treino continua de onde parou. Termina com 10 min de esteira inclinada (4–6%), ritmo de conversa.</p>
       ${planList(L)}<button class="btn solid full" data-act="${S.cur ? "wk-resume" : "wk-start"}" data-day="${L}">${ic("play", "fill")} ${S.cur ? "CONTINUAR NA ARENA" : `ENTRAR NA ARENA · ${L}`}</button>
       ${!S.cur && !UI.pickDay && !kd.wk ? `<button class="btn ghost full" data-act="wk-skip">Não consegui ir hoje</button>` : ""}`);
   const recs = maxLoads();
   return todayTrain(k) + head + main + painSec() + (recs.length ? sec("Maiores cargas registradas", `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div>`) : "") + prefsSec(vol);
 };
+// dias e horário do treino, como estão na agenda
+const trainWhen = () => { const it = S.sched.items.find(x => x.type === "treino" && live(x) && !x.date); if (!it) return "Dias de treino na agenda"; const d = defOn(it, today()); return `${recTxt(d)}${d.at ? " às " + d.at : ""}`; };
 function prefsSec(vol) {
   const s = S.settings;
   return sec("Balanço semanal de séries", `<div class="grid2"><div class="tile"><div class="lbl">Empurrar</div><div class="h2 tabnum">${vol.push}</div></div><div class="tile"><div class="lbl">Puxar</div><div class="h2 tabnum">${vol.pull}</div></div></div>
     <p class="muted small">Puxar ≥ empurrar protege o ombro. Aquecimento de manguito antes de peito, ombro e braço.</p>`) +
   sec("Regras de carga", `<p class="small"><b>Semanas 1–2:</b> adaptação com carga leve. <b>Depois, ao fim de cada treino:</b> fechou todas as repetições em todas as séries, sobe a carga; falhou na 1ª série ou em 2 ou mais séries, desce um degrau; senão mantém. <b>Deload só por sinal</b> (2 sessões falhando ou dor ≥ 4).<br><b>Regra do RIR:</b> termine sentindo que faria mais 3. Se faria mais de 4, estava leve. Se não completou, estava pesada.<br>${INCS_TXT}</p>
+    <div class="row between set-row"><span class="grow">Perguntar a dor no ombro depois dos treinos ${PAIN_DAYS.join(", ")}</span>${tog(s.painAsk !== false, "tog-pain", "Perguntar a dor no ombro")}</div>
     <div class="row between set-row"><span class="grow">Rodízio automático de variações</span>${tog(s.rotate, "tog-rotate", "Rodízio automático de variações")}</div>
     <div class="row between set-row"><span class="grow">Trocar variação a cada</span><div class="stepper sm"><button class="icon-btn" data-act="rot-weeks" data-d="-1" aria-label="Menos uma semana">${ic("minus")}</button><b class="tabnum">${s.rotateWeeks} sem.</b><button class="icon-btn" data-act="rot-weeks" data-d="1" aria-label="Mais uma semana">${ic("plus")}</button></div></div>
     <div class="lbl">Registro na Arena</div><div class="seg"><button class="${s.logMode === "set" ? "on" : ""}" data-act="logmode" data-v="set">1 toque por série</button><button class="${s.logMode === "end" ? "on" : ""}" data-act="logmode" data-v="end">Ao final</button></div>
@@ -53,6 +56,7 @@ function todayTrain(k) {
   return `<section class="hero-card"><div class="kick">Hoje · ${x.flex ? PERIODS[x.period] : x.at}${x.skip ? " · pulado" : ""}</div><h2 class="h2">Próximo: ${planLetter(k) || seqNext()} · ${PLAN[planLetter(k) || seqNext()].name}</h2><button class="btn ghost full" data-act="inst-open" data-id="${x.id}">Mudar horário, pular ou reagendar</button></section>`;
 }
 ACT["sel-var"] = b => { if (b.dataset.v) S.sel[b.dataset.s] = b.dataset.v; else delete S.sel[b.dataset.s]; save(); render(); };
+ACT["tog-pain"] = () => { S.settings.painAsk = S.settings.painAsk === false; save(); render(); };
 ACT["tog-rotate"] = () => { S.settings.rotate = !S.settings.rotate; save(); render(); };
 ACT["rot-weeks"] = b => { S.settings.rotateWeeks = clamp((S.settings.rotateWeeks || 4) + num(b.dataset.d), 1, 12); save(); render(); };
 ACT.logmode = b => { S.settings.logMode = b.dataset.v; save(); render(); };

@@ -9,12 +9,12 @@ let R = null, S = null, SEC = secDefault();
 
 const baseSettings = () => ({
   start: today(), logMode: "set", rotate: true, rotateWeeks: 4, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000,
-  deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false
+  deficit: 1000, activity: 1.375, floor: 1800, rule1: "acucar", needOthers: 2, gemModel: "", gemAck: false, painAsk: true
 });
 const rawProfile = (name, p = {}) => ({
   id: uid("p"), profile: Object.assign({ name, sex: "", startWeight: 140, goal: 105, height: 179, age: 24, avatar: false }, p),
   weights: [], days: {}, logs: {}, sel: {}, pain: [], neck: [], cur: null, chat: [], favs: {},
-  habits: defHabits(), supps: defSupps(), settings: baseSettings()
+  habits: defHabits(), supps: defSupps().filter(s => s.type !== "M"), settings: baseSettings() // perfil novo começa sem remédio
 });
 const newProfile = (name, p) => upgradeProfile(rawProfile(name, p));
 // v3: remédios saem da lista de suplementos (com o histórico), horários fixos viram rotina editável
@@ -35,11 +35,11 @@ function upgradeProfile(p) {
   return p;
 }
 function mergeProfile(o) {
-  const d = rawProfile("Hobert"), dp = d.profile, s = Object.assign(d, o || {});
+  const d = rawProfile("Você"), dp = d.profile, s = Object.assign(d, o || {});
   s.profile = Object.assign(dp, (o || {}).profile); // dp guardado antes: Object.assign(d, o) troca d.profile
   s.settings = Object.assign(baseSettings(), (o || {}).settings);
   if (!Array.isArray(s.habits) || !s.habits.length) s.habits = defHabits();
-  if (!Array.isArray(s.supps)) s.supps = defSupps();
+  if (!(o && Array.isArray(o.supps))) s.supps = defSupps(); // dados do v1: a lista antiga tinha a metformina, que migra para Remédios com o histórico
   if (!s.habits.some(h => h.id === s.settings.rule1)) s.settings.rule1 = s.habits[0].id;
   if (!(o && o.settings && o.settings.calcWeight)) s.settings.calcWeight = s.profile.startWeight;
   SECRET_KEYS.forEach(k => delete s.settings[k]);
@@ -55,7 +55,7 @@ function migrateV1(o, keepSecrets = true) {
 function mergeRoot(o) {
   const r = { v: 2, active: o.active, theme: o.theme || "auto", wall: o.wall || "none", accent: o.accent || "padrao", font: o.font || "padrao", profiles: {} };
   Object.entries(o.profiles || {}).forEach(([id, p]) => { r.profiles[id] = mergeProfile(p); r.profiles[id].id = id; });
-  if (!Object.keys(r.profiles).length) { const p = newProfile("Hobert"); p.id = "p1"; r.profiles.p1 = p; }
+  if (!Object.keys(r.profiles).length) { const p = newProfile("Você", { todo: true }); p.id = "p1"; r.profiles.p1 = p; } // todo: pede os dados nas boas-vindas
   if (!r.profiles[r.active]) r.active = Object.keys(r.profiles)[0];
   return r;
 }
@@ -84,7 +84,7 @@ async function loadState() {
   if (sv && sv.ghGistId && !("ghVer" in sv)) SEC.ghVer = null; // aparelho ligado à nuvem antes da checagem de versão: confia na cópia atual
   const tries = [() => lsGet(KEY), () => IDB.get("state2"), () => lsGet(KEY_V1), () => IDB.get("state")];
   for (const t of tries) { R = rootFrom(parse(await t())); if (R) break; }
-  if (!R) R = migrateV1({ profile: { name: "Hobert" }, days: {} }, false);
+  if (!R) R = mergeRoot({ profiles: {} }); // instalação nova
   useProfile(R.active); saveSec(); save();
 }
 function profileCreate(name, base) {

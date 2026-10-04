@@ -11,6 +11,7 @@ module.exports = async T => {
   a.click("[data-act=profile-create]"); await a.wait(30);
   T.ok(a.ev("S.profile.name") === "Mãe" && a.ev("Object.keys(R.profiles).length") === 2, "cria e entra no novo perfil");
   T.ok(a.ev("D(today()).water") === 0 && a.ev("S.weights.length") === 0 && a.ev("S.habits.length") === 6, "novo perfil começa vazio, com hábitos padrão");
+  T.ok(a.ev("S.meds.length") === 0 && a.ev("S.supps.length") === 5, "novo perfil começa sem remédios (só os suplementos padrão)");
   T.ok(a.ev("TG().kcal") === 1800 && a.ev("TG().prot") === 110, "metas calculadas para os dados dela (piso 1.800, 1,2 g/kg)");
   T.ok(a.ev("S.profile.sex") === "F" && a.ev("TG().tmb") === Math.round(10 * 90 + 6.25 * 160 - 5 * 55 - 161), "fórmula feminina de Mifflin-St Jeor (−161)");
   T.ok(/Mãe/.test(a.q("#top").textContent), "header mostra o perfil ativo");
@@ -32,5 +33,19 @@ module.exports = async T => {
   T.ok(!a.errors.length, "sem erros de script"); a.close();
   // regressão: instalação nova sem dados tinha metas NaN (perfil padrão sobrescrito na mescla)
   const b = await boot({}); T.ok(b.ev("TG().kcal") > 1000 && b.ev("S.profile.height") === 179 && !/NaN/.test(b.q("#view").textContent), "instalação nova: metas calculadas, sem NaN");
-  b.ev("R.wall = 'aurora'; save()"); T.ok(b.ev("mergeRoot(JSON.parse(JSON.stringify(R))).wall") === "aurora", "papel de parede sobrevive ao recarregar"); b.close();
+  b.ev("R.wall = 'aurora'; save()"); T.ok(b.ev("mergeRoot(JSON.parse(JSON.stringify(R))).wall") === "aurora", "papel de parede sobrevive ao recarregar");
+  // instalação nova não traz dados de outra pessoa e pede os dados nas boas-vindas
+  T.ok(b.q("#sheet").classList.contains("on") && /Bem-vindo/.test(b.q("#sheet").textContent), "instalação nova abre as boas-vindas");
+  T.ok(b.ev("S.profile.name") === "Você" && !b.ev("S.profile.avatar") && !/Hobert/.test(b.q("#top").textContent), "sem nome nem foto de outra pessoa");
+  T.ok(b.ev("S.meds.length") === 0 && !b.ev("S.sched.items.some(x => x.type === 'remedio')") && b.ev("candidates()[0].id") === "setup", "sem remédio cadastrado; card Agora pede para completar o perfil");
+  b.q("#nn").value = "Ana"; b.q("#nsx").value = "F"; b.q("#ns").value = "80"; b.q("#ng").value = "65"; b.q("#nh").value = "165"; b.q("#na").value = "40";
+  b.click("[data-act=welcome-save]");
+  T.ok(b.ev("S.profile.name") === "Ana" && b.ev("S.profile.sex") === "F" && !b.ev("S.profile.todo") && b.ev("S.settings.calcWeight") === 80 && !b.q("#sheet").classList.contains("on"), "boas-vindas salvam os dados e fecham");
+  T.ok(/Ana/.test(b.q("#top").textContent) && !b.ev("candidates().some(c => c.id === 'setup')"), "cabeçalho com o nome e sem pedido de perfil");
+  b.ev("go('treino')"); T.ok(/Seg a sex às 05:00, na sequência/.test(b.q("#view").textContent), "Treino mostra os dias e o horário da agenda");
+  b.ev("schedEdit(today(), S.sched.items.find(x => x.type === 'treino').id, { at: '18:30' }, true); render()");
+  T.ok(/às 18:30, na sequência/.test(b.q("#view").textContent), "mudar o horário na agenda muda o texto do Treino");
+  b.ev("S.settings.painAsk = false; summarySheet('A', [])"); b.click("[data-act=sum-next]");
+  T.ok(!b.q("#sheet").classList.contains("on"), "pergunta de dor no ombro pode ser desligada");
+  T.ok(!b.errors.length, "sem erros de script " + (b.errors[0] || "")); b.close();
 };

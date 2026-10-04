@@ -20,6 +20,7 @@ function registerSW() {
   try { history.replaceState({ layer: null }, ""); } catch (e) { }
   render();
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+  if (S.profile.todo) welcomeSheet();
   if (S.cur) toast("Treino em andamento. Continue pelo card Agora.");
   setTimeout(maybeReview, 1000);
 })();

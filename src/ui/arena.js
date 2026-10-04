@@ -68,7 +68,7 @@ function summarySheet(L, rows) {
   <p class="muted small">Agora, 10 min de esteira inclinada.</p><button class="btn solid full" data-act="sum-next" data-day="${L}">CONTINUAR</button>`);
 }
 function painSheet(L) {
-  openSheet(`<h3 class="h3">Dor no ombro esquerdo</h3><p class="muted">De 0 (nenhuma) a 10 (muito forte), agora, ao final do treino ${L}.</p>
+  openSheet(`<h3 class="h3">Dor no ombro</h3><p class="muted">De 0 (nenhuma) a 10 (muito forte), agora, ao final do treino ${L}.</p>
   <div class="painscale" role="group" aria-label="Escala de dor">${Array.from({ length: 11 }, (_, i) => `<button style="--p:${i / 10}" data-act="pain" data-v="${i}" data-day="${L}">${i}</button>`).join("")}</div>
   <button class="btn ghost full" data-act="close">Pular</button>`);
 }
