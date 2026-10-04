@@ -1,23 +1,39 @@
 /* ============ INICIALIZAÇÃO ============ */
 // a cada minuto: relógio, card Agora e virada do dia (espera se a pessoa estiver digitando)
 function tick() {
-  if (!typing() && !STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) { applyTheme(); render(); }
+  if (!typing() && !STACK.includes("arena") && !STACK.includes("sheet") && !STACK.includes("actions")) {
+    applyTheme();
+    render();
+  }
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
 }
 function registerSW() {
   if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) return;
-  navigator.serviceWorker.register("sw.js").catch(() => { });
+  navigator.serviceWorker.register("sw.js").catch(() => {});
   let had = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had && !sessionStorage.getItem("sir_reloaded")) { sessionStorage.setItem("sir_reloaded", "1"); location.reload(); } had = true; });
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (had && !sessionStorage.getItem("sir_reloaded")) {
+      sessionStorage.setItem("sir_reloaded", "1");
+      location.reload();
+    }
+    had = true;
+  });
 }
 (async function init() {
   await loadState();
-  Object.values(R.profiles).forEach(p => { if (!GEM_MODELS.some(m => m[0] === p.settings.gemModel)) p.settings.gemModel = GEM_DEFAULT; });
+  Object.values(R.profiles).forEach(p => {
+    if (!GEM_MODELS.some(m => m[0] === p.settings.gemModel)) p.settings.gemModel = GEM_DEFAULT;
+  });
   save();
-  applyTheme(); applyWall();
-  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
+  applyTheme();
+  applyWall();
+  try {
+    navigator.storage && navigator.storage.persist && navigator.storage.persist();
+  } catch (e) {}
   registerSW();
-  try { history.replaceState({ layer: null }, ""); } catch (e) { }
+  try {
+    history.replaceState({ layer: null }, "");
+  } catch (e) {}
   render();
   setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
   if (S.profile.todo) welcomeSheet();
