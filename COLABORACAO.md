@@ -14,17 +14,21 @@ Este app já quebrou duas vezes (tela em branco e "syntax error") porque várias
 8. **Mudou o app? Suba o cache.** Altere `V` em `src/sw.js` (e `APP_VERSION` em `src/ui/ajustes-ui.js`) a cada release, senão o celular pode continuar com a versão antiga.
 9. **Novo serviço externo? Libere na CSP.** A lista de domínios fica em `build.js` (`connect-src`, `img-src`). Sem isso o navegador bloqueia a chamada.
 10. **A rotina não reescreve o passado.** Para mudar um item da agenda "sempre", use `schedChange` (guarda o histórico com o mesmo id) e, para tirar da rotina, `schedRemove` (encerra com `until`). Não apague nem recrie itens: as doses registradas apontam para o id.
+11. **Sem janelas do navegador.** Nada de `confirm`, `alert` ou `prompt`: use `askConfirm` (painel do app) ou, se dá para voltar atrás, faça e ofereça `undoable` ("Desfazer"). O teste confere.
+12. **Texto de ajuda que se repete vira `hint()`** (some depois de "Entendi"). Avisos de saúde e privacidade ficam sempre na tela.
+13. **Cores e letras passam no teste de contraste.** Nada de cor fixa para brilho (use `color-mix` com `--accent`), contraste AA nos dois temas e nas paletas, letra de pelo menos 12 px.
+14. **Número na tela usa `fmtN()`** (vírgula decimal).
 
 ## Estrutura
 
 | Pasta | Função |
 |---|---|
-| `src/core/` | `util` (utilidades e registro `ACT`), `store` (perfis, migrações, localStorage + IndexedDB, segredos), `rules` (dia ativo, sequências, metas), `init` |
+| `src/core/` | `util` (utilidades e registro `ACT`), `store` (perfis, migrações, segredos), `persist` (localStorage + IndexedDB), `rules` (dia ativo, sequências, metas), `init` |
 | `src/data/` | `foods` (189 alimentos), `plan` (treino, hábitos, catálogo, marcos, rua), `content` (frases, refeições), `defaults`, `suplementos` (fichas com evidência), `tratamento` (educação em 4 níveis) |
 | `src/domain/` | regras sem tela: `progressao`, `treino`, `agua`, `comida`, `metabolico`, `agenda` (rotina flexível, com histórico), `remedios` (doses e adesão), `apetite` (padrões), `agora` (card Agora), `sinais` (alertas do card), `alinhamento` (dia alinhado) |
 | `src/svc/` | `backup` (`safeState()`), `nuvem` (gist: conflito entre aparelhos e senha), `ia` (Gemini), `foto` (foto do prato), `fotos` (fotos de progresso, só no aparelho), `lembretes` (.ics a partir da agenda) |
-| `src/ui/` | `shell` (seções, páginas, camadas, voltar), `parts`, `hoje`, `agenda-ui` + `agenda-add`, `acoes` (botão da logo) + `parser`, `keyboard`, `arena` + `rest`, `*-ui` das seções, `coach-ui`, `ajustes-ui`, `profiles` (perfis e boas-vindas), `list-editor`, `events` (o único ouvinte de clique), `gestures` |
-| `src/css/` | `tokens` (roxo/azul), `base`, `layout`, `sections`, `keyboard`, `arena` |
+| `src/ui/` | `shell` (seções, páginas, camadas com foco, voltar), `avisos` (toast, confirmar, desfazer), `campos` (redesenhar sem perder o digitado), `parts` (peças, dicas), `hoje`, `agenda-ui` + `agenda-add`, `acoes` (botão da logo) + `parser`, `keyboard`, `arena` + `rest`, `*-ui` das seções, `coach-ui`, `ajustes-ui`, `profiles` (perfis e boas-vindas), `list-editor`, `events` (o único ouvinte de clique), `gestures` |
+| `src/css/` | `tokens` (cores dos dois temas; brilhos saem de `--accent` com `color-mix`), `base`, `layout`, `sections`, `keyboard`, `arena` |
 
 A ordem de junção está em `build.js`. Arquivos com menos de 250 linhas depois de formatados, fora os de conteúdo em `data/` (o teste de fumaça confere).
 

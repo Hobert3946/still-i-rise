@@ -76,7 +76,7 @@ function backupFold() {
     "backup"
   );
 }
-const APP_VERSION = "3.4.0"; // suba junto com V em src/sw.js ao publicar
+const APP_VERSION = "3.5.0"; // suba junto com V em src/sw.js ao publicar
 PAGES.ajustes = {
   t: "Perfil e ajustes",
   r: () => {

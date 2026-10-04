@@ -1,4 +1,4 @@
-const V = "sir-v3-4-0";
+const V = "sir-v3-5-0";
 const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-180.png"];
 self.addEventListener("install", e => {
   e.waitUntil(
