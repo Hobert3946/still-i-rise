@@ -18,12 +18,15 @@ function prefsFold() {
     `, false, "prefs");
 }
 function cloudFold() {
-  const at = S.settings.cloudAt;
-  return fold("Nuvem (GitHub Gist, automático)", `<p class="muted small">Grava um gist secreto no seu GitHub a cada alteração (todos os perfis). Gist secreto não é privado: quem tiver o link consegue ler. Token e Gist ID ficam só neste aparelho.${at ? ` Última cópia: ${new Date(at).toLocaleString("pt-BR")}.` : ""}</p>
-    <label class="lbl" for="ghToken">Token pessoal (GitHub PAT, escopo "gist")</label><input class="field" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off" value="${SEC.ghToken ? "********" : ""}">
+  const at = S.settings.cloudAt, on = SEC.ghToken && SEC.ghGistId;
+  return fold("Nuvem (GitHub Gist, automático)", `<p class="muted small">Grava um gist secreto no seu GitHub a cada alteração (todos os perfis). Gist secreto não é privado: quem tiver o link consegue ler. Com uma senha, os dados vão criptografados e só abrem com ela. Token, Gist ID e senha ficam só neste aparelho.${at ? ` Última cópia: ${new Date(at).toLocaleString("pt-BR")}.` : ""}</p>
+    ${SEC.ghConflict ? banner("warn", "info", "Cópia automática parada", "A nuvem tem dados que este aparelho ainda não baixou. Escolha qual versão vale.", `<div class="sig-act"><button class="btn sm solid" data-act="cloud-resolve">Escolher</button></div>`) : ""}
+    <label class="lbl" for="ghToken">Token pessoal (GitHub PAT, escopo "gist")</label><input class="field" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off" value="${SEC.ghToken ? MASK : ""}">
     <label class="lbl" for="ghGistId">Gist ID (o app cria se estiver vazio)</label><input class="field" id="ghGistId" type="text" placeholder="Ex.: 5b4e72a..." autocomplete="off" value="${esc(SEC.ghGistId || "")}">
-    <div class="grid2"><button class="btn solid" data-act="gh-save">Salvar e enviar</button><button class="btn" data-act="gh-sync">${ic("download")} Baixar da nuvem</button></div>
-    <p class="muted xs">Guarde o Gist ID para restaurar seus dados em outro aparelho.</p>`, false, "nuvem");
+    <label class="lbl" for="ghPass">Senha da cópia (opcional, criptografa os dados)</label><input class="field" id="ghPass" type="password" placeholder="Sem senha" autocomplete="new-password" value="${SEC.ghPass ? MASK : ""}">
+    <div class="grid2"><button class="btn solid" data-act="gh-save">Salvar</button><button class="btn" data-act="gh-sync">${ic("download")} Baixar da nuvem</button></div>
+    ${on && !SEC.ghConflict ? `<button class="btn sm ghost full" data-act="gh-push">${ic("upload")} Enviar agora</button>` : ""}
+    <p class="muted xs">Em outro aparelho: cole o token, o Gist ID e a senha e toque em Baixar da nuvem. Guarde o Gist ID e a senha: sem a senha não dá para restaurar.</p>`, UI.openFold === "nuvem", "nuvem");
 }
 function backupFold() {
   const bk = S.settings.lastBackup;

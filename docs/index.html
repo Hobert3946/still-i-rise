@@ -1028,9 +1028,11 @@ const TREAT = [
 /* ============ ESTADO: perfis, migração do v1 e persistência em 3 camadas ============ */
 // Camada 1: localStorage (sir_v2). Camada 2: espelho em IndexedDB. Camada 3: arquivo .json exportado (svc/backup.js).
 // R = raiz com todos os perfis. S = perfil ativo (mesmo formato do v1 + habits + supps).
-// Segredos (chave do Gemini, token e gist do GitHub) ficam em SEC, numa chave própria, fora do estado e de todo backup.
-const KEY = "sir_v2", KEY_V1 = "sir_v1", KEY_SEC = "sir_secrets", SECRET_KEYS = ["gemKey", "ghToken", "ghGistId"];
-let R = null, S = null, SEC = { gemKey: "", ghToken: "", ghGistId: "" };
+// Segredos (chave do Gemini, token, gist e senha da nuvem) ficam em SEC, numa chave própria, fora do estado e de todo backup.
+// SEC também guarda o estado da nuvem neste aparelho: ghVer (versão do gist vista por último) e ghConflict.
+const KEY = "sir_v2", KEY_V1 = "sir_v1", KEY_SEC = "sir_secrets", SECRET_KEYS = ["gemKey", "ghToken", "ghGistId", "ghPass"];
+const secDefault = () => ({ gemKey: "", ghToken: "", ghGistId: "", ghPass: "", ghVer: "", ghConflict: false });
+let R = null, S = null, SEC = secDefault();
 
 const baseSettings = () => ({
   start: today(), logMode: "set", rotate: true, rotateWeeks: 4, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000,
@@ -1105,7 +1107,8 @@ function save() {
 function saveSec() { try { localStorage.setItem(KEY_SEC, JSON.stringify(SEC)); } catch (e) { } }
 // ordem: v2 local → v2 IndexedDB → v1 local → v1 IndexedDB → perfil novo. A chave sir_v1 nunca é apagada (rollback).
 async function loadState() {
-  SEC = Object.assign({ gemKey: "", ghToken: "", ghGistId: "" }, parse(lsGet(KEY_SEC)));
+  const sv = parse(lsGet(KEY_SEC)); SEC = Object.assign(secDefault(), sv);
+  if (sv && sv.ghGistId && !("ghVer" in sv)) SEC.ghVer = null; // aparelho ligado à nuvem antes da checagem de versão: confia na cópia atual
   const tries = [() => lsGet(KEY), () => IDB.get("state2"), () => lsGet(KEY_V1), () => IDB.get("state")];
   for (const t of tries) { R = rootFrom(parse(await t())); if (R) break; }
   if (!R) R = migrateV1({ profile: { name: "Hobert" }, days: {} }, false);
@@ -1585,6 +1588,7 @@ function candSignals(k) {
   if (ab) out.push(cand("abs", 95, "Bem-vindo de volta", `${abs} dias sem registro`, ab.txt, "habit", "Marcar a Regra nº 1", { id: S.settings.rule1 }));
   if (pa !== null && pa >= 4) out.push(cand("pain", 45, "Ombro", "Dor em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`, "go", "Ver treino", { tab: "treino" }));
   if (deloadSignal()) out.push(cand("deload", 44, "Treino", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie.", "go", "Ver treino", { tab: "treino" }));
+  if (SEC.ghConflict) out.push(cand("cloud", 90, "Nuvem", "Cópia automática parada", "A nuvem tem dados que este aparelho ainda não baixou. Escolha qual versão vale para não perder nada.", "cloud-resolve", "Escolher"));
   if (backupDays() > 21) out.push(cand("backup", 35, "Seus dados", "Backup atrasado", `${S.settings.lastBackup ? `Último backup há ${backupDays()} dias.` : "Você nunca exportou um backup."} O arquivo .json é o único que sobrevive à troca de celular.`, "export", "Exportar agora"));
   if (parseKey(k).getDay() === 1 && !S.weights.some(w => w.d >= mondayOf(k)) && new Date().getHours() < 12) out.push(cand("weigh", 75, "Segunda-feira", "Dia de pesagem", "Ao acordar, depois do banheiro, antes de comer. Meça a cintura junto.", "weigh", "Registrar peso"));
   return out;
@@ -1673,44 +1677,112 @@ function backupDays() {
 }
 
 /* ============ NUVEM: cópia automática em um gist secreto do GitHub ============ */
-// Gist "secreto" NÃO é privado: quem tiver o link consegue ler. Os dados de saúde vão para lá.
-// Token e gist id ficam só em SEC (este aparelho). A cópia leva todos os perfis via safeState().
-const GIST_FILE = "still-i-rise.json";
+// Gist "secreto" NÃO é privado: quem tiver o link consegue ler. Com a senha da cópia, o conteúdo vai criptografado (AES-GCM).
+// Token, gist id e senha ficam só em SEC (este aparelho). A cópia leva todos os perfis via safeState().
+// SEC.ghVer = versão do gist que este aparelho viu por último. Se a nuvem mudou desde então (outro aparelho enviou,
+// ou este aparelho nunca baixou dela), nada é enviado: a cópia automática para e o app pergunta qual versão vale.
+const GIST_FILE = "still-i-rise.json", GH_API = "https://api.github.com/gists", MASK = "********";
 const ghHead = () => ({ Authorization: "Bearer " + SEC.ghToken, Accept: "application/vnd.github+json", "Content-Type": "application/json" });
+async function ghFetch(path = "", o = {}) {
+  const r = await fetch(GH_API + path, Object.assign({ headers: ghHead() }, o)), j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.message || r.status);
+  return j;
+}
+const gistPath = () => "/" + encodeURIComponent(SEC.ghGistId);
+const gistVer = j => (j && j.history && j.history[0] && j.history[0].version) || "";
+// versão mais recente do gist, sem baixar o conteúdo
+async function cloudHead() { const c = await ghFetch(gistPath() + "/commits?per_page=1"); return { ver: (c && c[0] && c[0].version) || "", at: c && c[0] && c[0].committed_at }; }
+const cloudTrusts = ver => !ver || SEC.ghVer === null || ver === SEC.ghVer;
+
+/* ---- senha da cópia: PBKDF2 (SHA-256) → AES-GCM 256. Sal e vetor vão junto com os dados; a senha nunca sai do aparelho ---- */
+const KDF_IT = 250000, CRYPT = { pass: null, salt: null, key: null };
+const toB64 = u8 => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function cloudKey(pass, salt, it) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: it, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+function needCrypto() { if (!(window.crypto && crypto.subtle)) throw new Error("este navegador não tem criptografia (abra o app pelo endereço https)."); }
+async function sealState(txt) {
+  if (!SEC.ghPass) return txt;
+  needCrypto();
+  if (CRYPT.pass !== SEC.ghPass) { CRYPT.salt = crypto.getRandomValues(new Uint8Array(16)); CRYPT.key = await cloudKey(SEC.ghPass, CRYPT.salt, KDF_IT); CRYPT.pass = SEC.ghPass; }
+  const iv = crypto.getRandomValues(new Uint8Array(12)), ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, CRYPT.key, new TextEncoder().encode(txt));
+  return JSON.stringify({ sir: "aes-gcm-v1", it: KDF_IT, salt: toB64(CRYPT.salt), iv: toB64(iv), data: toB64(new Uint8Array(ct)) });
+}
+async function openState(txt) {
+  const o = JSON.parse(txt); if (!o || o.sir !== "aes-gcm-v1") return o;
+  if (!SEC.ghPass) throw new Error("esta cópia está protegida por senha. Preencha a senha da cópia.");
+  needCrypto();
+  let pt;
+  try { pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(o.iv) }, await cloudKey(SEC.ghPass, fromB64(o.salt), o.it), fromB64(o.data)); }
+  catch (e) { throw new Error("senha da cópia incorreta."); }
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+/* ---- enviar e baixar ---- */
+const CLOUD = { busy: false, again: false, sent: "", head: null };
 let cloudT = null;
-function cloudQueue() { if (!R || !SEC.ghToken || !SEC.ghGistId) return; clearTimeout(cloudT); cloudT = setTimeout(() => syncToCloud(false), 8000); }
-async function syncToCloud(manual) {
+function cloudQueue() { if (!R || !SEC.ghToken || !SEC.ghGistId || SEC.ghConflict) return; clearTimeout(cloudT); cloudT = setTimeout(() => syncToCloud(false), 8000); }
+function cloudConflict(h) { SEC.ghConflict = true; CLOUD.head = h; saveSec(); if (!STACK.includes("arena")) render(); }
+// envia os dados; sem force, para (e avisa) se a nuvem mudou desde a última vez que este aparelho a viu
+async function syncToCloud(manual, force) {
   if (!SEC.ghToken) return manual && toast("Cole o token do GitHub primeiro.");
-  const body = { description: "Still I Rise: cópia dos dados", files: { [GIST_FILE]: { content: JSON.stringify(safeState()) } } };
+  if (CLOUD.busy) { CLOUD.again = true; return; }
+  CLOUD.busy = true;
   try {
-    const id = SEC.ghGistId, r = await fetch(id ? "https://api.github.com/gists/" + encodeURIComponent(id) : "https://api.github.com/gists",
-      { method: id ? "PATCH" : "POST", headers: ghHead(), body: JSON.stringify(id ? body : { ...body, public: false }) });
-    const j = await r.json(); if (!r.ok) throw new Error(j.message || r.status);
-    if (!SEC.ghGistId) { SEC.ghGistId = j.id; saveSec(); }
+    const txt = JSON.stringify(safeState());
+    if (!manual && !force && txt === CLOUD.sent) return;
+    if (SEC.ghGistId && !force) { const h = await cloudHead(); if (!cloudTrusts(h.ver)) { cloudConflict(h); if (manual) conflictSheet(h); return; } }
+    const id = SEC.ghGistId, body = { description: "Still I Rise: cópia dos dados", files: { [GIST_FILE]: { content: await sealState(txt) } } };
+    const j = await ghFetch(id ? gistPath() : "", { method: id ? "PATCH" : "POST", body: JSON.stringify(id ? body : { ...body, public: false }) });
+    if (!id) SEC.ghGistId = j.id;
+    SEC.ghVer = gistVer(j) || (await cloudHead()).ver; SEC.ghConflict = false; CLOUD.sent = txt; saveSec();
     S.settings.cloudAt = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(R)); } catch (e) { }
     if (manual) { toast("Dados enviados para a nuvem."); render(); }
   } catch (e) { if (manual) toast("Falha ao enviar: " + e.message); }
+  finally { CLOUD.busy = false; if (CLOUD.again) { CLOUD.again = false; cloudQueue(); } }
 }
 async function syncFromCloud() {
+  readCloudFields();
   if (!SEC.ghToken || !SEC.ghGistId) return toast("Informe o token e o Gist ID.");
   try {
-    const r = await fetch("https://api.github.com/gists/" + encodeURIComponent(SEC.ghGistId), { headers: ghHead() }), j = await r.json();
-    if (!r.ok) throw new Error(j.message || r.status);
-    const f = j.files && j.files[GIST_FILE]; if (!f) throw new Error("arquivo não encontrado no gist");
-    const o = JSON.parse(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
+    const j = await ghFetch(gistPath()), f = j.files && j.files[GIST_FILE];
+    if (!f) throw new Error("arquivo não encontrado no gist");
+    const o = await openState(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
     if (!o || !(o.profiles || (o.profile && o.days))) throw new Error("dados inválidos");
     if (!confirm("Substituir os dados deste aparelho pela cópia da nuvem?")) return;
-    importObject(o); save(); applyTheme(); closeAll(); render(); toast("Dados restaurados da nuvem.");
+    importObject(o); SEC.ghVer = gistVer(j) || (await cloudHead()).ver; SEC.ghConflict = false; CLOUD.sent = JSON.stringify(safeState()); saveSec();
+    save(); applyTheme(); closeAll(); render(); toast("Dados restaurados da nuvem.");
   } catch (e) { toast("Falha ao baixar: " + e.message); }
 }
-ACT["gh-save"] = () => {
-  const t = $("#ghToken"), g = $("#ghGistId"), tv = t ? t.value.trim() : "";
-  if (tv && tv !== "********") SEC.ghToken = tv; else if (!tv) SEC.ghToken = "";
-  SEC.ghGistId = g ? g.value.trim() : ""; saveSec(); toast("Nuvem configurada!"); render();
-  if (SEC.ghToken) syncToCloud(true);
-};
+// campos da tela → SEC (a máscara ******** mantém o valor guardado; campo vazio apaga)
+function readCloudFields() {
+  const t = $("#ghToken"), g = $("#ghGistId"), p = $("#ghPass");
+  if (t && t.value.trim() !== MASK) SEC.ghToken = t.value.trim();
+  if (g && g.value.trim() !== SEC.ghGistId) { SEC.ghGistId = g.value.trim(); SEC.ghVer = ""; SEC.ghConflict = false; }
+  if (p && p.value !== MASK) SEC.ghPass = p.value;
+  saveSec();
+}
+// salvar liga este aparelho à nuvem; se o gist já tem dados que este aparelho não viu, pergunta antes de enviar
+async function cloudLink() {
+  readCloudFields(); render();
+  if (!SEC.ghToken) return toast("Nuvem desligada neste aparelho.");
+  if (!SEC.ghGistId) return syncToCloud(true, true); // gist novo com os dados deste aparelho
+  try { const h = await cloudHead(); if (cloudTrusts(h.ver)) return syncToCloud(true, true); cloudConflict(h); conflictSheet(h); }
+  catch (e) { toast("Falha ao conectar: " + e.message); }
+}
+function conflictSheet(h = CLOUD.head || {}) {
+  openSheet(`<h3 class="h3">Qual versão vale?</h3><p class="muted">A cópia na nuvem${h.at ? `, alterada em ${new Date(h.at).toLocaleString("pt-BR")},` : ""} tem dados que este aparelho ainda não baixou: outro aparelho enviou, ou é a primeira vez que este aparelho usa esse gist. Para não apagar nada, a cópia automática parou.</p>
+    <button class="btn solid full" data-act="gh-sync">${ic("download")} Baixar da nuvem (substitui este aparelho)</button>
+    <button class="btn full" data-act="gh-force">${ic("upload")} Enviar deste aparelho (substitui a nuvem)</button>
+    <p class="muted xs">O GitHub guarda as versões anteriores do gist (na página do gist, aba Revisions).</p>`);
+}
+ACT["gh-save"] = () => cloudLink();
 ACT["gh-sync"] = () => syncFromCloud();
 ACT["gh-push"] = () => syncToCloud(true);
+ACT["gh-force"] = () => { if (!confirm("Substituir a cópia da nuvem pelos dados deste aparelho?")) return; if (STACK.includes("sheet")) closeSheet(); syncToCloud(true, true); };
+ACT["cloud-resolve"] = () => conflictSheet();
 
 /* ============ AURA (Gemini): chat com contexto do dia e memória de 7 dias ============ */
 // Modelos estáveis e atuais em set/2026 (ai.google.dev/gemini-api/docs/models). A família 2.5 ficou restrita a quem já usava.
@@ -3077,12 +3149,15 @@ function prefsFold() {
     `, false, "prefs");
 }
 function cloudFold() {
-  const at = S.settings.cloudAt;
-  return fold("Nuvem (GitHub Gist, automático)", `<p class="muted small">Grava um gist secreto no seu GitHub a cada alteração (todos os perfis). Gist secreto não é privado: quem tiver o link consegue ler. Token e Gist ID ficam só neste aparelho.${at ? ` Última cópia: ${new Date(at).toLocaleString("pt-BR")}.` : ""}</p>
-    <label class="lbl" for="ghToken">Token pessoal (GitHub PAT, escopo "gist")</label><input class="field" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off" value="${SEC.ghToken ? "********" : ""}">
+  const at = S.settings.cloudAt, on = SEC.ghToken && SEC.ghGistId;
+  return fold("Nuvem (GitHub Gist, automático)", `<p class="muted small">Grava um gist secreto no seu GitHub a cada alteração (todos os perfis). Gist secreto não é privado: quem tiver o link consegue ler. Com uma senha, os dados vão criptografados e só abrem com ela. Token, Gist ID e senha ficam só neste aparelho.${at ? ` Última cópia: ${new Date(at).toLocaleString("pt-BR")}.` : ""}</p>
+    ${SEC.ghConflict ? banner("warn", "info", "Cópia automática parada", "A nuvem tem dados que este aparelho ainda não baixou. Escolha qual versão vale.", `<div class="sig-act"><button class="btn sm solid" data-act="cloud-resolve">Escolher</button></div>`) : ""}
+    <label class="lbl" for="ghToken">Token pessoal (GitHub PAT, escopo "gist")</label><input class="field" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off" value="${SEC.ghToken ? MASK : ""}">
     <label class="lbl" for="ghGistId">Gist ID (o app cria se estiver vazio)</label><input class="field" id="ghGistId" type="text" placeholder="Ex.: 5b4e72a..." autocomplete="off" value="${esc(SEC.ghGistId || "")}">
-    <div class="grid2"><button class="btn solid" data-act="gh-save">Salvar e enviar</button><button class="btn" data-act="gh-sync">${ic("download")} Baixar da nuvem</button></div>
-    <p class="muted xs">Guarde o Gist ID para restaurar seus dados em outro aparelho.</p>`, false, "nuvem");
+    <label class="lbl" for="ghPass">Senha da cópia (opcional, criptografa os dados)</label><input class="field" id="ghPass" type="password" placeholder="Sem senha" autocomplete="new-password" value="${SEC.ghPass ? MASK : ""}">
+    <div class="grid2"><button class="btn solid" data-act="gh-save">Salvar</button><button class="btn" data-act="gh-sync">${ic("download")} Baixar da nuvem</button></div>
+    ${on && !SEC.ghConflict ? `<button class="btn sm ghost full" data-act="gh-push">${ic("upload")} Enviar agora</button>` : ""}
+    <p class="muted xs">Em outro aparelho: cole o token, o Gist ID e a senha e toque em Baixar da nuvem. Guarde o Gist ID e a senha: sem a senha não dá para restaurar.</p>`, UI.openFold === "nuvem", "nuvem");
 }
 function backupFold() {
   const bk = S.settings.lastBackup;

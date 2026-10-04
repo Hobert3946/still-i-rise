@@ -16,6 +16,9 @@ async function boot(opts = {}) {
       w.matchMedia = () => ({ matches: true, addEventListener() { } });
       w.scrollTo = () => { }; w.HTMLElement.prototype.scrollTo = () => { }; w.HTMLElement.prototype.scrollIntoView = () => { };
       w.confirm = () => true; w.indexedDB = undefined;
+      // jsdom não traz WebCrypto nem TextEncoder: usa os do Node (senha da cópia na nuvem)
+      Object.defineProperty(w, "crypto", { value: require("crypto").webcrypto, configurable: true });
+      w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder;
       w.URL.createObjectURL = b => { w.__blob = b; return "blob:x"; }; w.URL.revokeObjectURL = () => { };
       w.HTMLAnchorElement.prototype.click = function () { w.__dl = this.download; };
       if (opts.v1) w.localStorage.setItem("sir_v1", JSON.stringify(opts.v1));

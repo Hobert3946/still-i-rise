@@ -1,9 +1,11 @@
 /* ============ ESTADO: perfis, migração do v1 e persistência em 3 camadas ============ */
 // Camada 1: localStorage (sir_v2). Camada 2: espelho em IndexedDB. Camada 3: arquivo .json exportado (svc/backup.js).
 // R = raiz com todos os perfis. S = perfil ativo (mesmo formato do v1 + habits + supps).
-// Segredos (chave do Gemini, token e gist do GitHub) ficam em SEC, numa chave própria, fora do estado e de todo backup.
-const KEY = "sir_v2", KEY_V1 = "sir_v1", KEY_SEC = "sir_secrets", SECRET_KEYS = ["gemKey", "ghToken", "ghGistId"];
-let R = null, S = null, SEC = { gemKey: "", ghToken: "", ghGistId: "" };
+// Segredos (chave do Gemini, token, gist e senha da nuvem) ficam em SEC, numa chave própria, fora do estado e de todo backup.
+// SEC também guarda o estado da nuvem neste aparelho: ghVer (versão do gist vista por último) e ghConflict.
+const KEY = "sir_v2", KEY_V1 = "sir_v1", KEY_SEC = "sir_secrets", SECRET_KEYS = ["gemKey", "ghToken", "ghGistId", "ghPass"];
+const secDefault = () => ({ gemKey: "", ghToken: "", ghGistId: "", ghPass: "", ghVer: "", ghConflict: false });
+let R = null, S = null, SEC = secDefault();
 
 const baseSettings = () => ({
   start: today(), logMode: "set", rotate: true, rotateWeeks: 4, lastBackup: null, notif: false, calcWeight: 140, waterGoal: 3000,
@@ -78,7 +80,8 @@ function save() {
 function saveSec() { try { localStorage.setItem(KEY_SEC, JSON.stringify(SEC)); } catch (e) { } }
 // ordem: v2 local → v2 IndexedDB → v1 local → v1 IndexedDB → perfil novo. A chave sir_v1 nunca é apagada (rollback).
 async function loadState() {
-  SEC = Object.assign({ gemKey: "", ghToken: "", ghGistId: "" }, parse(lsGet(KEY_SEC)));
+  const sv = parse(lsGet(KEY_SEC)); SEC = Object.assign(secDefault(), sv);
+  if (sv && sv.ghGistId && !("ghVer" in sv)) SEC.ghVer = null; // aparelho ligado à nuvem antes da checagem de versão: confia na cópia atual
   const tries = [() => lsGet(KEY), () => IDB.get("state2"), () => lsGet(KEY_V1), () => IDB.get("state")];
   for (const t of tries) { R = rootFrom(parse(await t())); if (R) break; }
   if (!R) R = migrateV1({ profile: { name: "Hobert" }, days: {} }, false);
