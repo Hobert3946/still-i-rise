@@ -48,7 +48,7 @@ function waterStreak() {
 }
 // quanto deveria ter bebido até a hora h (linear das 6h às 21h, arredondado a 50 ml)
 const waterExpected = h => Math.round((S.settings.waterGoal * clamp((h - W_FROM) / (W_TO - W_FROM), 0, 1)) / 50) * 50;
-// hora do dia em que o volume bebido "estaria no ritmo" (usada para desenhar a maré no rio)
+// hora do dia em que o volume bebido "estaria no ritmo"
 const waterHourFor = ml => W_FROM + (W_TO - W_FROM) * clamp(ml / S.settings.waterGoal, 0, 1);
 function waterPace(w) {
   const now = new Date(),

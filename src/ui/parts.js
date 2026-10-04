@@ -51,7 +51,7 @@ function headTitle() {
     ];
   if (UI.tab === "treino") return [`Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}`, "Treino"];
   if (UI.tab === "nutri") return [`Meta ${fmtInt(TG().kcal)} kcal · ${TG().prot} g`, "Nutrição"];
-  return [`${String(r1(curWeight())).replace(".", ",")} kg · meta ${S.profile.goal} kg`, "Saúde"];
+  return [`${fmtN(curWeight())} kg · meta ${fmtN(S.profile.goal)} kg`, "Saúde"];
 }
 function rHeader() {
   const [k, t] = headTitle();

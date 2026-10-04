@@ -3,7 +3,7 @@ function profileRows() {
   return Object.values(R.profiles)
     .map(
       p => `<div class="li prof ${p.id === R.active ? "on" : ""}">
-    <button class="grow row" data-act="profile-use" data-id="${p.id}" aria-pressed="${p.id === R.active}">${avatarHTML(p)}<span class="grow"><b>${esc(p.profile.name)}</b><small class="muted">${r1(p.weights.length ? p.weights[p.weights.length - 1].kg : p.profile.startWeight)} kg · meta ${p.profile.goal} kg</small></span>${p.id === R.active ? `<span class="pill ok">ativo</span>` : ""}</button>
+    <button class="grow row" data-act="profile-use" data-id="${p.id}" aria-pressed="${p.id === R.active}">${avatarHTML(p)}<span class="grow"><b>${esc(p.profile.name)}</b><small class="muted">${fmtN(p.weights.length ? p.weights[p.weights.length - 1].kg : p.profile.startWeight)} kg · meta ${fmtN(p.profile.goal)} kg</small></span>${p.id === R.active ? `<span class="pill ok">ativo</span>` : ""}</button>
     ${Object.keys(R.profiles).length > 1 ? `<button class="icon-btn bad" data-act="profile-del" data-id="${p.id}" aria-label="Excluir perfil ${esc(p.profile.name)}">${ic("trash")}</button>` : ""}</div>`
     )
     .join("");

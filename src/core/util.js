@@ -39,6 +39,8 @@ const dispDate = k => {
   return `${pad(d.getDate())} ${MESES[d.getMonth()]}`;
 };
 const fmtInt = n => Math.round(n).toLocaleString("pt-BR");
+// números com casa decimal na tela: sempre no padrão brasileiro (138,5 kg · 1,375)
+const fmtN = (n, d = 1) => (Number(n) || 0).toLocaleString("pt-BR", { maximumFractionDigits: d });
 const fmtL = (ml, d = 1) => (ml / 1000).toFixed(d).replace(".", ",");
 const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const toMin = t => {

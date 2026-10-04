@@ -37,7 +37,7 @@ function goalsHTML(k) {
   const custom = S.goals
     .map(
       g =>
-        `<div class="goal"><span class="grow"><b>${esc(g.n)}</b><small class="muted tabnum">${(d.g || {})[g.id] || 0} / ${g.target} ${esc(g.unit)}</small></span><button class="btn sm" data-act="goal-add" data-id="${g.id}">+${g.step} ${esc(g.unit)}</button><button class="icon-btn" data-act="goal-del" data-id="${g.id}" aria-label="Excluir meta ${esc(g.n)}">${ic("trash")}</button></div>`
+        `<div class="goal"><span class="grow"><b>${esc(g.n)}</b><small class="muted tabnum">${fmtN((d.g || {})[g.id] || 0)} / ${fmtN(g.target)} ${esc(g.unit)}</small></span><button class="btn sm" data-act="goal-add" data-id="${g.id}">+${fmtN(g.step)} ${esc(g.unit)}</button><button class="icon-btn" data-act="goal-del" data-id="${g.id}" aria-label="Excluir meta ${esc(g.n)}">${ic("trash")}</button></div>`
     )
     .join("");
   return `<h3 class="lbl sec-t">Metas do dia</h3>${meter("Água", fmtL(d.water || 0), fmtL(S.settings.waterGoal), "L", "var(--water)", "go", 'data-tab="nutri" data-seg="agua"')}

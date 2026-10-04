@@ -49,7 +49,7 @@ function aguaView() {
   ${sec(
     "Meta diária",
     `<div class="row between"><button class="icon-btn lg" data-act="w-goal" data-d="-250" aria-label="Diminuir meta">${ic("minus")}</button><div class="h2 tabnum">${fmtL(goal, 2)} L</div><button class="icon-btn lg" data-act="w-goal" data-d="250" aria-label="Aumentar meta">${ic("plus")}</button></div>
-    <p class="muted small">Referência comum: 35 ml por kg, cerca de ${fmtL(35 * (S.settings.calcWeight || 100))} L para ${S.settings.calcWeight || 100} kg. Se tiver dúvida sobre o seu caso (fígado, rins), pergunte ao médico.</p>`
+    <p class="muted small">Referência comum: 35 ml por kg, cerca de ${fmtL(35 * (S.settings.calcWeight || 100))} L para ${fmtN(S.settings.calcWeight || 100)} kg. Se tiver dúvida sobre o seu caso (fígado, rins), pergunte ao médico.</p>`
   )}`;
 }
 // a água sobe na garrafa depois de desenhada

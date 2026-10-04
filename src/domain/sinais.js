@@ -17,7 +17,7 @@ function candSignals(k) {
         45,
         "Ombro",
         "Dor em alta",
-        `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`,
+        `Média das 3 últimas: ${fmtN(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`,
         "go",
         "Ver treino",
         { tab: "treino" }

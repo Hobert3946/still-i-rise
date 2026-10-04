@@ -25,7 +25,7 @@ function chartSVG() {
   const line = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.kg).toFixed(1)}`).join(" ");
   const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - pb} L${pl},${H - pb}Z`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de peso das últimas ${pts.length} pesagens"><defs><linearGradient id="wfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-    <line x1="${pl}" x2="${W - pr}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ok)" stroke-dasharray="4 4"/><text x="${pl + 2}" y="${y(goal) - 4}" fill="var(--ok)">meta ${goal}</text>
+    <line x1="${pl}" x2="${W - pr}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ok)" stroke-dasharray="4 4"/><text x="${pl + 2}" y="${y(goal) - 4}" fill="var(--ok)">meta ${fmtN(goal)}</text>
     <path d="${area}" fill="url(#wfill)"/><path class="draw" d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.kg)}" r="3.5" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>`).join("")}
     <text x="0" y="${y(mx) + 8}">${mx}</text><text x="0" y="${y(mn)}">${mn}</text><text x="${pl}" y="${H - 5}">${dispDate(pts[0].d)}</text><text x="${W - pr}" y="${H - 5}" text-anchor="end">${dispDate(pts[pts.length - 1].d)}</text></svg>`;
@@ -38,9 +38,9 @@ function weightSec() {
     dv = r1(w - s);
   return sec(
     "",
-    `<div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${r1(w)}<small class="unit"> kg</small></div></div><div class="right"><div class="lbl">Desde o início</div><div class="h3 tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${dv > 0 ? "+" : ""}${dv} kg</div></div></div>
-    <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${s} kg</span><span class="lbl">Meta ${g} kg · faltam ${r1(Math.max(0, w - g))}</span></div>
-    <p class="muted small">IMC ${String(r1(w / (S.profile.height / 100) ** 2)).replace(".", ",")} · altura ${S.profile.height} cm</p>
+    `<div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${fmtN(w)}<small class="unit"> kg</small></div></div><div class="right"><div class="lbl">Desde o início</div><div class="h3 tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${dv > 0 ? "+" : ""}${fmtN(dv)} kg</div></div></div>
+    <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${fmtN(s)} kg</span><span class="lbl">Meta ${fmtN(g)} kg · faltam ${fmtN(Math.max(0, w - g))}</span></div>
+    <p class="muted small">IMC ${fmtN(w / (S.profile.height / 100) ** 2)} · altura ${S.profile.height} cm</p>
     ${chartSVG()}<button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
     <p class="muted small">Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
     ${
@@ -50,7 +50,7 @@ function weightSec() {
             .reverse()
             .map(
               x =>
-                `<div class="li"><b class="tabnum grow">${x.kg} kg${x.waist ? `<span class="muted"> · cintura ${x.waist} cm</span>` : ""}</b><span class="muted small">${dispDate(x.d)}</span></div>`
+                `<div class="li"><b class="tabnum grow">${fmtN(x.kg)} kg${x.waist ? `<span class="muted"> · cintura ${fmtN(x.waist)} cm</span>` : ""}</b><span class="muted small">${dispDate(x.d)}</span></div>`
             )
             .join("")}</div>`
         : ""

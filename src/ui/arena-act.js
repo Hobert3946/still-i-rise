@@ -4,7 +4,7 @@ ACT["wk-start"] = b => wkStart(b.dataset.day || planLetter(today()) || seqNext()
 ACT["wk-resume"] = () => wkOpen();
 ACT["wk-exit"] = () => {
   dropLayer("arena");
-  toast("Treino salvo. Continue pelo rio ou pelo orbe.");
+  toast("Treino salvo. Continue pelo card Agora ou pela aba Treino.");
 };
 ACT["wk-prev"] = () => {
   if (S.cur.i > 0) {

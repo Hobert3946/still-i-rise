@@ -91,7 +91,7 @@ ACT["ia-cam"] = () => $("#ia-foto").click();
 ACT["ia-send"] = () => auraSend();
 ACT["ia-clear"] = () =>
   openSheet(
-    `<h3 class="h3">Limpar a conversa?</h3><p class="muted">Todo o histórico com a Aura deste perfil será apagado.</p><div class="grid2"><button class="btn" data-act="close">Cancelar</button><button class="btn danger" data-act="ia-clear-ok">Sim, apagar</button></div>`
+    `<h3 class="h3">Limpar a conversa?</h3><p class="muted">Todo o histórico com o Coach deste perfil será apagado.</p><div class="grid2"><button class="btn" data-act="close">Cancelar</button><button class="btn danger" data-act="ia-clear-ok">Sim, apagar</button></div>`
   );
 ACT["ia-clear-ok"] = () => {
   S.chat = [];

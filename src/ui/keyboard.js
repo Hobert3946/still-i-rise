@@ -10,7 +10,7 @@ function trayHTML(m, k) {
         x,
         i
       ]) => `<div class="swipe" data-i="${i}"><div class="swipe-bg">${ic("trash")}<span>Excluir</span>${ic("trash")}</div>
-    <div class="swipe-in"><div class="grow"><b>${esc(x.n)}</b><small class="muted">${x.g ? x.g + " g · " : ""}${Math.round(x.k)} kcal · ${r1(x.p)} g prot</small></div><button class="icon-btn" data-act="meal-del" data-i="${i}" aria-label="Excluir ${esc(x.n)}">${ic("x")}</button></div></div>`
+    <div class="swipe-in"><div class="grow"><b>${esc(x.n)}</b><small class="muted">${x.g ? x.g + " g · " : ""}${Math.round(x.k)} kcal · ${fmtN(x.p)} g prot</small></div><button class="icon-btn" data-act="meal-del" data-i="${i}" aria-label="Excluir ${esc(x.n)}">${ic("x")}</button></div></div>`
     )
     .join("")}</div>`;
 }
@@ -70,7 +70,7 @@ ACT.fhold = b => {
 /* ---- gramas ajustáveis ---- */
 function foodSheet(i) {
   const f = FOODS[i];
-  openSheet(`<h3 class="h3">${esc(f[0])}</h3><div class="muted small">${f[1]} kcal e ${f[2]} g de proteína por 100 g · fonte ${f[6] === "T" ? "TACO 4ª ed." : "estimativa/rótulo"} · ${f[5]}</div>
+  openSheet(`<h3 class="h3">${esc(f[0])}</h3><div class="muted small">${fmtN(f[1])} kcal e ${fmtN(f[2])} g de proteína por 100 g · fonte ${f[6] === "T" ? "TACO 4ª ed." : "estimativa/rótulo"} · ${f[5]}</div>
   ${isSugarDrink(f) ? banner("warn", "info", "Bebida com açúcar", "Quebra a Regra nº 1 de hoje. Pode registrar: o app não julga, amanhã continua normal.") : ""}
   <div class="stepper"><button class="icon-btn" data-act="g-adj" data-s="-10" aria-label="Menos 10 g">${ic("minus")}</button><input id="g" class="field tabnum" inputmode="numeric" value="${f[4]}" data-i="${i}" aria-label="Gramas"><span class="muted">g</span><button class="icon-btn" data-act="g-adj" data-s="10" aria-label="Mais 10 g">${ic("plus")}</button></div>
   <div class="grid3"><button class="chip" data-act="g-set" data-g="${f[4]}">1 porção</button><button class="chip" data-act="g-set" data-g="${f[4] * 2}">2 porções</button><button class="chip" data-act="g-set" data-g="100">100 g</button></div>
@@ -87,7 +87,7 @@ function gSum(i) {
   const f = FOODS[i],
     g = num($("#g").value),
     e = $("#g-sum");
-  if (e) e.textContent = `${Math.round((f[1] * g) / 100)} kcal · ${r1((f[2] * g) / 100)} g prot`;
+  if (e) e.textContent = `${Math.round((f[1] * g) / 100)} kcal · ${fmtN((f[2] * g) / 100)} g prot`;
 }
 ACT["g-adj"] = b => {
   const inp = $("#g");
@@ -142,7 +142,7 @@ function foodListHTML(q) {
       .slice(0, 40)
       .map(i => {
         const f = FOODS[i];
-        return `<button class="food" data-act="fhold" data-i="${i}" data-m="${UI.meal}"><div class="grow"><b>${esc(f[0])}</b><small class="muted">${f[3]} (${f[4]} g) · ${Math.round((f[1] * f[4]) / 100)} kcal · ${r1((f[2] * f[4]) / 100)} g prot</small></div>${ic("plus")}</button>`;
+        return `<button class="food" data-act="fhold" data-i="${i}" data-m="${UI.meal}"><div class="grow"><b>${esc(f[0])}</b><small class="muted">${f[3]} (${f[4]} g) · ${Math.round((f[1] * f[4]) / 100)} kcal · ${fmtN((f[2] * f[4]) / 100)} g prot</small></div>${ic("plus")}</button>`;
       })
       .join("") + (r.length > 40 ? `<p class="muted xs">Mostrando 40. Refine a busca.</p>` : "")
   );

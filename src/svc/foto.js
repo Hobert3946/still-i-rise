@@ -119,7 +119,7 @@ function fotoTotal() {
   const k = FOTO.items.reduce((a, x) => a + x.k, 0),
     p = FOTO.items.reduce((a, x) => a + x.p, 0),
     e = $("#foto-total");
-  if (e) e.textContent = `${fmtInt(k)} kcal · ${r1(p)} g prot`;
+  if (e) e.textContent = `${fmtInt(k)} kcal · ${fmtN(p)} g prot`;
 }
 ACT.foto = b => fotoStart(b.dataset.m);
 ACT["foto-del"] = b => {

@@ -1,6 +1,6 @@
 /* ============ GESTOS DE TOQUE (celular primeiro) ============ */
 // alça (reordenar) > número da carga (arrastar ajusta) > item da bandeja (arrastar exclui) > tecla (segurar)
-// > nó do rio (deslizar para a direita conclui) > palco da arena (deslizar troca de exercício)
+// > item marcável (deslizar para a direita conclui) > palco da arena (deslizar troca de exercício)
 let G = null;
 const moved = (e, g) => [e.clientX - g.x, e.clientY - g.y];
 function gStart(e) {

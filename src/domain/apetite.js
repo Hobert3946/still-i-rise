@@ -58,21 +58,21 @@ function insightSleep() {
   const lo = days.filter(x => x.s < 6).map(x => x.f),
     hi = days.filter(x => x.s >= 6).map(x => x.f);
   if (lo.length < 3 || hi.length < 3 || avg(lo) - avg(hi) < 1) return null;
-  return `Nos ${lo.length} dias em que você dormiu menos de 6 h, sua fome à noite foi em média ${r1(avg(lo))}, contra ${r1(avg(hi))} nos ${hi.length} dias com 6 h ou mais.`;
+  return `Nos ${lo.length} dias em que você dormiu menos de 6 h, sua fome à noite foi em média ${fmtN(avg(lo))}, contra ${fmtN(avg(hi))} nos ${hi.length} dias com 6 h ou mais.`;
 }
 function insightStress() {
   const s = S.hunger.filter(x => x.estresse != null),
     hi = s.filter(x => x.estresse >= 6).map(x => x.vontade),
     lo = s.filter(x => x.estresse < 6).map(x => x.vontade);
   if (hi.length < 4 || lo.length < 4 || avg(hi) - avg(lo) < 1.5) return null;
-  return `Com estresse alto (6+), sua vontade de comer foi em média ${r1(avg(hi))}; com estresse menor, ${r1(avg(lo))} (${hi.length + lo.length} registros).`;
+  return `Com estresse alto (6+), sua vontade de comer foi em média ${fmtN(avg(hi))}; com estresse menor, ${fmtN(avg(lo))} (${hi.length + lo.length} registros).`;
 }
 function insightGap() {
   const g = S.hunger.map(x => [gapBefore(x), x.fome]).filter(x => x[0] != null),
     long = g.filter(x => x[0] >= 4).map(x => x[1]),
     short = g.filter(x => x[0] < 4).map(x => x[1]);
   if (long.length < 4 || short.length < 4 || avg(long) - avg(short) < 1.5) return null;
-  return `Quando passam 4 h ou mais desde a última refeição, sua fome chega em média a ${r1(avg(long))}, contra ${r1(avg(short))} com intervalos menores (${g.length} registros).`;
+  return `Quando passam 4 h ou mais desde a última refeição, sua fome chega em média a ${fmtN(avg(long))}, contra ${fmtN(avg(short))} com intervalos menores (${g.length} registros).`;
 }
 function insightTrigger() {
   const ep = S.hunger.filter(x => x.perda);
@@ -95,7 +95,7 @@ function insightHour() {
     .filter(([, a]) => a.length >= 3)
     .sort((x, y) => avg(y[1]) - avg(x[1]))[0];
   return top
-    ? `Sua fome costuma ser maior entre ${pad(+top[0])}h e ${pad(+top[0] + 3)}h (média ${r1(avg(top[1]))}, ${top[1].length} registros).`
+    ? `Sua fome costuma ser maior entre ${pad(+top[0])}h e ${pad(+top[0] + 3)}h (média ${fmtN(avg(top[1]))}, ${top[1].length} registros).`
     : null;
 }
 const hungerInsights = () =>

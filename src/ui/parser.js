@@ -1,6 +1,6 @@
 /* ============ INTERPRETADOR DA PALETA: texto livre → ações ============ */
 // Entende: "água 500", "500", "garrafa", "peso 118,4 cintura 121", "cardio 30 6,5 5", "fibra 5", "dor 3", "pescoço 4",
-// "repetir almoço", "frango 150 @almoço" (refeição pelo horário se omitida), "?pergunta" para o Coach, e comandos/lentes.
+// "repetir almoço", "frango 150 @almoço" (refeição pelo horário se omitida), "?pergunta" para o Coach, e atalhos para as telas.
 const MEAL_ALIAS = {
   cafe: "Café da manhã",
   "cafe da manha": "Café da manhã",
@@ -88,7 +88,7 @@ function parseFood(t) {
     return cmd(
       "fork",
       `${shortName(f[0])} · ${gg} g`,
-      `${m} · ${Math.round((f[1] * gg) / 100)} kcal · ${r1((f[2] * gg) / 100)} g prot`,
+      `${m} · ${Math.round((f[1] * gg) / 100)} kcal · ${fmtN((f[2] * gg) / 100)} g prot`,
       () => {
         foodAdd(i, gg, m, dayK());
         toast(`Adicionado em ${m}.`);

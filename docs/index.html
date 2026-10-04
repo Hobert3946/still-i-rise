@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-RfomS9VQf7vP3+haDgXTiIv4reIs8O5AUYJkv5qDCtA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-KwE6n1sXPVmWARuFpVaXNRSt6WHw97dEab3InDSVi/I='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -549,6 +549,8 @@ const dispDate = k => {
   return `${pad(d.getDate())} ${MESES[d.getMonth()]}`;
 };
 const fmtInt = n => Math.round(n).toLocaleString("pt-BR");
+// números com casa decimal na tela: sempre no padrão brasileiro (138,5 kg · 1,375)
+const fmtN = (n, d = 1) => (Number(n) || 0).toLocaleString("pt-BR", { maximumFractionDigits: d });
 const fmtL = (ml, d = 1) => (ml / 1000).toFixed(d).replace(".", ",");
 const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 const toMin = t => {
@@ -2645,8 +2647,12 @@ function prefill(slot, vid) {
     const ls = last.sets[i] || last.sets[last.sets.length - 1];
     out.push({ kg: r1(Math.max(0, ls.kg + delta)), reps: nx.dir === "hold" ? ls.reps : slot.reps[0], done: false });
   }
-  hint = `${nx.dir === "up" ? `Hoje +${nx.inc} kg` : nx.dir === "down" ? `Hoje −${nx.inc} kg` : "Mantenha a carga"}. ${nx.why}`;
-  return { sets: out, hint, ghost: `${dispDate(last.date)}: ${last.sets.map(s => `${s.kg}×${s.reps}`).join(" · ")}` };
+  hint = `${nx.dir === "up" ? `Hoje +${fmtN(nx.inc)} kg` : nx.dir === "down" ? `Hoje −${fmtN(nx.inc)} kg` : "Mantenha a carga"}. ${nx.why}`;
+  return {
+    sets: out,
+    hint,
+    ghost: `${dispDate(last.date)}: ${last.sets.map(s => `${fmtN(s.kg)}×${s.reps}`).join(" · ")}`
+  };
 }
 // deload só por sinal: 3+ exercícios falharam 2 sessões seguidas com a mesma carga
 function deloadSignal() {
@@ -2819,7 +2825,7 @@ function waterStreak() {
 }
 // quanto deveria ter bebido até a hora h (linear das 6h às 21h, arredondado a 50 ml)
 const waterExpected = h => Math.round((S.settings.waterGoal * clamp((h - W_FROM) / (W_TO - W_FROM), 0, 1)) / 50) * 50;
-// hora do dia em que o volume bebido "estaria no ritmo" (usada para desenhar a maré no rio)
+// hora do dia em que o volume bebido "estaria no ritmo"
 const waterHourFor = ml => W_FROM + (W_TO - W_FROM) * clamp(ml / S.settings.waterGoal, 0, 1);
 function waterPace(w) {
   const now = new Date(),
@@ -3388,21 +3394,21 @@ function insightSleep() {
   const lo = days.filter(x => x.s < 6).map(x => x.f),
     hi = days.filter(x => x.s >= 6).map(x => x.f);
   if (lo.length < 3 || hi.length < 3 || avg(lo) - avg(hi) < 1) return null;
-  return `Nos ${lo.length} dias em que você dormiu menos de 6 h, sua fome à noite foi em média ${r1(avg(lo))}, contra ${r1(avg(hi))} nos ${hi.length} dias com 6 h ou mais.`;
+  return `Nos ${lo.length} dias em que você dormiu menos de 6 h, sua fome à noite foi em média ${fmtN(avg(lo))}, contra ${fmtN(avg(hi))} nos ${hi.length} dias com 6 h ou mais.`;
 }
 function insightStress() {
   const s = S.hunger.filter(x => x.estresse != null),
     hi = s.filter(x => x.estresse >= 6).map(x => x.vontade),
     lo = s.filter(x => x.estresse < 6).map(x => x.vontade);
   if (hi.length < 4 || lo.length < 4 || avg(hi) - avg(lo) < 1.5) return null;
-  return `Com estresse alto (6+), sua vontade de comer foi em média ${r1(avg(hi))}; com estresse menor, ${r1(avg(lo))} (${hi.length + lo.length} registros).`;
+  return `Com estresse alto (6+), sua vontade de comer foi em média ${fmtN(avg(hi))}; com estresse menor, ${fmtN(avg(lo))} (${hi.length + lo.length} registros).`;
 }
 function insightGap() {
   const g = S.hunger.map(x => [gapBefore(x), x.fome]).filter(x => x[0] != null),
     long = g.filter(x => x[0] >= 4).map(x => x[1]),
     short = g.filter(x => x[0] < 4).map(x => x[1]);
   if (long.length < 4 || short.length < 4 || avg(long) - avg(short) < 1.5) return null;
-  return `Quando passam 4 h ou mais desde a última refeição, sua fome chega em média a ${r1(avg(long))}, contra ${r1(avg(short))} com intervalos menores (${g.length} registros).`;
+  return `Quando passam 4 h ou mais desde a última refeição, sua fome chega em média a ${fmtN(avg(long))}, contra ${fmtN(avg(short))} com intervalos menores (${g.length} registros).`;
 }
 function insightTrigger() {
   const ep = S.hunger.filter(x => x.perda);
@@ -3425,7 +3431,7 @@ function insightHour() {
     .filter(([, a]) => a.length >= 3)
     .sort((x, y) => avg(y[1]) - avg(x[1]))[0];
   return top
-    ? `Sua fome costuma ser maior entre ${pad(+top[0])}h e ${pad(+top[0] + 3)}h (média ${r1(avg(top[1]))}, ${top[1].length} registros).`
+    ? `Sua fome costuma ser maior entre ${pad(+top[0])}h e ${pad(+top[0] + 3)}h (média ${fmtN(avg(top[1]))}, ${top[1].length} registros).`
     : null;
 }
 const hungerInsights = () =>
@@ -3642,7 +3648,7 @@ function candSignals(k) {
         45,
         "Ombro",
         "Dor em alta",
-        `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`,
+        `Média das 3 últimas: ${fmtN(pa)}/10. Procure um fisioterapeuta antes de aumentar carga de empurrar.`,
         "go",
         "Ver treino",
         { tab: "treino" }
@@ -4375,7 +4381,7 @@ function fotoTotal() {
   const k = FOTO.items.reduce((a, x) => a + x.k, 0),
     p = FOTO.items.reduce((a, x) => a + x.p, 0),
     e = $("#foto-total");
-  if (e) e.textContent = `${fmtInt(k)} kcal · ${r1(p)} g prot`;
+  if (e) e.textContent = `${fmtInt(k)} kcal · ${fmtN(p)} g prot`;
 }
 ACT.foto = b => fotoStart(b.dataset.m);
 ACT["foto-del"] = b => {
@@ -5006,7 +5012,7 @@ function headTitle() {
     ];
   if (UI.tab === "treino") return [`Semana ${weekNo()}${inAdapt() ? " · adaptação" : ""}`, "Treino"];
   if (UI.tab === "nutri") return [`Meta ${fmtInt(TG().kcal)} kcal · ${TG().prot} g`, "Nutrição"];
-  return [`${String(r1(curWeight())).replace(".", ",")} kg · meta ${S.profile.goal} kg`, "Saúde"];
+  return [`${fmtN(curWeight())} kg · meta ${fmtN(S.profile.goal)} kg`, "Saúde"];
 }
 function rHeader() {
   const [k, t] = headTitle();
@@ -5245,7 +5251,7 @@ function goalsHTML(k) {
   const custom = S.goals
     .map(
       g =>
-        `<div class="goal"><span class="grow"><b>${esc(g.n)}</b><small class="muted tabnum">${(d.g || {})[g.id] || 0} / ${g.target} ${esc(g.unit)}</small></span><button class="btn sm" data-act="goal-add" data-id="${g.id}">+${g.step} ${esc(g.unit)}</button><button class="icon-btn" data-act="goal-del" data-id="${g.id}" aria-label="Excluir meta ${esc(g.n)}">${ic("trash")}</button></div>`
+        `<div class="goal"><span class="grow"><b>${esc(g.n)}</b><small class="muted tabnum">${fmtN((d.g || {})[g.id] || 0)} / ${fmtN(g.target)} ${esc(g.unit)}</small></span><button class="btn sm" data-act="goal-add" data-id="${g.id}">+${fmtN(g.step)} ${esc(g.unit)}</button><button class="icon-btn" data-act="goal-del" data-id="${g.id}" aria-label="Excluir meta ${esc(g.n)}">${ic("trash")}</button></div>`
     )
     .join("");
   return `<h3 class="lbl sec-t">Metas do dia</h3>${meter("Água", fmtL(d.water || 0), fmtL(S.settings.waterGoal), "L", "var(--water)", "go", 'data-tab="nutri" data-seg="agua"')}
@@ -5678,7 +5684,7 @@ ACT["plus-water"] = () => openActions("water");
 
 /* ============ INTERPRETADOR DA PALETA: texto livre → ações ============ */
 // Entende: "água 500", "500", "garrafa", "peso 118,4 cintura 121", "cardio 30 6,5 5", "fibra 5", "dor 3", "pescoço 4",
-// "repetir almoço", "frango 150 @almoço" (refeição pelo horário se omitida), "?pergunta" para o Coach, e comandos/lentes.
+// "repetir almoço", "frango 150 @almoço" (refeição pelo horário se omitida), "?pergunta" para o Coach, e atalhos para as telas.
 const MEAL_ALIAS = {
   cafe: "Café da manhã",
   "cafe da manha": "Café da manhã",
@@ -5766,7 +5772,7 @@ function parseFood(t) {
     return cmd(
       "fork",
       `${shortName(f[0])} · ${gg} g`,
-      `${m} · ${Math.round((f[1] * gg) / 100)} kcal · ${r1((f[2] * gg) / 100)} g prot`,
+      `${m} · ${Math.round((f[1] * gg) / 100)} kcal · ${fmtN((f[2] * gg) / 100)} g prot`,
       () => {
         foodAdd(i, gg, m, dayK());
         toast(`Adicionado em ${m}.`);
@@ -5880,7 +5886,7 @@ function trayHTML(m, k) {
         x,
         i
       ]) => `<div class="swipe" data-i="${i}"><div class="swipe-bg">${ic("trash")}<span>Excluir</span>${ic("trash")}</div>
-    <div class="swipe-in"><div class="grow"><b>${esc(x.n)}</b><small class="muted">${x.g ? x.g + " g · " : ""}${Math.round(x.k)} kcal · ${r1(x.p)} g prot</small></div><button class="icon-btn" data-act="meal-del" data-i="${i}" aria-label="Excluir ${esc(x.n)}">${ic("x")}</button></div></div>`
+    <div class="swipe-in"><div class="grow"><b>${esc(x.n)}</b><small class="muted">${x.g ? x.g + " g · " : ""}${Math.round(x.k)} kcal · ${fmtN(x.p)} g prot</small></div><button class="icon-btn" data-act="meal-del" data-i="${i}" aria-label="Excluir ${esc(x.n)}">${ic("x")}</button></div></div>`
     )
     .join("")}</div>`;
 }
@@ -5940,7 +5946,7 @@ ACT.fhold = b => {
 /* ---- gramas ajustáveis ---- */
 function foodSheet(i) {
   const f = FOODS[i];
-  openSheet(`<h3 class="h3">${esc(f[0])}</h3><div class="muted small">${f[1]} kcal e ${f[2]} g de proteína por 100 g · fonte ${f[6] === "T" ? "TACO 4ª ed." : "estimativa/rótulo"} · ${f[5]}</div>
+  openSheet(`<h3 class="h3">${esc(f[0])}</h3><div class="muted small">${fmtN(f[1])} kcal e ${fmtN(f[2])} g de proteína por 100 g · fonte ${f[6] === "T" ? "TACO 4ª ed." : "estimativa/rótulo"} · ${f[5]}</div>
   ${isSugarDrink(f) ? banner("warn", "info", "Bebida com açúcar", "Quebra a Regra nº 1 de hoje. Pode registrar: o app não julga, amanhã continua normal.") : ""}
   <div class="stepper"><button class="icon-btn" data-act="g-adj" data-s="-10" aria-label="Menos 10 g">${ic("minus")}</button><input id="g" class="field tabnum" inputmode="numeric" value="${f[4]}" data-i="${i}" aria-label="Gramas"><span class="muted">g</span><button class="icon-btn" data-act="g-adj" data-s="10" aria-label="Mais 10 g">${ic("plus")}</button></div>
   <div class="grid3"><button class="chip" data-act="g-set" data-g="${f[4]}">1 porção</button><button class="chip" data-act="g-set" data-g="${f[4] * 2}">2 porções</button><button class="chip" data-act="g-set" data-g="100">100 g</button></div>
@@ -5957,7 +5963,7 @@ function gSum(i) {
   const f = FOODS[i],
     g = num($("#g").value),
     e = $("#g-sum");
-  if (e) e.textContent = `${Math.round((f[1] * g) / 100)} kcal · ${r1((f[2] * g) / 100)} g prot`;
+  if (e) e.textContent = `${Math.round((f[1] * g) / 100)} kcal · ${fmtN((f[2] * g) / 100)} g prot`;
 }
 ACT["g-adj"] = b => {
   const inp = $("#g");
@@ -6012,7 +6018,7 @@ function foodListHTML(q) {
       .slice(0, 40)
       .map(i => {
         const f = FOODS[i];
-        return `<button class="food" data-act="fhold" data-i="${i}" data-m="${UI.meal}"><div class="grow"><b>${esc(f[0])}</b><small class="muted">${f[3]} (${f[4]} g) · ${Math.round((f[1] * f[4]) / 100)} kcal · ${r1((f[2] * f[4]) / 100)} g prot</small></div>${ic("plus")}</button>`;
+        return `<button class="food" data-act="fhold" data-i="${i}" data-m="${UI.meal}"><div class="grow"><b>${esc(f[0])}</b><small class="muted">${f[3]} (${f[4]} g) · ${Math.round((f[1] * f[4]) / 100)} kcal · ${fmtN((f[2] * f[4]) / 100)} g prot</small></div>${ic("plus")}</button>`;
       })
       .join("") + (r.length > 40 ? `<p class="muted xs">Mostrando 40. Refine a busca.</p>` : "")
   );
@@ -6230,8 +6236,8 @@ function exBody(step, dd) {
     fi = focusOf(dd),
     done = dd.sets.filter(s => s.done).length,
     unit = slot.unit ? "seg" : "reps";
-  const pips = `<div class="pips" role="group" aria-label="Séries">${dd.sets.map((s, i) => `<button class="pip ${s.done ? "done" : ""} ${i === fi && c.mode === "set" ? "cur" : ""}" data-act="wk-focus" data-i="${i}" aria-label="Série ${i + 1}: ${s.kg || 0} kg × ${s.reps}${s.done ? ", feita" : ""}"><i>${s.done ? ic("check") : i + 1}</i><small class="tabnum">${s.kg || 0}×${s.reps}</small></button>`).join("")}</div>`;
-  return `<div class="row between wrap"><span class="pill">${slot.sets} × ${repsTxt(slot)} · descanso ${slot.rest}s${slot.inc ? ` · +${slot.inc} kg` : ""}</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por série" : "Registrar ao final"}</button></div>
+  const pips = `<div class="pips" role="group" aria-label="Séries">${dd.sets.map((s, i) => `<button class="pip ${s.done ? "done" : ""} ${i === fi && c.mode === "set" ? "cur" : ""}" data-act="wk-focus" data-i="${i}" aria-label="Série ${i + 1}: ${fmtN(s.kg)} kg × ${s.reps}${s.done ? ", feita" : ""}"><i>${s.done ? ic("check") : i + 1}</i><small class="tabnum">${fmtN(s.kg)}×${s.reps}</small></button>`).join("")}</div>`;
+  return `<div class="row between wrap"><span class="pill">${slot.sets} × ${repsTxt(slot)} · descanso ${slot.rest}s${slot.inc ? ` · +${fmtN(slot.inc)} kg` : ""}</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por série" : "Registrar ao final"}</button></div>
     <h2 class="ar-name">${esc(v[1])}</h2>
     ${dd.ghost ? `<p class="ghost">Última vez ${esc(dd.ghost)}</p>` : ""}<p class="hint">${esc(dd.hint)}</p>
     ${c.mode === "set" ? dialHTML(slot, dd, fi) + pips : setsEndHTML(dd, unit)}
@@ -6289,16 +6295,16 @@ function summarySheet(L, rows) {
         nx = r.nx;
       const t =
         nx.dir === "up"
-          ? `<b class="up">↑ ${nx.kg} kg</b>`
+          ? `<b class="up">↑ ${fmtN(nx.kg)} kg</b>`
           : nx.dir === "down"
-            ? `<b class="down">↓ ${nx.kg} kg</b>`
-            : `<b class="muted">${nx.kg ? "= " + nx.kg + " kg" : "="}</b>`;
+            ? `<b class="down">↓ ${fmtN(nx.kg)} kg</b>`
+            : `<b class="muted">${nx.kg ? "= " + fmtN(nx.kg) + " kg" : "="}</b>`;
       const sub = r.stag
         ? `Estagnado há 3 treinos: teste a variação ${esc(r.stag)}.`
         : nx.dir === "up"
-          ? `${nx.why} Sobe ${nx.inc} kg.`
+          ? `${nx.why} Sobe ${fmtN(nx.inc)} kg.`
           : nx.dir === "down"
-            ? `${nx.why} Desce ${nx.inc} kg.`
+            ? `${nx.why} Desce ${fmtN(nx.inc)} kg.`
             : nx.why;
       return `<div class="li"><div class="grow"><b>${esc(v[1])}</b><small class="muted">${sub}</small></div><div class="tabnum">${t}</div></div>`;
     };
@@ -6324,7 +6330,7 @@ ACT["wk-start"] = b => wkStart(b.dataset.day || planLetter(today()) || seqNext()
 ACT["wk-resume"] = () => wkOpen();
 ACT["wk-exit"] = () => {
   dropLayer("arena");
-  toast("Treino salvo. Continue pelo rio ou pelo orbe.");
+  toast("Treino salvo. Continue pelo card Agora ou pela aba Treino.");
 };
 ACT["wk-prev"] = () => {
   if (S.cur.i > 0) {
@@ -6457,7 +6463,7 @@ function nextBadge(slot, vid) {
     last = h[h.length - 1];
   if (!last || !(last.sets[0] && last.sets[0].kg > 0)) return "";
   const nx = nextLoad(slot, last.sets);
-  return `<span class="pill ${nx.dir === "up" ? "ok" : nx.dir === "down" ? "warn" : ""}">${nx.dir === "up" ? "↑" : nx.dir === "down" ? "↓" : "="} ${nx.kg} kg</span>`;
+  return `<span class="pill ${nx.dir === "up" ? "ok" : nx.dir === "down" ? "warn" : ""}">${nx.dir === "up" ? "↑" : nx.dir === "down" ? "↓" : "="} ${fmtN(nx.kg)} kg</span>`;
 }
 function planList(L) {
   const p = PLAN[L];
@@ -6470,7 +6476,7 @@ function planList(L) {
   const ex = p.ex
     .map(e => {
       const v = findV(e, varId(e));
-      return `<details class="fold ex" data-fold="ex-${e.id}"><summary><span class="grow"><b>${esc(v[1])}</b><small class="muted">${e.sets} × ${repsTxt(e)} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</small></span>${nextBadge(e, v[0])}${ic("down")}</summary>
+      return `<details class="fold ex" data-fold="ex-${e.id}"><summary><span class="grow"><b>${esc(v[1])}</b><small class="muted">${e.sets} × ${repsTxt(e)} · descanso ${e.rest}s${e.inc ? ` · +${fmtN(e.inc)} kg` : ""}</small></span>${nextBadge(e, v[0])}${ic("down")}</summary>
       <div class="body"><p class="how">${esc(v[2])}</p><div class="lbl">Variação (${e.v.length})</div><div class="chips">${e.v.map(x => `<button class="chip ${x[0] === v[0] ? "on" : ""}" data-act="sel-var" data-s="${e.id}" data-v="${x[0]}">${esc(x[1].replace(/ \(.*\)/, ""))}</button>`).join("")}${S.sel[e.id] ? `<button class="chip" data-act="sel-var" data-s="${e.id}" data-v="">Automático</button>` : ""}</div></div></details>`;
     })
     .join("");
@@ -6485,7 +6491,7 @@ VIEWS.treino = () => {
     kd = D(k);
   const skip = kd.skipWk && !UI.pickDay && !S.cur && !kd.wk;
   const head = `${S.cur ? banner("acc", "play", "Treino em andamento", `Treino ${S.cur.day} aberto.`, `<div class="sig-act"><button class="btn sm solid" data-act="wk-resume">Continuar</button></div>`) : ""}
-    ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta.`) : ""}
+    ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${fmtN(pa)}/10. Procure um fisioterapeuta.`) : ""}
     ${deloadSignal() ? banner("warn", "info", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie.") : ""}
     <div class="daychips" role="group" aria-label="Escolher treino">${DAY_ORDER.map(x => `<button class="dchip ${x === L ? "on" : ""}" style="--hue:${WK_HUE[x]}" data-act="pickday" data-day="${x}"><b>${x}</b><small>${PLAN[x].name}</small></button>`).join("")}</div>`;
   const main = skip
@@ -6509,7 +6515,7 @@ VIEWS.treino = () => {
     (recs.length
       ? sec(
           "Maiores cargas registradas",
-          `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div>`
+          `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${fmtN(r[1])} kg</b></div>`).join("")}</div>`
         )
       : "") +
     prefsSec(vol)
@@ -6548,7 +6554,7 @@ function painSec() {
     "Dor no ombro (0–10)",
     `<p class="muted small">Registrada ao fim dos treinos A, D e E. Média das 3 últimas ≥ 4 mostra alerta.</p>
     ${l.length ? `<div class="painhist">${l.map(p => `<span style="--p:${p.v / 10}" title="${dispDate(p.d)}"><b>${p.v}</b><small>${p.day || ""}</small></span>`).join("")}</div>` : `<p class="muted small">Sem registros ainda.</p>`}
-    ${pa !== null ? `<p class="small">Média das 3 últimas: <b>${r1(pa)}</b>/10</p>` : ""}<button class="btn sm full" data-act="pain-open">Registrar dor agora</button>`
+    ${pa !== null ? `<p class="small">Média das 3 últimas: <b>${fmtN(pa)}</b>/10</p>` : ""}<button class="btn sm full" data-act="pain-open">Registrar dor agora</button>`
   );
 }
 ACT.pickday = b => {
@@ -6712,7 +6718,7 @@ function aguaView() {
   ${sec(
     "Meta diária",
     `<div class="row between"><button class="icon-btn lg" data-act="w-goal" data-d="-250" aria-label="Diminuir meta">${ic("minus")}</button><div class="h2 tabnum">${fmtL(goal, 2)} L</div><button class="icon-btn lg" data-act="w-goal" data-d="250" aria-label="Aumentar meta">${ic("plus")}</button></div>
-    <p class="muted small">Referência comum: 35 ml por kg, cerca de ${fmtL(35 * (S.settings.calcWeight || 100))} L para ${S.settings.calcWeight || 100} kg. Se tiver dúvida sobre o seu caso (fígado, rins), pergunte ao médico.</p>`
+    <p class="muted small">Referência comum: 35 ml por kg, cerca de ${fmtL(35 * (S.settings.calcWeight || 100))} L para ${fmtN(S.settings.calcWeight || 100)} kg. Se tiver dúvida sobre o seu caso (fígado, rins), pergunte ao médico.</p>`
   )}`;
 }
 // a água sobe na garrafa depois de desenhada
@@ -6884,7 +6890,7 @@ function chartSVG() {
   const line = pts.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.kg).toFixed(1)}`).join(" ");
   const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - pb} L${pl},${H - pb}Z`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de peso das últimas ${pts.length} pesagens"><defs><linearGradient id="wfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-    <line x1="${pl}" x2="${W - pr}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ok)" stroke-dasharray="4 4"/><text x="${pl + 2}" y="${y(goal) - 4}" fill="var(--ok)">meta ${goal}</text>
+    <line x1="${pl}" x2="${W - pr}" y1="${y(goal)}" y2="${y(goal)}" stroke="var(--ok)" stroke-dasharray="4 4"/><text x="${pl + 2}" y="${y(goal) - 4}" fill="var(--ok)">meta ${fmtN(goal)}</text>
     <path d="${area}" fill="url(#wfill)"/><path class="draw" d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.kg)}" r="3.5" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>`).join("")}
     <text x="0" y="${y(mx) + 8}">${mx}</text><text x="0" y="${y(mn)}">${mn}</text><text x="${pl}" y="${H - 5}">${dispDate(pts[0].d)}</text><text x="${W - pr}" y="${H - 5}" text-anchor="end">${dispDate(pts[pts.length - 1].d)}</text></svg>`;
@@ -6897,9 +6903,9 @@ function weightSec() {
     dv = r1(w - s);
   return sec(
     "",
-    `<div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${r1(w)}<small class="unit"> kg</small></div></div><div class="right"><div class="lbl">Desde o início</div><div class="h3 tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${dv > 0 ? "+" : ""}${dv} kg</div></div></div>
-    <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${s} kg</span><span class="lbl">Meta ${g} kg · faltam ${r1(Math.max(0, w - g))}</span></div>
-    <p class="muted small">IMC ${String(r1(w / (S.profile.height / 100) ** 2)).replace(".", ",")} · altura ${S.profile.height} cm</p>
+    `<div class="row between"><div><div class="lbl">Peso atual</div><div class="big tabnum">${fmtN(w)}<small class="unit"> kg</small></div></div><div class="right"><div class="lbl">Desde o início</div><div class="h3 tabnum" style="color:${w <= s ? "var(--ok)" : "var(--bad)"}">${dv > 0 ? "+" : ""}${fmtN(dv)} kg</div></div></div>
+    <div class="bar"><i style="width:${prog * 100}%"></i></div><div class="row between"><span class="lbl">${fmtN(s)} kg</span><span class="lbl">Meta ${fmtN(g)} kg · faltam ${fmtN(Math.max(0, w - g))}</span></div>
+    <p class="muted small">IMC ${fmtN(w / (S.profile.height / 100) ** 2)} · altura ${S.profile.height} cm</p>
     ${chartSVG()}<button class="btn solid full" data-act="weigh">${ic("scale")} REGISTRAR PESO</button>
     <p class="muted small">Pesagem semanal: segunda, ao acordar. Nunca se pese depois de furar: o número vem inflado por sódio e água e você vai ler como gordura.</p>
     ${
@@ -6909,7 +6915,7 @@ function weightSec() {
             .reverse()
             .map(
               x =>
-                `<div class="li"><b class="tabnum grow">${x.kg} kg${x.waist ? `<span class="muted"> · cintura ${x.waist} cm</span>` : ""}</b><span class="muted small">${dispDate(x.d)}</span></div>`
+                `<div class="li"><b class="tabnum grow">${fmtN(x.kg)} kg${x.waist ? `<span class="muted"> · cintura ${fmtN(x.waist)} cm</span>` : ""}</b><span class="muted small">${dispDate(x.d)}</span></div>`
             )
             .join("")}</div>`
         : ""
@@ -7355,7 +7361,7 @@ ACT["ia-cam"] = () => $("#ia-foto").click();
 ACT["ia-send"] = () => auraSend();
 ACT["ia-clear"] = () =>
   openSheet(
-    `<h3 class="h3">Limpar a conversa?</h3><p class="muted">Todo o histórico com a Aura deste perfil será apagado.</p><div class="grid2"><button class="btn" data-act="close">Cancelar</button><button class="btn danger" data-act="ia-clear-ok">Sim, apagar</button></div>`
+    `<h3 class="h3">Limpar a conversa?</h3><p class="muted">Todo o histórico com o Coach deste perfil será apagado.</p><div class="grid2"><button class="btn" data-act="close">Cancelar</button><button class="btn danger" data-act="ia-clear-ok">Sim, apagar</button></div>`
   );
 ACT["ia-clear-ok"] = () => {
   S.chat = [];
@@ -7382,7 +7388,7 @@ function goalsFold() {
   return fold(
     "Perfil e metas",
     `<div class="grid2 tiles4"><div class="tile"><div class="lbl">TMB</div><div class="h3 tabnum">${fmtInt(tg.tmb)}</div></div><div class="tile"><div class="lbl">Gasto total</div><div class="h3 tabnum">${fmtInt(tg.tdee)}</div></div><div class="tile"><div class="lbl">Meta diária</div><div class="h3 tabnum">${fmtInt(tg.kcal)} kcal</div></div><div class="tile"><div class="lbl">Proteína</div><div class="h3 tabnum">${tg.prot} g</div></div></div>
-    <p class="muted small">Mifflin-St Jeor (${p.sex === "F" ? "feminina" : p.sex === "M" ? "masculina" : "masculina: informe o sexo abaixo"}) para ${r1(s.calcWeight)} kg: TMB × ${s.activity}, déficit de ${fmtInt(s.deficit)} kcal, piso de ${fmtInt(s.floor)}. Proteína 1,2 g/kg. Recalcula sozinho a cada 4 kg de variação.</p>
+    <p class="muted small">Mifflin-St Jeor (${p.sex === "F" ? "feminina" : p.sex === "M" ? "masculina" : "masculina: informe o sexo abaixo"}) para ${fmtN(s.calcWeight)} kg: TMB × ${fmtN(s.activity, 3)}, déficit de ${fmtInt(s.deficit)} kcal, piso de ${fmtInt(s.floor)}. Proteína 1,2 g/kg. Recalcula sozinho a cada 4 kg de variação.</p>
     ${f("pn", "Nome", p.name, "text")}<label class="lbl" for="psex">Sexo biológico (muda o cálculo do gasto)</label>${sexSelect("psex", p.sex)}<div class="grid2">${f("ps", "Peso inicial (kg)", p.startWeight)}${f("pg", "Meta (kg)", p.goal)}${f("ph", "Altura (cm)", p.height, "numeric")}${f("pa", "Idade", p.age, "numeric")}
     ${f("pdef", "Déficit (kcal)", s.deficit, "numeric")}${f("pact", "Fator de atividade", s.activity)}${f("pfloor", "Piso calórico (kcal)", s.floor, "numeric")}${f("pwater", "Meta de água (ml)", s.waterGoal, "numeric")}</div>
     <button class="btn solid full" data-act="profile-save">SALVAR PERFIL E METAS</button>`,
@@ -7668,7 +7674,7 @@ function profileRows() {
   return Object.values(R.profiles)
     .map(
       p => `<div class="li prof ${p.id === R.active ? "on" : ""}">
-    <button class="grow row" data-act="profile-use" data-id="${p.id}" aria-pressed="${p.id === R.active}">${avatarHTML(p)}<span class="grow"><b>${esc(p.profile.name)}</b><small class="muted">${r1(p.weights.length ? p.weights[p.weights.length - 1].kg : p.profile.startWeight)} kg · meta ${p.profile.goal} kg</small></span>${p.id === R.active ? `<span class="pill ok">ativo</span>` : ""}</button>
+    <button class="grow row" data-act="profile-use" data-id="${p.id}" aria-pressed="${p.id === R.active}">${avatarHTML(p)}<span class="grow"><b>${esc(p.profile.name)}</b><small class="muted">${fmtN(p.weights.length ? p.weights[p.weights.length - 1].kg : p.profile.startWeight)} kg · meta ${fmtN(p.profile.goal)} kg</small></span>${p.id === R.active ? `<span class="pill ok">ativo</span>` : ""}</button>
     ${Object.keys(R.profiles).length > 1 ? `<button class="icon-btn bad" data-act="profile-del" data-id="${p.id}" aria-label="Excluir perfil ${esc(p.profile.name)}">${ic("trash")}</button>` : ""}</div>`
     )
     .join("");
@@ -8123,7 +8129,7 @@ document.addEventListener("visibilitychange", () => {
 
 /* ============ GESTOS DE TOQUE (celular primeiro) ============ */
 // alça (reordenar) > número da carga (arrastar ajusta) > item da bandeja (arrastar exclui) > tecla (segurar)
-// > nó do rio (deslizar para a direita conclui) > palco da arena (deslizar troca de exercício)
+// > item marcável (deslizar para a direita conclui) > palco da arena (deslizar troca de exercício)
 let G = null;
 const moved = (e, g) => [e.clientX - g.x, e.clientY - g.y];
 function gStart(e) {

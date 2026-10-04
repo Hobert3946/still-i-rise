@@ -68,8 +68,8 @@ function exBody(step, dd) {
     fi = focusOf(dd),
     done = dd.sets.filter(s => s.done).length,
     unit = slot.unit ? "seg" : "reps";
-  const pips = `<div class="pips" role="group" aria-label="Séries">${dd.sets.map((s, i) => `<button class="pip ${s.done ? "done" : ""} ${i === fi && c.mode === "set" ? "cur" : ""}" data-act="wk-focus" data-i="${i}" aria-label="Série ${i + 1}: ${s.kg || 0} kg × ${s.reps}${s.done ? ", feita" : ""}"><i>${s.done ? ic("check") : i + 1}</i><small class="tabnum">${s.kg || 0}×${s.reps}</small></button>`).join("")}</div>`;
-  return `<div class="row between wrap"><span class="pill">${slot.sets} × ${repsTxt(slot)} · descanso ${slot.rest}s${slot.inc ? ` · +${slot.inc} kg` : ""}</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por série" : "Registrar ao final"}</button></div>
+  const pips = `<div class="pips" role="group" aria-label="Séries">${dd.sets.map((s, i) => `<button class="pip ${s.done ? "done" : ""} ${i === fi && c.mode === "set" ? "cur" : ""}" data-act="wk-focus" data-i="${i}" aria-label="Série ${i + 1}: ${fmtN(s.kg)} kg × ${s.reps}${s.done ? ", feita" : ""}"><i>${s.done ? ic("check") : i + 1}</i><small class="tabnum">${fmtN(s.kg)}×${s.reps}</small></button>`).join("")}</div>`;
+  return `<div class="row between wrap"><span class="pill">${slot.sets} × ${repsTxt(slot)} · descanso ${slot.rest}s${slot.inc ? ` · +${fmtN(slot.inc)} kg` : ""}</span><button class="chip" data-act="wk-mode">${c.mode === "set" ? "1 toque por série" : "Registrar ao final"}</button></div>
     <h2 class="ar-name">${esc(v[1])}</h2>
     ${dd.ghost ? `<p class="ghost">Última vez ${esc(dd.ghost)}</p>` : ""}<p class="hint">${esc(dd.hint)}</p>
     ${c.mode === "set" ? dialHTML(slot, dd, fi) + pips : setsEndHTML(dd, unit)}
@@ -127,16 +127,16 @@ function summarySheet(L, rows) {
         nx = r.nx;
       const t =
         nx.dir === "up"
-          ? `<b class="up">↑ ${nx.kg} kg</b>`
+          ? `<b class="up">↑ ${fmtN(nx.kg)} kg</b>`
           : nx.dir === "down"
-            ? `<b class="down">↓ ${nx.kg} kg</b>`
-            : `<b class="muted">${nx.kg ? "= " + nx.kg + " kg" : "="}</b>`;
+            ? `<b class="down">↓ ${fmtN(nx.kg)} kg</b>`
+            : `<b class="muted">${nx.kg ? "= " + fmtN(nx.kg) + " kg" : "="}</b>`;
       const sub = r.stag
         ? `Estagnado há 3 treinos: teste a variação ${esc(r.stag)}.`
         : nx.dir === "up"
-          ? `${nx.why} Sobe ${nx.inc} kg.`
+          ? `${nx.why} Sobe ${fmtN(nx.inc)} kg.`
           : nx.dir === "down"
-            ? `${nx.why} Desce ${nx.inc} kg.`
+            ? `${nx.why} Desce ${fmtN(nx.inc)} kg.`
             : nx.why;
       return `<div class="li"><div class="grow"><b>${esc(v[1])}</b><small class="muted">${sub}</small></div><div class="tabnum">${t}</div></div>`;
     };

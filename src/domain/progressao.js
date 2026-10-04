@@ -83,8 +83,12 @@ function prefill(slot, vid) {
     const ls = last.sets[i] || last.sets[last.sets.length - 1];
     out.push({ kg: r1(Math.max(0, ls.kg + delta)), reps: nx.dir === "hold" ? ls.reps : slot.reps[0], done: false });
   }
-  hint = `${nx.dir === "up" ? `Hoje +${nx.inc} kg` : nx.dir === "down" ? `Hoje −${nx.inc} kg` : "Mantenha a carga"}. ${nx.why}`;
-  return { sets: out, hint, ghost: `${dispDate(last.date)}: ${last.sets.map(s => `${s.kg}×${s.reps}`).join(" · ")}` };
+  hint = `${nx.dir === "up" ? `Hoje +${fmtN(nx.inc)} kg` : nx.dir === "down" ? `Hoje −${fmtN(nx.inc)} kg` : "Mantenha a carga"}. ${nx.why}`;
+  return {
+    sets: out,
+    hint,
+    ghost: `${dispDate(last.date)}: ${last.sets.map(s => `${fmtN(s.kg)}×${s.reps}`).join(" · ")}`
+  };
 }
 // deload só por sinal: 3+ exercícios falharam 2 sessões seguidas com a mesma carga
 function deloadSignal() {

@@ -4,7 +4,7 @@ function nextBadge(slot, vid) {
     last = h[h.length - 1];
   if (!last || !(last.sets[0] && last.sets[0].kg > 0)) return "";
   const nx = nextLoad(slot, last.sets);
-  return `<span class="pill ${nx.dir === "up" ? "ok" : nx.dir === "down" ? "warn" : ""}">${nx.dir === "up" ? "↑" : nx.dir === "down" ? "↓" : "="} ${nx.kg} kg</span>`;
+  return `<span class="pill ${nx.dir === "up" ? "ok" : nx.dir === "down" ? "warn" : ""}">${nx.dir === "up" ? "↑" : nx.dir === "down" ? "↓" : "="} ${fmtN(nx.kg)} kg</span>`;
 }
 function planList(L) {
   const p = PLAN[L];
@@ -17,7 +17,7 @@ function planList(L) {
   const ex = p.ex
     .map(e => {
       const v = findV(e, varId(e));
-      return `<details class="fold ex" data-fold="ex-${e.id}"><summary><span class="grow"><b>${esc(v[1])}</b><small class="muted">${e.sets} × ${repsTxt(e)} · descanso ${e.rest}s${e.inc ? ` · +${e.inc} kg` : ""}</small></span>${nextBadge(e, v[0])}${ic("down")}</summary>
+      return `<details class="fold ex" data-fold="ex-${e.id}"><summary><span class="grow"><b>${esc(v[1])}</b><small class="muted">${e.sets} × ${repsTxt(e)} · descanso ${e.rest}s${e.inc ? ` · +${fmtN(e.inc)} kg` : ""}</small></span>${nextBadge(e, v[0])}${ic("down")}</summary>
       <div class="body"><p class="how">${esc(v[2])}</p><div class="lbl">Variação (${e.v.length})</div><div class="chips">${e.v.map(x => `<button class="chip ${x[0] === v[0] ? "on" : ""}" data-act="sel-var" data-s="${e.id}" data-v="${x[0]}">${esc(x[1].replace(/ \(.*\)/, ""))}</button>`).join("")}${S.sel[e.id] ? `<button class="chip" data-act="sel-var" data-s="${e.id}" data-v="">Automático</button>` : ""}</div></div></details>`;
     })
     .join("");
@@ -32,7 +32,7 @@ VIEWS.treino = () => {
     kd = D(k);
   const skip = kd.skipWk && !UI.pickDay && !S.cur && !kd.wk;
   const head = `${S.cur ? banner("acc", "play", "Treino em andamento", `Treino ${S.cur.day} aberto.`, `<div class="sig-act"><button class="btn sm solid" data-act="wk-resume">Continuar</button></div>`) : ""}
-    ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${r1(pa)}/10. Procure um fisioterapeuta.`) : ""}
+    ${pa !== null && pa >= 4 ? banner("bad", "shield", "Dor no ombro em alta", `Média das 3 últimas: ${fmtN(pa)}/10. Procure um fisioterapeuta.`) : ""}
     ${deloadSignal() ? banner("warn", "info", "Sinal de deload", "3 ou mais exercícios falharam 2 sessões seguidas com a mesma carga. Reduza cerca de 20% nesta semana e reavalie.") : ""}
     <div class="daychips" role="group" aria-label="Escolher treino">${DAY_ORDER.map(x => `<button class="dchip ${x === L ? "on" : ""}" style="--hue:${WK_HUE[x]}" data-act="pickday" data-day="${x}"><b>${x}</b><small>${PLAN[x].name}</small></button>`).join("")}</div>`;
   const main = skip
@@ -56,7 +56,7 @@ VIEWS.treino = () => {
     (recs.length
       ? sec(
           "Maiores cargas registradas",
-          `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${r[1]} kg</b></div>`).join("")}</div>`
+          `<div class="list">${recs.map(r => `<div class="li"><span class="grow">${esc(r[0])}</span><b class="tabnum">${fmtN(r[1])} kg</b></div>`).join("")}</div>`
         )
       : "") +
     prefsSec(vol)
@@ -95,7 +95,7 @@ function painSec() {
     "Dor no ombro (0–10)",
     `<p class="muted small">Registrada ao fim dos treinos A, D e E. Média das 3 últimas ≥ 4 mostra alerta.</p>
     ${l.length ? `<div class="painhist">${l.map(p => `<span style="--p:${p.v / 10}" title="${dispDate(p.d)}"><b>${p.v}</b><small>${p.day || ""}</small></span>`).join("")}</div>` : `<p class="muted small">Sem registros ainda.</p>`}
-    ${pa !== null ? `<p class="small">Média das 3 últimas: <b>${r1(pa)}</b>/10</p>` : ""}<button class="btn sm full" data-act="pain-open">Registrar dor agora</button>`
+    ${pa !== null ? `<p class="small">Média das 3 últimas: <b>${fmtN(pa)}</b>/10</p>` : ""}<button class="btn sm full" data-act="pain-open">Registrar dor agora</button>`
   );
 }
 ACT.pickday = b => {
