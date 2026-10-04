@@ -29,6 +29,15 @@ ACT["hints-reset"] = () => {
   render();
   toast("As dicas vão aparecer de novo.");
 };
+// botões de escolha (.seg): o leitor de tela precisa saber qual está marcado
+const ariaSeg = root =>
+  $$(".seg button", root).forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on")));
+function segPick(b) {
+  $$("button", b.parentNode).forEach(x => {
+    x.classList.toggle("on", x === b);
+    x.setAttribute("aria-pressed", x === b);
+  });
+}
 const banner = (cls, icon, title, txt, extra = "") =>
   `<div class="banner ${cls}">${ic(icon)}<div class="grow"><b>${title}</b>${txt}${extra}</div></div>`;
 const mealChips = (cur, act) =>
@@ -83,6 +92,7 @@ function render() {
   keepFields($("#view"), () => {
     $("#view").innerHTML = VIEWS[UI.tab]();
   });
+  ariaSeg($("#view"));
   rTabbar();
   if (UI.page && STACK.includes("page")) rPage();
   if (S.cur && STACK.includes("arena")) arenaRender();

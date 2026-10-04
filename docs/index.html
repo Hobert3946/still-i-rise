@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-xg1bP/bsVi/iub75Ovnzb9k5QQ5MAD8FbgbJhJIblbE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-NZsJwg9IbtUfUeeqtdUQMcMVAdNsdBUf+SwCGRyq4HE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -4726,14 +4726,50 @@ const TABS = {
 /* ---- pilha de camadas: cada camada aberta vira uma entrada no histórico (o "voltar" do celular fecha a de cima) ---- */
 const STACK = [],
   HIDE = {};
-const syncInert = () =>
+// só a camada de cima recebe toque, teclado e leitor de tela; as de baixo (inclusive uma página sob um painel) ficam inertes
+const LAYER_EL = { page: "#page", sheet: "#sheet", actions: "#actions", arena: "#arena" };
+const syncInert = () => {
   ["#top", "#view", "#tabbar"].forEach(s => {
     const e = $(s);
     if (e) e.inert = STACK.length > 0;
   });
+  Object.entries(LAYER_EL).forEach(([id, s]) => {
+    const e = $(s);
+    if (e) e.inert = STACK.includes(id) && STACK[STACK.length - 1] !== id;
+  });
+};
+// foco: ao abrir uma camada, guarda onde estava; ao fechar, volta para lá (ou para o botão equivalente, se a tela foi redesenhada)
+const FOCUS = {};
+const qv = v => String(v).replace(/["\\]/g, "\\$&");
+const focusKey = e => {
+  if (!e || e === document.body) return null;
+  if (e.id) return `[id="${qv(e.id)}"]`;
+  const d = e.dataset || {};
+  if (!d.act) return null;
+  return ["act", "id", "k", "m", "tab", "seg", "p", "v", "i"]
+    .filter(k => d[k] != null)
+    .map(k => `[data-${k}="${qv(d[k])}"]`)
+    .join("");
+};
+function focusBack(id) {
+  const f = FOCUS[id];
+  delete FOCUS[id];
+  if (!f) return;
+  const e = f.el.isConnected ? f.el : f.key && $(f.key);
+  if (e && !e.closest("[inert]")) e.focus({ preventScroll: true });
+}
+// leva o foco para o título da camada recém-aberta (o leitor de tela anuncia o que abriu)
+function focusLayer(root) {
+  const t = root && (root.querySelector("h2, h3") || root.querySelector("button, input, select, textarea"));
+  if (!t) return;
+  if (/^H\d$/.test(t.tagName)) t.tabIndex = -1;
+  t.focus({ preventScroll: true });
+}
 let skipPop = 0;
 function pushLayer(id) {
   if (STACK.includes(id)) return;
+  const a = document.activeElement;
+  FOCUS[id] = { el: a, key: focusKey(a) };
   STACK.push(id);
   document.body.classList.add("lock");
   syncInert();
@@ -4748,6 +4784,7 @@ function dropLayer(id, fromPop) {
   HIDE[id]();
   if (!STACK.length) document.body.classList.remove("lock");
   syncInert();
+  focusBack(id);
   if (!fromPop) {
     skipPop++;
     try {
@@ -4800,7 +4837,94 @@ function rTabbar() {
 const segBar = (tab, opts) =>
   `<div class="segbar" role="tablist" aria-label="Partes">${opts.map(([k, n]) => `<button role="tab" class="${UI.seg[tab] === k ? "on" : ""}" aria-selected="${UI.seg[tab] === k}" data-act="seg" data-seg="${k}">${n}</button>`).join("")}</div>`;
 
-/* ---- redesenhar sem perder o que a pessoa digitou ---- */
+/* ---- páginas cheias (agenda, coach, ajustes) ---- */
+const PAGES = {}; // cada página registra PAGES.nome = { t: "Título", r: () => html, right: () => html }
+function openPage(name) {
+  if (STACK.includes("sheet")) dropLayer("sheet");
+  if (STACK.includes("actions")) dropLayer("actions");
+  UI.page = name;
+  $("#page").classList.add("on");
+  pushLayer("page");
+  rPage(true);
+}
+HIDE.page = () => {
+  $("#page").classList.remove("on");
+  UI.page = null;
+};
+function rPage(first) {
+  const p = PAGES[UI.page],
+    body = $("#page-body"),
+    y = body && !first ? body.scrollTop : 0;
+  const opened = first ? [] : $$("#page details[data-fold][open]").map(e => e.dataset.fold);
+  const html = `<div class="page-in"><header class="page-top"><button class="icon-btn" data-act="page-close" aria-label="Voltar">${ic("left")}</button><h2 class="h2 grow" id="page-t" tabindex="-1">${p.t}</h2>${p.right ? p.right() : ""}</header><div class="page-body" id="page-body">${p.r()}</div></div>`;
+  if (first) $("#page").innerHTML = html;
+  else
+    keepFields($("#page"), () => {
+      $("#page").innerHTML = html;
+    });
+  opened.forEach(f => {
+    const e = $(`#page details[data-fold="${f}"]`);
+    if (e) e.open = true;
+  });
+  $("#page-body").scrollTop = y;
+  if (first) {
+    const t = $("#page-t");
+    if (t) t.focus({ preventScroll: true });
+  }
+  ariaSeg($("#page"));
+  if (p.after) p.after(first);
+}
+ACT.page = b => openPage(b.dataset.p);
+ACT["page-close"] = () => dropLayer("page");
+
+/* ---- painel inferior ---- */
+function openSheet(html) {
+  const s = $("#sheet");
+  s.innerHTML = `<button class="sheet-x icon-btn" data-act="close" aria-label="Fechar">${ic("x")}</button>` + html;
+  s.classList.add("on");
+  pushLayer("sheet");
+  scrimSync();
+  s.scrollTop = 0;
+  const h = s.querySelector("h2, h3");
+  if (h) {
+    h.id = "sheet-t";
+    s.setAttribute("aria-labelledby", "sheet-t");
+    s.removeAttribute("aria-label");
+  } else {
+    s.removeAttribute("aria-labelledby");
+    s.setAttribute("aria-label", "Detalhes");
+  }
+  ariaSeg(s);
+  focusLayer(s);
+}
+HIDE.sheet = () => {
+  $("#sheet").classList.remove("on");
+  scrimSync();
+};
+function closeSheet() {
+  dropLayer("sheet");
+}
+ACT.close = () => closeSheet();
+
+/* ---- tema: auto / claro / escuro (global) ---- */
+function applyTheme() {
+  const t = R.theme;
+  const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  const m = $("meta[name=theme-color]");
+  if (m) m.content = dark ? "#0D0D0F" : "#F5F5FA";
+  applyLook();
+  const hr = new Date().getHours();
+  document.body.dataset.hour = hr >= 4 && hr < 10 ? "morning" : hr >= 19 || hr < 4 ? "night" : "day";
+}
+ACT.theme = b => {
+  R.theme = b.dataset.v;
+  save();
+  applyTheme();
+  render();
+};
+
+/* ============ CAMPOS: redesenhar sem perder o que a pessoa digitou ============ */
 // guarda os campos alterados (valor ≠ o de quando foram desenhados) e o foco, redesenha e devolve tudo,
 // a não ser que o valor salvo por trás do campo tenha mudado (aí vale o novo)
 const fieldDef = e =>
@@ -4836,81 +4960,6 @@ function keepFields(root, draw) {
 const typing = () => {
   const a = document.activeElement;
   return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!a.closest("#view,#page");
-};
-
-/* ---- páginas cheias (agenda, coach, ajustes) ---- */
-const PAGES = {}; // cada página registra PAGES.nome = { t: "Título", r: () => html, right: () => html }
-function openPage(name) {
-  if (STACK.includes("sheet")) dropLayer("sheet");
-  if (STACK.includes("actions")) dropLayer("actions");
-  UI.page = name;
-  $("#page").classList.add("on");
-  pushLayer("page");
-  rPage(true);
-}
-HIDE.page = () => {
-  $("#page").classList.remove("on");
-  UI.page = null;
-};
-function rPage(first) {
-  const p = PAGES[UI.page],
-    body = $("#page-body"),
-    y = body && !first ? body.scrollTop : 0;
-  const opened = first ? [] : $$("#page details[data-fold][open]").map(e => e.dataset.fold);
-  const html = `<div class="page-in"><header class="page-top"><button class="icon-btn" data-act="page-close" aria-label="Voltar">${ic("left")}</button><h2 class="h2 grow" id="page-t" tabindex="-1">${p.t}</h2>${p.right ? p.right() : ""}</header><div class="page-body" id="page-body">${p.r()}</div></div>`;
-  if (first) $("#page").innerHTML = html;
-  else
-    keepFields($("#page"), () => {
-      $("#page").innerHTML = html;
-    });
-  opened.forEach(f => {
-    const e = $(`#page details[data-fold="${f}"]`);
-    if (e) e.open = true;
-  });
-  $("#page-body").scrollTop = y;
-  if (first) {
-    const t = $("#page-t");
-    if (t) t.focus({ preventScroll: true });
-  }
-  if (p.after) p.after(first);
-}
-ACT.page = b => openPage(b.dataset.p);
-ACT["page-close"] = () => dropLayer("page");
-
-/* ---- painel inferior ---- */
-function openSheet(html) {
-  const s = $("#sheet");
-  s.innerHTML = `<button class="sheet-x icon-btn" data-act="close" aria-label="Fechar">${ic("x")}</button>` + html;
-  s.classList.add("on");
-  pushLayer("sheet");
-  scrimSync();
-  s.scrollTop = 0;
-}
-HIDE.sheet = () => {
-  $("#sheet").classList.remove("on");
-  scrimSync();
-};
-function closeSheet() {
-  dropLayer("sheet");
-}
-ACT.close = () => closeSheet();
-
-/* ---- tema: auto / claro / escuro (global) ---- */
-function applyTheme() {
-  const t = R.theme;
-  const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme:dark)").matches);
-  document.documentElement.dataset.theme = dark ? "dark" : "light";
-  const m = $("meta[name=theme-color]");
-  if (m) m.content = dark ? "#0D0D0F" : "#F5F5FA";
-  applyLook();
-  const hr = new Date().getHours();
-  document.body.dataset.hour = hr >= 4 && hr < 10 ? "morning" : hr >= 19 || hr < 4 ? "night" : "day";
-}
-ACT.theme = b => {
-  R.theme = b.dataset.v;
-  save();
-  applyTheme();
-  render();
 };
 
 /* ============ AVISOS: confirmar no próprio app, desfazer e toast ============ */
@@ -4995,6 +5044,15 @@ ACT["hints-reset"] = () => {
   render();
   toast("As dicas vão aparecer de novo.");
 };
+// botões de escolha (.seg): o leitor de tela precisa saber qual está marcado
+const ariaSeg = root =>
+  $$(".seg button", root).forEach(b => b.setAttribute("aria-pressed", b.classList.contains("on")));
+function segPick(b) {
+  $$("button", b.parentNode).forEach(x => {
+    x.classList.toggle("on", x === b);
+    x.setAttribute("aria-pressed", x === b);
+  });
+}
 const banner = (cls, icon, title, txt, extra = "") =>
   `<div class="banner ${cls}">${ic(icon)}<div class="grow"><b>${title}</b>${txt}${extra}</div></div>`;
 const mealChips = (cur, act) =>
@@ -5049,6 +5107,7 @@ function render() {
   keepFields($("#view"), () => {
     $("#view").innerHTML = VIEWS[UI.tab]();
   });
+  ariaSeg($("#view"));
   rTabbar();
   if (UI.page && STACK.includes("page")) rPage();
   if (S.cur && STACK.includes("arena")) arenaRender();
@@ -5424,11 +5483,11 @@ const closeSheetIf = () => {
   if (STACK.includes("sheet")) closeSheet();
 };
 ACT.tmode = b => {
-  $$("#tmode button").forEach(x => x.classList.toggle("on", x === b));
+  segPick(b);
   $("#t-fix").hidden = b.dataset.v !== "fix";
   $("#t-flex").hidden = b.dataset.v === "fix";
 };
-ACT.per = b => $$("#e-per button").forEach(x => x.classList.toggle("on", x === b));
+ACT.per = b => segPick(b);
 ACT.dur = b => {
   const i = $("#e-dur");
   i.value = clamp(num(i.value, 15) + num(b.dataset.d), 5, 600);
@@ -5494,7 +5553,7 @@ function addSheet(t) {
 ACT["inst-new"] = () => addTypeSheet();
 ACT["inst-new-type"] = b => addSheet(b.dataset.t);
 ACT.rmode = b => {
-  $$("#rmode button").forEach(x => x.classList.toggle("on", x === b));
+  segPick(b);
   $("#r-rec").hidden = b.dataset.v !== "rec";
   $("#r-once").hidden = b.dataset.v === "rec";
 };
@@ -5650,6 +5709,7 @@ function rActions() {
     `<div class="act-in"><div class="act-head"><h2 class="h3">Registrar</h2><button class="icon-btn" data-act="actions-close" aria-label="Fechar">${ic("x")}</button></div>
     ${v ? "" : `<form class="act-search" data-form="pal">${ic("search")}<input id="pal-q" type="text" autocomplete="off" autocapitalize="off" enterkeyhint="go" placeholder="ou escreva: água 500, frango 150…" aria-label="Escrever um registro"></form><div id="pal-res"></div>`}
     <div class="act-body" id="act-body">${body}</div></div>`;
+  ariaSeg($("#actions"));
 }
 function openActions(view = null) {
   UI.act = view;
@@ -5657,6 +5717,7 @@ function openActions(view = null) {
   pushLayer("actions");
   scrimSync();
   rActions();
+  focusLayer($("#actions"));
 }
 HIDE.actions = () => {
   $("#actions").classList.remove("on");
@@ -5695,6 +5756,7 @@ ACT["act-go"] = b => {
   }
   UI.act = k || null;
   rActions();
+  focusLayer($(k ? "#act-body" : "#actions"));
 };
 ACT["act-water"] = b => {
   const ml = num(b.dataset.ml);
@@ -6212,6 +6274,7 @@ function wkOpen() {
   pushLayer("arena");
   lockScreen();
   arenaRender();
+  focusLayer($("#arena"));
 }
 HIDE.arena = () => {
   $("#arena").classList.remove("on");
@@ -6840,7 +6903,7 @@ ACT.scale = b => {
   haptic(6);
 };
 ACT.perda = b => {
-  $$("#sc-perda button").forEach(x => x.classList.toggle("on", x === b));
+  segPick(b);
   UI.hg.perda = b.dataset.v === "1";
 };
 ACT.gat = b => {

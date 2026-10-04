@@ -188,11 +188,11 @@ const closeSheetIf = () => {
   if (STACK.includes("sheet")) closeSheet();
 };
 ACT.tmode = b => {
-  $$("#tmode button").forEach(x => x.classList.toggle("on", x === b));
+  segPick(b);
   $("#t-fix").hidden = b.dataset.v !== "fix";
   $("#t-flex").hidden = b.dataset.v === "fix";
 };
-ACT.per = b => $$("#e-per button").forEach(x => x.classList.toggle("on", x === b));
+ACT.per = b => segPick(b);
 ACT.dur = b => {
   const i = $("#e-dur");
   i.value = clamp(num(i.value, 15) + num(b.dataset.d), 5, 600);

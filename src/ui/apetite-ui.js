@@ -55,7 +55,7 @@ ACT.scale = b => {
   haptic(6);
 };
 ACT.perda = b => {
-  $$("#sc-perda button").forEach(x => x.classList.toggle("on", x === b));
+  segPick(b);
   UI.hg.perda = b.dataset.v === "1";
 };
 ACT.gat = b => {

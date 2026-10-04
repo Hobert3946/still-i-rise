@@ -33,7 +33,7 @@ function addSheet(t) {
 ACT["inst-new"] = () => addTypeSheet();
 ACT["inst-new-type"] = b => addSheet(b.dataset.t);
 ACT.rmode = b => {
-  $$("#rmode button").forEach(x => x.classList.toggle("on", x === b));
+  segPick(b);
   $("#r-rec").hidden = b.dataset.v !== "rec";
   $("#r-once").hidden = b.dataset.v === "rec";
 };

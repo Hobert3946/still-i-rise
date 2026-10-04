@@ -24,14 +24,50 @@ const TABS = {
 /* ---- pilha de camadas: cada camada aberta vira uma entrada no histórico (o "voltar" do celular fecha a de cima) ---- */
 const STACK = [],
   HIDE = {};
-const syncInert = () =>
+// só a camada de cima recebe toque, teclado e leitor de tela; as de baixo (inclusive uma página sob um painel) ficam inertes
+const LAYER_EL = { page: "#page", sheet: "#sheet", actions: "#actions", arena: "#arena" };
+const syncInert = () => {
   ["#top", "#view", "#tabbar"].forEach(s => {
     const e = $(s);
     if (e) e.inert = STACK.length > 0;
   });
+  Object.entries(LAYER_EL).forEach(([id, s]) => {
+    const e = $(s);
+    if (e) e.inert = STACK.includes(id) && STACK[STACK.length - 1] !== id;
+  });
+};
+// foco: ao abrir uma camada, guarda onde estava; ao fechar, volta para lá (ou para o botão equivalente, se a tela foi redesenhada)
+const FOCUS = {};
+const qv = v => String(v).replace(/["\\]/g, "\\$&");
+const focusKey = e => {
+  if (!e || e === document.body) return null;
+  if (e.id) return `[id="${qv(e.id)}"]`;
+  const d = e.dataset || {};
+  if (!d.act) return null;
+  return ["act", "id", "k", "m", "tab", "seg", "p", "v", "i"]
+    .filter(k => d[k] != null)
+    .map(k => `[data-${k}="${qv(d[k])}"]`)
+    .join("");
+};
+function focusBack(id) {
+  const f = FOCUS[id];
+  delete FOCUS[id];
+  if (!f) return;
+  const e = f.el.isConnected ? f.el : f.key && $(f.key);
+  if (e && !e.closest("[inert]")) e.focus({ preventScroll: true });
+}
+// leva o foco para o título da camada recém-aberta (o leitor de tela anuncia o que abriu)
+function focusLayer(root) {
+  const t = root && (root.querySelector("h2, h3") || root.querySelector("button, input, select, textarea"));
+  if (!t) return;
+  if (/^H\d$/.test(t.tagName)) t.tabIndex = -1;
+  t.focus({ preventScroll: true });
+}
 let skipPop = 0;
 function pushLayer(id) {
   if (STACK.includes(id)) return;
+  const a = document.activeElement;
+  FOCUS[id] = { el: a, key: focusKey(a) };
   STACK.push(id);
   document.body.classList.add("lock");
   syncInert();
@@ -46,6 +82,7 @@ function dropLayer(id, fromPop) {
   HIDE[id]();
   if (!STACK.length) document.body.classList.remove("lock");
   syncInert();
+  focusBack(id);
   if (!fromPop) {
     skipPop++;
     try {
@@ -98,44 +135,6 @@ function rTabbar() {
 const segBar = (tab, opts) =>
   `<div class="segbar" role="tablist" aria-label="Partes">${opts.map(([k, n]) => `<button role="tab" class="${UI.seg[tab] === k ? "on" : ""}" aria-selected="${UI.seg[tab] === k}" data-act="seg" data-seg="${k}">${n}</button>`).join("")}</div>`;
 
-/* ---- redesenhar sem perder o que a pessoa digitou ---- */
-// guarda os campos alterados (valor ≠ o de quando foram desenhados) e o foco, redesenha e devolve tudo,
-// a não ser que o valor salvo por trás do campo tenha mudado (aí vale o novo)
-const fieldDef = e =>
-  e.tagName === "SELECT"
-    ? ([...e.options].find(o => o.defaultSelected) || e.options[0] || {}).value
-    : /^(checkbox|radio)$/.test(e.type)
-      ? e.defaultChecked
-      : e.defaultValue;
-const fieldVal = e => (/^(checkbox|radio)$/.test(e.type) ? e.checked : e.value);
-function keepFields(root, draw) {
-  if (!root) return draw();
-  const a = document.activeElement,
-    kept = $$("input[id],textarea[id],select[id]", root)
-      .filter(e => e.type !== "file" && fieldVal(e) !== fieldDef(e))
-      .map(e => ({ id: e.id, def: fieldDef(e), val: fieldVal(e) }));
-  const focus = a && a.id && root.contains(a) ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
-  draw();
-  kept.forEach(k => {
-    const e = document.getElementById(k.id);
-    if (!e || !root.contains(e) || fieldDef(e) !== k.def) return;
-    if (/^(checkbox|radio)$/.test(e.type)) e.checked = k.val;
-    else e.value = k.val;
-  });
-  const f = focus && document.getElementById(focus.id);
-  if (f && root.contains(f) && document.activeElement !== f) {
-    f.focus({ preventScroll: true });
-    try {
-      f.setSelectionRange(focus.s, focus.e);
-    } catch (x) {}
-  }
-}
-// alguém digitando num campo da tela ou de uma página: o redesenho automático (relógio, voltar ao app) espera
-const typing = () => {
-  const a = document.activeElement;
-  return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!a.closest("#view,#page");
-};
-
 /* ---- páginas cheias (agenda, coach, ajustes) ---- */
 const PAGES = {}; // cada página registra PAGES.nome = { t: "Título", r: () => html, right: () => html }
 function openPage(name) {
@@ -170,6 +169,7 @@ function rPage(first) {
     const t = $("#page-t");
     if (t) t.focus({ preventScroll: true });
   }
+  ariaSeg($("#page"));
   if (p.after) p.after(first);
 }
 ACT.page = b => openPage(b.dataset.p);
@@ -183,6 +183,17 @@ function openSheet(html) {
   pushLayer("sheet");
   scrimSync();
   s.scrollTop = 0;
+  const h = s.querySelector("h2, h3");
+  if (h) {
+    h.id = "sheet-t";
+    s.setAttribute("aria-labelledby", "sheet-t");
+    s.removeAttribute("aria-label");
+  } else {
+    s.removeAttribute("aria-labelledby");
+    s.setAttribute("aria-label", "Detalhes");
+  }
+  ariaSeg(s);
+  focusLayer(s);
 }
 HIDE.sheet = () => {
   $("#sheet").classList.remove("on");

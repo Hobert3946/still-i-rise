@@ -22,6 +22,7 @@ function wkOpen() {
   pushLayer("arena");
   lockScreen();
   arenaRender();
+  focusLayer($("#arena"));
 }
 HIDE.arena = () => {
   $("#arena").classList.remove("on");

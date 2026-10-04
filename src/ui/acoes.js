@@ -60,6 +60,7 @@ function rActions() {
     `<div class="act-in"><div class="act-head"><h2 class="h3">Registrar</h2><button class="icon-btn" data-act="actions-close" aria-label="Fechar">${ic("x")}</button></div>
     ${v ? "" : `<form class="act-search" data-form="pal">${ic("search")}<input id="pal-q" type="text" autocomplete="off" autocapitalize="off" enterkeyhint="go" placeholder="ou escreva: água 500, frango 150…" aria-label="Escrever um registro"></form><div id="pal-res"></div>`}
     <div class="act-body" id="act-body">${body}</div></div>`;
+  ariaSeg($("#actions"));
 }
 function openActions(view = null) {
   UI.act = view;
@@ -67,6 +68,7 @@ function openActions(view = null) {
   pushLayer("actions");
   scrimSync();
   rActions();
+  focusLayer($("#actions"));
 }
 HIDE.actions = () => {
   $("#actions").classList.remove("on");
@@ -105,6 +107,7 @@ ACT["act-go"] = b => {
   }
   UI.act = k || null;
   rActions();
+  focusLayer($(k ? "#act-body" : "#actions"));
 };
 ACT["act-water"] = b => {
   const ml = num(b.dataset.ml);

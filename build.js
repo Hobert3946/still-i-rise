@@ -39,6 +39,7 @@ const JS = [
   "svc/fotos",
   "svc/lembretes",
   "ui/shell",
+  "ui/campos",
   "ui/avisos",
   "ui/parts",
   "ui/hoje",
