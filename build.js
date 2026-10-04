@@ -82,6 +82,15 @@ html = html
   .join(b64("logo-256.jpg"))
   .split("%%MARK%%")
   .join(b64("logo-mark.png"));
+// versão do build = hash do conteúdo (página + service worker). Mudou qualquer coisa, muda o número: o service
+// worker novo é detectado pelo celular sem ninguém precisar lembrar de subir a versão à mão.
+const swSrc = src("sw.js");
+const BUILD = crypto
+  .createHash("sha256")
+  .update(html + swSrc, "utf8")
+  .digest("hex")
+  .slice(0, 8);
+html = html.split("%%BUILD%%").join(BUILD);
 // CSP: só rodam os scripts deste arquivo (hash de cada um, sem 'unsafe-inline') e a rede só fala com o Gemini,
 // o GitHub (nuvem), a Wikipédia (foto do autor da frase) e o Google Fonts. Novo serviço externo? Inclua aqui.
 const scriptHashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
@@ -102,7 +111,8 @@ const CSP = [
 ].join("; ");
 html = html.replace("%%CSP%%", CSP);
 fs.writeFileSync(path.join(out, "index.html"), html, "utf8");
-["sw.js", "manifest.json"].forEach(f => fs.copyFileSync(path.join(__dirname, "src", f), path.join(out, f)));
+fs.writeFileSync(path.join(out, "sw.js"), swSrc.split("%%BUILD%%").join(BUILD), "utf8");
+fs.copyFileSync(path.join(__dirname, "src", "manifest.json"), path.join(out, "manifest.json"));
 ["icon-192.png", "icon-512.png", "icon-180.png"].forEach(f => fs.copyFileSync(asset(f), path.join(out, f)));
 fs.rmSync(path.join(out, "icon.svg"), { force: true });
-console.log("index.html:", (fs.statSync(path.join(out, "index.html")).size / 1024).toFixed(0), "KB");
+console.log("index.html:", (fs.statSync(path.join(out, "index.html")).size / 1024).toFixed(0), "KB · build", BUILD);

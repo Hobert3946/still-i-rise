@@ -4,7 +4,7 @@ PWA pessoal de treino, alimentação, saúde e hábitos para manter o peso depoi
 
 - Código-fonte: `src/` · Gerar o app: `node build.js` (saída em `docs/`, servida pelo GitHub Pages)
 - Testes: `npm test` (jsdom, confere também o formato) · Formatar: `npm run format` (Prettier)
-- Ao publicar, suba `V` em `src/sw.js` e `APP_VERSION` em `src/ui/ajustes-ui.js` (aparece no fim de Ajustes)
+- **Atualização automática:** o build gera um número de versão a partir do conteúdo (aparece no fim de Ajustes, ex.: `3.5.0 · 4b356adc`). Publicou (push na `main` com `docs/`), o app instalado no celular percebe sozinho ao voltar para a tela (e a cada 30 min) e recarrega na hora segura: em segundo plano, ou sem treino, painel aberto ou alguém digitando. `APP_VERSION` é só o nome da versão para pessoas.
 
 ## Princípio
 **A complexidade fica no sistema, não na tela.** O app responde primeiro "o que eu faço agora?". O resto aparece quando você toca.

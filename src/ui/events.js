@@ -140,7 +140,10 @@ document.addEventListener("change", e => {
 matchMedia("(prefers-color-scheme:dark)").addEventListener &&
   matchMedia("(prefers-color-scheme:dark)").addEventListener("change", () => R && applyTheme());
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden || !R) return;
+  if (!R) return;
+  updApply(); // em segundo plano é a hora mais segura para trocar de versão
+  if (document.hidden) return;
+  updCheck();
   if (RT.iv) restTick();
   if (S.cur && STACK.includes("arena")) lockScreen();
   applyTheme();

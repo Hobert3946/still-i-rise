@@ -1,10 +1,11 @@
-const V = "sir-v3-5-0";
+// 4b356adc vira o hash do conteúdo no build: cada publicação tem um service worker diferente
+const V = "sir-4b356adc";
 const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-180.png"];
 self.addEventListener("install", e => {
   e.waitUntil(
     caches
       .open(V)
-      .then(c => c.addAll(SHELL))
+      .then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))) // ignora o cache HTTP (até 10 min no GitHub Pages)
       .then(() => self.skipWaiting())
   );
 });
@@ -22,8 +23,9 @@ self.addEventListener("fetch", e => {
   const u = new URL(r.url);
   if (u.origin === location.origin) {
     const doc = r.mode === "navigate" || u.pathname.endsWith("/") || u.pathname.endsWith(".html");
+    // página: sempre pergunta ao servidor (no-cache revalida), para não servir uma versão velha do cache HTTP
     const net = () =>
-      fetch(r).then(res => {
+      (doc ? fetch(r.url, { cache: "no-cache", credentials: "same-origin" }) : fetch(r)).then(res => {
         if (res.ok) {
           const cp = res.clone();
           caches.open(V).then(c => c.put(r, cp));

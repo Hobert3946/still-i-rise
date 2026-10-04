@@ -76,7 +76,8 @@ function backupFold() {
     "backup"
   );
 }
-const APP_VERSION = "3.5.0"; // suba junto com V em src/sw.js ao publicar
+const APP_VERSION = "3.5.0"; // versão para pessoas (suba quando quiser marcar uma entrega)
+const APP_BUILD = "%%BUILD%%"; // hash do build: muda sozinho a cada publicação
 PAGES.ajustes = {
   t: "Perfil e ajustes",
   r: () => {
@@ -92,7 +93,9 @@ PAGES.ajustes = {
     }, 0);
     return `${sec("", profilesListHTML())}${sec("", goalsFold() + habitsFold() + prefsFold() + cloudFold() + backupFold())}
     <section class="card logo-card"><img src="%%LOGO%%" alt="Still I Rise, por Hobert Silva Santos, Salvador BR" width="200" height="200"></section>
-    <p class="powered">Powered by Hobert Silva</p><p class="powered small">Versão ${APP_VERSION}</p>`;
+    <p class="powered">Powered by Hobert Silva</p><p class="powered small">Versão ${APP_VERSION} · ${APP_BUILD}</p>
+    <button class="btn sm ghost full" data-act="upd-check">${ic("repeat")} Procurar atualização</button>
+    <p class="muted xs center">O app se atualiza sozinho quando você volta para ele.</p>`;
   }
 };
 ACT.notif = () => {
@@ -135,3 +138,15 @@ ACT.reset = () =>
       toast("Dados do perfil apagados.");
     }
   );
+ACT["upd-check"] = async () => {
+  if (!UPD.reg) return toast("Atualização automática só funciona no app publicado (https).");
+  toast("Procurando atualização…");
+  try {
+    await UPD.reg.update();
+  } catch (e) {
+    return toast("Sem conexão para procurar atualização.");
+  }
+  const novo = UPD.reg.installing || UPD.reg.waiting;
+  if (!novo) return toast(`Você já está na versão mais nova (${APP_VERSION} · ${APP_BUILD}).`);
+  toast("Versão nova encontrada. O app recarrega ao fechar esta tela.");
+};

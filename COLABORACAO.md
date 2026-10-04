@@ -11,7 +11,7 @@ Este app já quebrou duas vezes (tela em branco e "syntax error") porque várias
 5. **Um único ouvinte de clique.** Para uma nova ação, registre `ACT["nome-da-acao"] = (botao, evento) => {...}` no módulo e use `data-act="nome-da-acao"` no HTML. Sem `onclick` inline.
 6. **Segredos nunca saem do aparelho.** `gemKey`, `ghToken`, `ghGistId` e `ghPass` ficam só em `sir_secrets` (localStorage), fora do estado. Todo backup e toda cópia na nuvem passam por `safeState()`.
 7. **Não escreva na tela o que o app não sabe.** Sem alertas inventados (ex.: "pico glicêmico" sem medir glicose) e sem números fixos disfarçados de dados.
-8. **Mudou o app? Suba o cache.** Altere `V` em `src/sw.js` (e `APP_VERSION` em `src/ui/ajustes-ui.js`) a cada release, senão o celular pode continuar com a versão antiga.
+8. **A versão sobe sozinha.** O `build.js` gera o número do build pelo conteúdo e grava no `sw.js` e na página; o celular se atualiza sozinho. Não edite `V` à mão. `APP_VERSION` (em `src/ui/ajustes-ui.js`) é só o nome da versão para pessoas.
 9. **Novo serviço externo? Libere na CSP.** A lista de domínios fica em `build.js` (`connect-src`, `img-src`). Sem isso o navegador bloqueia a chamada.
 10. **A rotina não reescreve o passado.** Para mudar um item da agenda "sempre", use `schedChange` (guarda o histórico com o mesmo id) e, para tirar da rotina, `schedRemove` (encerra com `until`). Não apague nem recrie itens: as doses registradas apontam para o id.
 11. **Sem janelas do navegador.** Nada de `confirm`, `alert` ou `prompt`: use `askConfirm` (painel do app) ou, se dá para voltar atrás, faça e ofereça `undoable` ("Desfazer"). O teste confere.

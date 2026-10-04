@@ -43,6 +43,7 @@ async function boot(opts = {}) {
       if (opts.v1) w.localStorage.setItem("sir_v1", JSON.stringify(opts.v1));
       if (opts.v2) w.localStorage.setItem("sir_v2", JSON.stringify(opts.v2));
       if (opts.sec) w.localStorage.setItem("sir_secrets", JSON.stringify(opts.sec));
+      Object.entries(opts.ls || {}).forEach(([k, v]) => w.localStorage.setItem(k, v));
       if (opts.fetch) w.fetch = opts.fetch;
     }
   });
