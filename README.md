@@ -3,7 +3,8 @@
 PWA pessoal de treino, alimentação, saúde e hábitos para manter o peso depois de uma grande perda. JavaScript puro, sem backend, sem framework. Feita para o celular (instalada na tela inicial).
 
 - Código-fonte: `src/` · Gerar o app: `node build.js` (saída em `docs/`, servida pelo GitHub Pages)
-- Testes: `npm test` (jsdom) · Ao publicar, suba `V` em `src/sw.js` e `APP_VERSION` em `src/ui/ajustes-ui.js` (aparece no fim de Ajustes)
+- Testes: `npm test` (jsdom, confere também o formato) · Formatar: `npm run format` (Prettier)
+- **Atualização automática:** o build gera um número de versão a partir do conteúdo (aparece no fim de Ajustes, ex.: `3.5.0 · 4b356adc`). Publicou (push na `main` com `docs/`), o app instalado no celular percebe sozinho ao voltar para a tela (e a cada 30 min) e recarrega na hora segura: em segundo plano, ou sem treino, painel aberto ou alguém digitando. `APP_VERSION` é só o nome da versão para pessoas.
 
 ## Princípio
 **A complexidade fica no sistema, não na tela.** O app responde primeiro "o que eu faço agora?". O resto aparece quando você toca.
@@ -16,14 +17,18 @@ Barra de baixo com 4 seções com nome e a **logo no centro**:
 
 - **Coach:** botão fixo no canto de cima, em qualquer seção.
 - **Perfil e ajustes:** toque no seu avatar, no canto de cima à esquerda.
+- **Primeira vez:** a tela de boas-vindas pede nome, sexo biológico, peso, meta, altura e idade (ou restaura de um backup .json ou da nuvem).
 - **Voltar:** o botão voltar do celular fecha a camada de cima.
+- **Dicas:** explicações e gestos (segurar, arrastar) aparecem até você tocar em "Entendi". Ajustes › Aparência mostra todas de novo.
+- **Apagar ou substituir** pede confirmação no próprio app. Tirar da rotina, remover remédio, hábito, suplemento ou meta é imediato, com **Desfazer** no aviso.
+- **Números** sempre no padrão brasileiro (138,5 kg).
 
 ### Hoje
-- **Card AGORA:** uma única ação, a mais relevante do momento. Pode ser o treino em 5 min, uma dose atrasada, o almoço, a água atrás do ritmo, "como dormiu?", "como está sua fome?", a Regra nº 1, a pesagem de segunda ou um alerta (ausência, dor, deload, backup). "Depois" adia por 30 min.
+- **Card AGORA (abre a tela, aberto):** uma única ação, a mais relevante do momento. Pode ser o treino em 5 min, uma dose atrasada, o almoço, a água atrás do ritmo, "como dormiu?", "como está sua fome?", a Regra nº 1, a pesagem de segunda ou um alerta (ausência, dor, deload, backup). "Depois" adia por 30 min. Dá para recolher o card numa linha (fica salvo no aparelho), mas o que é urgente (dose atrasada, treino em andamento) aparece sempre aberto.
 - **"Seu dia está X% alinhado":** tocar mostra o que conta e quanto, e deixa marcar os hábitos ali mesmo. Só entra no cálculo o que já dá para medir.
 - **Água, proteína e calorias** em três barras.
 - **A seguir:** os próximos itens da agenda.
-- **Rodapé:** frase do dia, dica do dia e próximo marco (ao tocar).
+- **Frase do dia** compacta, com a foto do autor, e **rodapé** com dica do dia e próximo marco (ao tocar).
 
 ### Agenda (Hoje → "Agenda")
 A rotina não tem horário fixo. Cada item é de um destes tipos:
@@ -34,6 +39,7 @@ A rotina não tem horário fixo. Cada item é de um destes tipos:
 
 Como editar:
 - **Tocar** num item abre a edição: horário, duração, dias, concluir, pular, duplicar, reagendar e excluir. Toda mudança pergunta **"Só neste dia" ou "Sempre"**.
+- **"Sempre" vale do dia escolhido em diante.** Os dias anteriores continuam como eram, e "Tirar da rotina" também não apaga o passado.
 - **Arrastar pela alça ⋮⋮** muda o horário (de 15 em 15 min), só naquele dia. O aviso que aparece oferece "Aplicar sempre".
 - **+ Adicionar** cria atividade, consulta, hábito, suplemento, refeição, treino ou meta diária.
 
@@ -65,7 +71,7 @@ Como editar:
 - **Corpo:** peso, gráfico, IMC, cintura, marcos, pescoço (acantose), ritmo das 8 semanas, **fotos de progresso** (só no aparelho) e protocolo de recaída.
 - **Remédios:** área sóbria.
   - dose **informada por você** conforme a receita; o app nunca sugere dose
-  - horários na agenda
+  - horários na agenda (mudar um horário vale de hoje em diante; as doses já registradas e a adesão continuam)
   - "Registrar dose", com a hora registrada
   - adesão de 30 dias
   - **perguntas para a próxima consulta**
@@ -78,15 +84,29 @@ Como editar:
 
   Não recomenda nada, não dá dose e não promete perda de peso. Cada opção tem o botão "Quero perguntar ao médico".
 
+## Lembretes
+O app gera um arquivo `.ics` que o calendário do celular importa, e os avisos tocam mesmo com o app fechado (Ajustes › Lembretes).
+- Os horários vêm da **Agenda**: remédios (com a dose), treino e consultas vêm marcados; suplementos, hábitos, refeições e atividades podem ser marcados.
+- Itens sem horário fixo não entram. Pesagem semanal e copos de água ficam como lembretes extras.
+- Dá para avisar na hora, 10 ou 30 min antes. Mudou a agenda? Gere o arquivo de novo.
+
 ## Dados
 - **Perfis:** cada perfil guarda os próprios dias, treinos, agenda, remédios, apetite, favoritos e conversa.
 - **3 camadas de backup:**
   1. localStorage
   2. espelho em IndexedDB
-  3. arquivo `.json` exportado
+  3. arquivo `.json` exportado (no iPhone, "Compartilhar backup" manda direto para WhatsApp ou Drive)
 
   Além delas, há a cópia automática num gist secreto do GitHub.
-- **Segredos:** a chave do Gemini, o token e o gist ficam em `sir_secrets`, só neste aparelho, fora de todo backup (`safeState()`).
+- **Nuvem (gist):**
+  - Num aparelho novo, "Salvar" não envia nada se o gist já tem dados: o app pergunta qual versão vale. "Baixar da nuvem" lê os campos da tela.
+  - Antes de cada envio automático, o app confere se outro aparelho mudou o gist. Se mudou, a cópia automática para e o card Agora pede para escolher.
+  - **Senha da cópia** (opcional): os dados vão criptografados (PBKDF2 + AES-GCM) e só abrem com ela.
+  - Ajustes › Nuvem tem um passo a passo com link que já cria o token com a permissão certa. O Coach tem o passo a passo da chave do Gemini.
+- **Segredos:** a chave do Gemini, o token, o gist e a senha da nuvem ficam em `sir_secrets`, só neste aparelho, fora de todo backup (`safeState()`).
+- **Metas:** Mifflin-St Jeor com o sexo biológico do perfil (perfis antigos sem sexo informado seguem com a fórmula masculina).
+- **Acessibilidade:** contraste AA nos dois temas e nas 12 paletas, letra mínima de 12 px, foco no painel que abre (e de volta ao fechar), botões de escolha com estado para leitor de tela.
+- **Segurança:** a página tem uma CSP gerada no build (hash de cada script, sem `unsafe-inline`); a rede só fala com Gemini, GitHub, Wikipédia e Google Fonts.
 - **Fotos de progresso:** ficam só no IndexedDB do aparelho.
 - **Migração:** os dados antigos migram sozinhos.
   - `sir_v1` é preservado para permitir rollback.

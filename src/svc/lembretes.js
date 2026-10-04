@@ -1,59 +1,207 @@
-/* ============ LEMBRETES: gera um arquivo .ics para o calendário do celular ============ */
-// id, texto, horário padrão, dias (ICS BYDAY) ou null = todo dia, mensagem
-const REMS = [
-  ["treino", "Treino (segunda a sexta)", "04:50", "MO,TU,WE,TH,FR", "Hora de se preparar para o treino. Água, tênis e vamos."],
-  ["pesagem", "Pesagem (segunda, ao acordar)", "05:15", "MO", "Dia de pesagem: depois do banheiro, antes de comer. Meça a cintura junto."],
-  ["supl", "Suplementos", "08:00", null, "Suplementos do dia: creatina, vitamina D e os demais."],
-  ["a1", "Água 1", "07:00", null, "Beba um copo de água."],
-  ["a2", "Água 2", "09:00", null, "Beba um copo de água."],
-  ["a3", "Água 3", "11:00", null, "Beba um copo de água."],
-  ["a4", "Água 4", "13:00", null, "Beba um copo de água."],
-  ["a5", "Água 5", "15:00", null, "Beba um copo de água."],
-  ["a6", "Água 6", "17:00", null, "Beba um copo de água."],
-  ["a7", "Água 7", "19:00", null, "Última água do dia. Feche a meta."],
-  ["dormir", "Preparar para dormir", "21:00", null, "Telas fora. Deitar às 21:30 para acordar inteiro às 04:50."]
+/* ============ LEMBRETES: gera um arquivo .ics para o calendário do celular (toca com o app fechado) ============ */
+// Os horários vêm da Agenda: remédios, treino, consultas, suplementos, hábitos, refeições e atividades com hora marcada.
+// Itens flexíveis (sem hora) não entram. Fora da agenda: pesagem semanal e copos de água (metas sem horário).
+// Configuração em S.settings.rem: { "ag:<id do item>": { on }, pesagem: { on, t }, a1: { on, t }, ... } e S.settings.remLead (min antes).
+const REM_EXTRA = [
+  [
+    "pesagem",
+    "Pesagem (segunda, ao acordar)",
+    "06:30",
+    "MO",
+    "Dia de pesagem: depois do banheiro, antes de comer. Meça a cintura junto."
+  ],
+  ...["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00"].map((t, i) => [
+    `a${i + 1}`,
+    `Água ${i + 1}`,
+    t,
+    null,
+    i === 6 ? "Última água do dia. Feche a meta." : "Beba um copo de água."
+  ])
 ];
-const REM_DEF_ON = { treino: 1, pesagem: 1, supl: 1, a1: 1, a3: 1, a4: 1, a5: 1, a7: 1, dormir: 1 };
-const REM_TITLE = { treino: "Still I Rise: treino", pesagem: "Still I Rise: pesagem", supl: "Still I Rise: suplementos", dormir: "Still I Rise: hora de dormir" };
+const REM_EXTRA_ON = { pesagem: 1, a1: 1, a3: 1, a4: 1, a5: 1, a7: 1 };
+const REM_TYPE_ON = { remedio: 1, treino: 1, consulta: 1 };
+const REM_LEADS = [
+  [0, "Na hora"],
+  [10, "10 min antes"],
+  [30, "30 min antes"]
+];
+const REM_ORDER = ["remedio", "treino", "consulta", "suplemento", "habito", "refeicao", "atividade"];
 const DAYCODE = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
-function remSaved(id, def) { const r = (S.settings.rem || {})[id]; return r || { on: !!REM_DEF_ON[id], t: def }; }
+// itens da agenda com horário fixo que ainda vão acontecer
+const remItems = () =>
+  S.sched.items
+    .map(x => defOn(x, today()))
+    .filter(x => live(x) && x.at && (x.date ? x.date >= today() : x.days.length))
+    .sort((a, b) => REM_ORDER.indexOf(a.type) - REM_ORDER.indexOf(b.type) || toMin(a.at) - toMin(b.at));
+const remCfg = () => S.settings.rem || {};
+const remOnAg = it => {
+  const r = remCfg()["ag:" + it.id];
+  return r ? !!r.on : !!REM_TYPE_ON[it.type];
+};
+const remExtra = (id, def) => remCfg()[id] || { on: !!REM_EXTRA_ON[id], t: def };
 function remSheet() {
+  const ag = remItems(),
+    lead = S.settings.remLead || 0;
+  const agRow = it =>
+    `<div class="li"><label class="grow row"><input type="checkbox" class="cbx" data-rem="ag:${it.id}" ${remOnAg(it) ? "checked" : ""}><span class="grow"><b>${esc(TYPES[it.type][0])}: ${esc(it.title)}</b><small class="muted">${recTxt(it)} às ${it.at}</small></span></label></div>`;
+  const exRow = ([id, nm, def]) => {
+    const r = remExtra(id, def);
+    return `<div class="li"><label class="grow row"><input type="checkbox" class="cbx" data-rem="${id}" ${r.on ? "checked" : ""}><span>${nm}</span></label><input type="time" class="field time" data-remt="${id}" value="${esc(r.t)}" aria-label="Horário: ${nm}"></div>`;
+  };
   openSheet(`<h3 class="h3">Lembretes no calendário</h3>
-  <p class="muted">Marque o que quer e ajuste o horário. O app cria um arquivo que o calendário do celular importa e passa a tocar todo dia, mesmo com o app fechado.</p>
-  <div class="list">${REMS.map(([id, nm, def, days]) => { const r = remSaved(id, def); return `<div class="li"><label class="grow row"><input type="checkbox" data-rem="${id}" ${r.on ? "checked" : ""} class="cbx"><span>${nm}</span></label><input type="time" class="field time" data-remt="${id}" value="${r.t}" aria-label="Horário: ${nm}"></div>`; }).join("")}</div>
-  <p class="muted" style="font-size:14px">O som e a vibração vêm das configurações do calendário. Se quiser tocar como despertador, deixe o volume de notificações do calendário alto.</p>
-  <button class="btn solid full" data-act="rem-gen">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>`);
+  <p class="muted">Os horários vêm da sua Agenda. O app cria um arquivo que o calendário do celular importa e passa a tocar mesmo com o app fechado. Mudou a agenda? Gere o arquivo de novo.</p>
+  <div class="lbl">Da agenda</div><div class="list">${ag.map(agRow).join("") || `<p class="muted small">Nenhum item com horário na agenda.</p>`}</div>
+  <p class="muted xs">Itens sem horário fixo não entram. Para mudar um horário, edite na Agenda.</p>
+  <div class="lbl">Fora da agenda</div><div class="list">${REM_EXTRA.map(exRow).join("")}</div>
+  <label class="lbl" for="rem-lead">Avisar</label><select class="field" id="rem-lead">${REM_LEADS.map(([v, n]) => `<option value="${v}" ${v === lead ? "selected" : ""}>${n}</option>`).join("")}</select>
+  <p class="muted" style="font-size:14px">O som e a vibração vêm das configurações do calendário. Ao importar de novo, apague os eventos antigos para não duplicar.</p>
+  <button class="btn solid full" data-act="rem-gen" data-m="file">${ic("download")} BAIXAR E ADICIONAR AO CALENDÁRIO</button>
+  ${shareFiles("x.ics", "text/calendar") ? `<button class="btn ghost full" data-act="rem-gen" data-m="share">${ic("upload")} Compartilhar o arquivo (e-mail, Arquivos...)</button>` : ""}`);
 }
-function nextStart(days, hhmm) {
-  const [h, m] = hhmm.split(":").map(Number), now = new Date(), c = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-  const ok = d => !days || days.split(",").includes(DAYCODE[d.getDay()]);
+// primeira ocorrência a partir de agora (ou do primeiro dia da rotina), nos dias da semana pedidos
+function nextStart(days, hhmm, from) {
+  const [h, m] = hhmm.split(":").map(Number),
+    now = new Date(),
+    f = from && from > today() ? parseKey(from) : now;
+  const c = new Date(f.getFullYear(), f.getMonth(), f.getDate(), h, m),
+    ok = d => !days || days.split(",").includes(DAYCODE[d.getDay()]);
   if (c <= now) c.setDate(c.getDate() + 1);
   while (!ok(c)) c.setDate(c.getDate() + 1);
   return c;
 }
-const icsLocal = d => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}00`;
-const icsEsc = s => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
-function buildICS(sel) {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z/, "Z");
-  const ev = sel.map(({ id, t }) => {
-    const r = REMS.find(x => x[0] === id), days = r[3], st = nextStart(days, t), en = new Date(st.getTime() + 10 * 60000);
-    const title = REM_TITLE[id] || "Still I Rise: água";
-    return ["BEGIN:VEVENT", `UID:sir-${id}@still-i-rise`, `DTSTAMP:${stamp}`, `DTSTART:${icsLocal(st)}`, `DTEND:${icsLocal(en)}`,
-      `RRULE:FREQ=${days ? "WEEKLY;BYDAY=" + days : "DAILY"}`, `SUMMARY:${icsEsc(title)}`, `DESCRIPTION:${icsEsc(r[4])}`,
-      "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEsc(title)}`, "TRIGGER:PT0M", "END:VALARM", "END:VEVENT"].join("\r\n");
+const icsLocal = d =>
+  `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+const icsEsc = s => String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+function icsEvent(uid, title, desc, st, dur, rrule, lead, stamp) {
+  const en = new Date(st.getTime() + Math.max(5, dur || 10) * 60000);
+  return [
+    "BEGIN:VEVENT",
+    `UID:sir-${uid}@still-i-rise`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${icsLocal(st)}`,
+    `DTEND:${icsLocal(en)}`,
+    ...(rrule ? [`RRULE:${rrule}`] : []),
+    `SUMMARY:${icsEsc(title)}`,
+    `DESCRIPTION:${icsEsc(desc)}`,
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${icsEsc(title)}`,
+    `TRIGGER:${lead ? `-PT${lead}M` : "PT0M"}`,
+    "END:VALARM",
+    "END:VEVENT"
+  ].join("\r\n");
+}
+// título e texto do aviso de cada tipo de item da agenda
+function remText(it) {
+  if (it.type === "remedio") {
+    const m = medById(it.ref) || {};
+    return [
+      `Remédio: ${it.title}`,
+      [m.dose, m.withMeal ? "Tomar com a refeição." : "", "Registre a dose no app."].filter(Boolean).join(" ")
+    ];
+  }
+  if (it.type === "suplemento") {
+    const s = S.supps.find(x => x.id === it.ref) || {};
+    return [`Suplemento: ${it.title}`, s.tip || "Marque no app quando tomar."];
+  }
+  if (it.type === "consulta") return [`Consulta: ${it.title}`, "Leve suas perguntas para o médico (Saúde › Remédios)."];
+  if (it.type === "treino") return ["Treino", "Hora de se preparar para o treino. Água, tênis e vamos."];
+  if (it.type === "refeicao") return [it.title, "Registre a refeição no app."];
+  return [it.title, ""];
+}
+function buildICS(keys, lead = 0) {
+  const stamp = new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d+Z/, "Z"),
+    ev = [];
+  keys.forEach(key => {
+    if (key.startsWith("ag:")) {
+      const raw = S.sched.items.find(x => x.id === key.slice(3));
+      if (!raw || !live(raw)) return;
+      const it = defOn(raw, today()),
+        [title, desc] = remText(it);
+      if (it.date) {
+        const st = new Date(`${it.date}T${it.at}:00`);
+        if (st > new Date()) ev.push(icsEvent(it.id, title, desc, st, it.dur, "", lead, stamp));
+        return;
+      }
+      const days = it.days.map(d => DAYCODE[d]).join(","),
+        until = it.until ? `;UNTIL=${it.until.replace(/-/g, "")}T235959` : "";
+      ev.push(
+        icsEvent(
+          it.id,
+          title,
+          desc,
+          nextStart(days, it.at, it.from),
+          it.dur,
+          (it.days.length === 7 ? "FREQ=DAILY" : "FREQ=WEEKLY;BYDAY=" + days) + until,
+          lead,
+          stamp
+        )
+      );
+    } else {
+      const r = REM_EXTRA.find(x => x[0] === key);
+      if (!r) return;
+      const t = remExtra(key, r[2]).t,
+        title = key === "pesagem" ? "Pesagem" : "Água";
+      ev.push(
+        icsEvent(
+          key,
+          title,
+          r[4],
+          nextStart(r[3], t),
+          10,
+          r[3] ? "FREQ=WEEKLY;BYDAY=" + r[3] : "FREQ=DAILY",
+          lead,
+          stamp
+        )
+      );
+    }
   });
-  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Still I Rise//PT-BR//", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Still I Rise", ...ev, "END:VCALENDAR"].join("\r\n") + "\r\n";
+  return {
+    n: ev.length,
+    txt:
+      [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Still I Rise//PT-BR//",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:Still I Rise",
+        ...ev,
+        "END:VCALENDAR"
+      ].join("\r\n") + "\r\n"
+  };
 }
 ACT["rem-open"] = remSheet;
-ACT["rem-gen"] = () => {
-  const cfg = {}, sel = [];
-  REMS.forEach(([id, , def]) => {
-    const on = $(`[data-rem="${id}"]`).checked, t = $(`[data-remt="${id}"]`).value || def;
-    cfg[id] = { on, t }; if (on) sel.push({ id, t });
+ACT["rem-gen"] = async b => {
+  const cfg = {},
+    sel = [];
+  $$("#sheet [data-rem]").forEach(c => {
+    const id = c.dataset.rem,
+      t = $(`#sheet [data-remt="${id}"]`);
+    cfg[id] = t
+      ? { on: c.checked, t: /^\d\d:\d\d$/.test(t.value) ? t.value : REM_EXTRA.find(x => x[0] === id)[2] }
+      : { on: c.checked };
+    if (c.checked) sel.push(id);
   });
-  S.settings.rem = cfg; save();
+  S.settings.rem = cfg;
+  S.settings.remLead = num($("#rem-lead").value, 0);
+  save();
   if (!sel.length) return toast("Marque pelo menos um lembrete.");
-  download(new Blob([buildICS(sel)], { type: "text/calendar;charset=utf-8" }), "still-i-rise-lembretes.ics");
-  closeSheet(); toast(`${sel.length} lembretes gerados. Abra o arquivo para adicionar.`);
+  const ics = buildICS(sel, S.settings.remLead);
+  const how = await deliverFile(
+    new Blob([ics.txt], { type: "text/calendar" }),
+    "still-i-rise-lembretes.ics",
+    b.dataset.m === "share" ? "share" : "file"
+  );
+  if (!how) return;
+  closeSheet();
+  toast(
+    how === "shared"
+      ? `${ics.n} lembretes compartilhados.`
+      : `${ics.n} lembretes gerados. Abra o arquivo para adicionar.`
+  );
 };
