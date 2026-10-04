@@ -2,16 +2,18 @@
 // S.meds = [{ id, n, dose, withMeal, doctor, start, notes }] · horários = itens "remedio" da agenda (ref = id)
 // dose tomada: D(dia).med[idDoItemDaAgenda] = "HH:MM"
 const medById = id => (S.meds || []).find(m => m.id === id);
-const medItems = id => S.sched.items.filter(x => x.type === "remedio" && x.ref === id);
+const medItems = id => S.sched.items.filter(x => x.type === "remedio" && x.ref === id && live(x));
 const medTimes = id => medItems(id).map(x => x.at).filter(Boolean).sort();
 function medSave(o, times) {
   if (!o.id) delete o.id;
   let m = o.id && medById(o.id);
   if (m) Object.assign(m, o); else { m = Object.assign({ id: uid("m"), start: today() }, o); S.meds.push(m); }
-  // horários: mantém os itens que continuam, cria os novos, remove os que saíram
-  const keep = medItems(m.id);
-  keep.filter(x => !times.includes(x.at)).forEach(x => S.sched.items.splice(S.sched.items.indexOf(x), 1));
-  times.filter(t => !keep.some(x => x.at === t)).forEach(t => S.sched.items.push(schedItem("remedio", m.id, m.n, { at: t, dur: 5 })));
+  // horários: os que continuam ficam; um horário trocado muda a partir de hoje no mesmo item (as doses passadas
+  // apontam para ele); os que saíram deixam a rotina a partir de hoje; os novos começam hoje
+  const k = today(), cur = medItems(m.id), keep = cur.filter(x => x.at && times.includes(x.at));
+  const old = cur.filter(x => !keep.includes(x)).sort((a, b) => toMin(a.at) - toMin(b.at)), add = times.filter(t => !keep.some(x => x.at === t)).sort();
+  old.forEach((x, i) => i < add.length ? schedChange(x, k, { at: add[i], period: "" }) : schedRemove(k, x.id, true));
+  add.slice(old.length).forEach(t => S.sched.items.push(schedItem("remedio", m.id, m.n, { at: t, dur: 5, from: k })));
   medItems(m.id).forEach(x => x.title = m.n);
   save(); return m;
 }

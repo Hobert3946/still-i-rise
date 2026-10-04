@@ -56,11 +56,11 @@ ACT["li-save"] = b => listSave(b.dataset.k, +b.dataset.i);
 // subir/descer pelo painel de edição (acessível sem arrastar); o painel continua aberto no item movido
 ACT["li-move"] = b => { const k = b.dataset.k, i = +b.dataset.i, j = i + num(b.dataset.d); listMove(k, i, j); if (j >= 0 && j < LISTS[k]().length) (k === "habits" ? habitSheet : suppSheet)(j); };
 // o horário do suplemento é um item da agenda (cria, atualiza ou deixa flexível pela manhã)
-const suppItem = id => S.sched.items.find(x => x.type === "suplemento" && x.ref === id);
+const suppItem = id => S.sched.items.find(x => x.type === "suplemento" && x.ref === id && live(x));
 const suppAt = id => (suppItem(id) || {}).at || "";
 const suppWhen = id => { const x = suppItem(id); return !x ? "fora da agenda" : x.at ? "às " + x.at : PERIODS[x.period].toLowerCase(); };
-const habitWhen = id => { const x = S.sched.items.find(y => y.type === "habito" && y.ref === id); return !x ? "o dia todo" : x.at ? "às " + x.at : PERIODS[x.period].toLowerCase(); };
-function suppSync(s, at) { const x = suppItem(s.id); if (x) Object.assign(x, { at, period: at ? "" : "manha", title: s.n }); else S.sched.items.push(schedItem("suplemento", s.id, s.n, { at, period: at ? "" : "manha", dur: 5 })); }
+const habitWhen = id => { const x = S.sched.items.find(y => y.type === "habito" && y.ref === id && live(y)); return !x ? "o dia todo" : x.at ? "às " + x.at : PERIODS[x.period].toLowerCase(); };
+function suppSync(s, at) { const x = suppItem(s.id); if (x) { schedChange(x, today(), { at, period: at ? "" : "manha" }); x.title = s.n; } else S.sched.items.push(schedItem("suplemento", s.id, s.n, { at, period: at ? "" : "manha", dur: 5, from: today() })); }
 ACT["li-del"] = b => {
   const k = b.dataset.k, i = +b.dataset.i, a = LISTS[k](), it = a[i]; if (!it) return;
   if (k === "habits" && it.id === S.settings.rule1) return toast("Escolha outra Regra nº 1 antes de remover este hábito.");

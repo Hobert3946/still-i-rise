@@ -1428,9 +1428,12 @@ function getMetabolicAdvice(k = today()) {
 }
 
 /* ============ AGENDA: rotina ≠ horário fixo ============ */
-// item = { id, type, ref, title, days:[0..6] (recorrente) | date:"AAAA-MM-DD" (evento único), at:"HH:MM" ("" = flexível), period, dur }
+// item = { id, type, ref, title, days:[0..6] (recorrente) | date:"AAAA-MM-DD" (evento único), at:"HH:MM" ("" = flexível), period, dur,
+//          from, until (primeiro e último dia na rotina), hist: [{ until, days, at, period, dur }] (como era até aquele dia) }
 // type: treino | refeicao | remedio | suplemento | habito | atividade | consulta
 // S.sched.ov[dia][id] = exceções só daquele dia: { at, dur, period, skip, done }
+// Mudar "sempre" vale do dia escolhido em diante: o que valia antes vira histórico, com o mesmo id. Assim os dias
+// passados (e as doses registradas neles, que apontam para o id) continuam como eram.
 const TYPES = {
   treino: ["Treino", "dumb"], refeicao: ["Refeição", "fork"], remedio: ["Remédio", "pill"], suplemento: ["Suplemento", "leaf"],
   habito: ["Hábito", "check"], atividade: ["Atividade", "flame"], consulta: ["Consulta", "user"]
@@ -1452,7 +1455,10 @@ function defaultSched(p) {
 }
 const ovOf = (k, id) => ((S.sched.ov[k] || {})[id]) || {};
 function setOv(k, id, patch) { const d = S.sched.ov[k] = S.sched.ov[k] || {}; d[id] = Object.assign(d[id] || {}, patch); save(); }
-const occurs = (it, k) => it.date ? it.date === k : it.days.includes(parseKey(k).getDay()) && (!it.from || k >= it.from) && (!it.until || k <= it.until);
+const SCHED_F = ["days", "at", "period", "dur"];
+const defOn = (it, k) => { const h = (it.hist || []).find(x => k <= x.until); return h ? Object.assign({}, it, h) : it; };
+const live = (it, k = today()) => !it.until || it.until >= k;
+const occurs = (it, k) => it.date ? it.date === k : (!it.from || k >= it.from) && (!it.until || k <= it.until) && defOn(it, k).days.includes(parseKey(k).getDay());
 // feito? cada tipo olha o registro real do dia (refeição registrada, dose tomada, hábito marcado...)
 function instDone(it, k, o) {
   const d = D(k);
@@ -1465,17 +1471,28 @@ function instDone(it, k, o) {
   return false;
 }
 function instances(k = dayK()) {
-  return S.sched.items.filter(it => occurs(it, k)).map(it => {
-    const o = ovOf(k, it.id), at = o.at != null ? o.at : it.at, period = o.period != null ? o.period : it.period;
+  return S.sched.items.filter(it => occurs(it, k)).map(item => {
+    const it = defOn(item, k), o = ovOf(k, it.id), at = o.at != null ? o.at : it.at, period = o.period != null ? o.period : it.period;
     const skip = !!o.skip || (it.type === "treino" && !!D(k).skipWk);
     return { id: it.id, it, k, at, period, dur: o.dur || it.dur, skip, done: instDone(it, k, o), min: at ? toMin(at) : PERIOD_MIN[period], flex: !at, moved: o.at != null && o.at !== it.at };
   }).sort((a, b) => a.min - b.min);
 }
 const hasTrainItem = k => instances(k).some(x => x.it.type === "treino");
-// editar: "só hoje" vira exceção do dia; "sempre" muda a rotina (a partir de hoje)
+// muda a rotina do dia k em diante; o que valia na véspera vira histórico
+function schedChange(it, k, patch) {
+  const prev = addDays(k, -1), cur = defOn(it, prev), hs = it.hist || [], cp = v => Array.isArray(v) ? v.slice() : v;
+  const changes = SCHED_F.some(f => f in patch && JSON.stringify(patch[f]) !== JSON.stringify(cur[f]));
+  if (changes && (!it.from || it.from <= prev) && !hs.some(h => h.until === prev)) {
+    const snap = { until: prev }; SCHED_F.forEach(f => snap[f] = cp(cur[f]));
+    hs.push(snap); hs.sort((a, b) => a.until < b.until ? -1 : 1);
+  }
+  hs.filter(h => h.until >= k).forEach(h => SCHED_F.forEach(f => { if (f in patch) h[f] = cp(patch[f]); }));
+  Object.assign(it, patch); if (hs.length) it.hist = hs;
+}
+// editar: "só neste dia" vira exceção do dia; "sempre" muda a rotina a partir do dia k
 function schedEdit(k, id, patch, always) {
   const it = S.sched.items.find(x => x.id === id); if (!it) return;
-  if (always || it.date) { Object.assign(it, patch); if (S.sched.ov[k] && S.sched.ov[k][id]) ["at", "dur", "period"].forEach(f => { if (f in patch) delete S.sched.ov[k][id][f]; }); save(); }
+  if (always || it.date) { if (it.date) Object.assign(it, patch); else schedChange(it, k, patch); if (S.sched.ov[k] && S.sched.ov[k][id]) ["at", "dur", "period"].forEach(f => { if (f in patch) delete S.sched.ov[k][id][f]; }); save(); }
   else setOv(k, id, patch);
 }
 function schedSkip(k, id, v = true) {
@@ -1483,15 +1500,20 @@ function schedSkip(k, id, v = true) {
   setOv(k, id, { skip: v }); if (it.type === "treino") { DW(k).skipWk = v; save(); }
 }
 function schedDone(k, id, v = true) { setOv(k, id, { done: v }); }
-function schedAdd(o) { const it = schedItem(o.type || "atividade", o.ref, o.title, o); S.sched.items.push(it); save(); return it; }
-// excluir: evento único some; recorrente pode sair só hoje (pular) ou da rotina
+// item recorrente novo começa hoje (ou no dia informado em o.from): não aparece nos dias passados
+function schedAdd(o) { const it = schedItem(o.type || "atividade", o.ref, o.title, o.date ? o : Object.assign({ from: today() }, o)); S.sched.items.push(it); save(); return it; }
+// excluir: evento único some; recorrente pode sair só neste dia (pular) ou da rotina do dia k em diante
 function schedRemove(k, id, always) {
   const i = S.sched.items.findIndex(x => x.id === id); if (i < 0) return;
-  if (always || S.sched.items[i].date) { S.sched.items.splice(i, 1); save(); } else schedSkip(k, id, true);
+  const it = S.sched.items[i];
+  if (!always && !it.date) return schedSkip(k, id, true);
+  if (it.date || (it.from && it.from >= k)) S.sched.items.splice(i, 1); else it.until = addDays(k, -1);
+  save();
 }
 function schedDuplicate(k, id) {
   const it = S.sched.items.find(x => x.id === id); if (!it) return null;
-  const o = ovOf(k, id), c = Object.assign({}, it, { days: [], date: k, at: o.at != null ? o.at : it.at }); delete c.id;
+  const d = defOn(it, k), o = ovOf(k, id), c = Object.assign({}, d, { days: [], date: k, at: o.at != null ? o.at : d.at });
+  ["id", "hist", "from", "until"].forEach(f => delete c[f]);
   return schedAdd(c);
 }
 function schedReschedule(k, id, toDay, at) { schedSkip(k, id, true); const c = schedDuplicate(k, id); if (c) { c.date = toDay; c.at = at; save(); } return c; }
@@ -1501,16 +1523,18 @@ const nextInst = (k = today(), from = nowMin()) => instances(k).filter(x => !x.d
 // S.meds = [{ id, n, dose, withMeal, doctor, start, notes }] · horários = itens "remedio" da agenda (ref = id)
 // dose tomada: D(dia).med[idDoItemDaAgenda] = "HH:MM"
 const medById = id => (S.meds || []).find(m => m.id === id);
-const medItems = id => S.sched.items.filter(x => x.type === "remedio" && x.ref === id);
+const medItems = id => S.sched.items.filter(x => x.type === "remedio" && x.ref === id && live(x));
 const medTimes = id => medItems(id).map(x => x.at).filter(Boolean).sort();
 function medSave(o, times) {
   if (!o.id) delete o.id;
   let m = o.id && medById(o.id);
   if (m) Object.assign(m, o); else { m = Object.assign({ id: uid("m"), start: today() }, o); S.meds.push(m); }
-  // horários: mantém os itens que continuam, cria os novos, remove os que saíram
-  const keep = medItems(m.id);
-  keep.filter(x => !times.includes(x.at)).forEach(x => S.sched.items.splice(S.sched.items.indexOf(x), 1));
-  times.filter(t => !keep.some(x => x.at === t)).forEach(t => S.sched.items.push(schedItem("remedio", m.id, m.n, { at: t, dur: 5 })));
+  // horários: os que continuam ficam; um horário trocado muda a partir de hoje no mesmo item (as doses passadas
+  // apontam para ele); os que saíram deixam a rotina a partir de hoje; os novos começam hoje
+  const k = today(), cur = medItems(m.id), keep = cur.filter(x => x.at && times.includes(x.at));
+  const old = cur.filter(x => !keep.includes(x)).sort((a, b) => toMin(a.at) - toMin(b.at)), add = times.filter(t => !keep.some(x => x.at === t)).sort();
+  old.forEach((x, i) => i < add.length ? schedChange(x, k, { at: add[i], period: "" }) : schedRemove(k, x.id, true));
+  add.slice(old.length).forEach(t => S.sched.items.push(schedItem("remedio", m.id, m.n, { at: t, dur: 5, from: k })));
   medItems(m.id).forEach(x => x.title = m.n);
   save(); return m;
 }
@@ -2382,7 +2406,7 @@ ACT["inst-add"] = () => {
   const date = once ? $("#n-date").value : "";
   if (once && !/^\d{4}-\d\d-\d\d$/.test(date)) return toast("Escolha a data.");
   if (!once && !UI.edit.days.length) return toast("Escolha pelo menos um dia.");
-  schedAdd(Object.assign({ type: t, ref, title, days: once ? [] : UI.edit.days.slice(), date }, p));
+  schedAdd(Object.assign({ type: t, ref, title, days: once ? [] : UI.edit.days.slice(), date, from: once ? "" : dayK() }, p));
   closeSheet(); render(); toast("Adicionado à agenda.");
 };
 /* ---- metas diárias personalizadas (ex.: passos) ---- */
@@ -3385,11 +3409,11 @@ ACT["li-save"] = b => listSave(b.dataset.k, +b.dataset.i);
 // subir/descer pelo painel de edição (acessível sem arrastar); o painel continua aberto no item movido
 ACT["li-move"] = b => { const k = b.dataset.k, i = +b.dataset.i, j = i + num(b.dataset.d); listMove(k, i, j); if (j >= 0 && j < LISTS[k]().length) (k === "habits" ? habitSheet : suppSheet)(j); };
 // o horário do suplemento é um item da agenda (cria, atualiza ou deixa flexível pela manhã)
-const suppItem = id => S.sched.items.find(x => x.type === "suplemento" && x.ref === id);
+const suppItem = id => S.sched.items.find(x => x.type === "suplemento" && x.ref === id && live(x));
 const suppAt = id => (suppItem(id) || {}).at || "";
 const suppWhen = id => { const x = suppItem(id); return !x ? "fora da agenda" : x.at ? "às " + x.at : PERIODS[x.period].toLowerCase(); };
-const habitWhen = id => { const x = S.sched.items.find(y => y.type === "habito" && y.ref === id); return !x ? "o dia todo" : x.at ? "às " + x.at : PERIODS[x.period].toLowerCase(); };
-function suppSync(s, at) { const x = suppItem(s.id); if (x) Object.assign(x, { at, period: at ? "" : "manha", title: s.n }); else S.sched.items.push(schedItem("suplemento", s.id, s.n, { at, period: at ? "" : "manha", dur: 5 })); }
+const habitWhen = id => { const x = S.sched.items.find(y => y.type === "habito" && y.ref === id && live(y)); return !x ? "o dia todo" : x.at ? "às " + x.at : PERIODS[x.period].toLowerCase(); };
+function suppSync(s, at) { const x = suppItem(s.id); if (x) { schedChange(x, today(), { at, period: at ? "" : "manha" }); x.title = s.n; } else S.sched.items.push(schedItem("suplemento", s.id, s.n, { at, period: at ? "" : "manha", dur: 5, from: today() })); }
 ACT["li-del"] = b => {
   const k = b.dataset.k, i = +b.dataset.i, a = LISTS[k](), it = a[i]; if (!it) return;
   if (k === "habits" && it.id === S.settings.rule1) return toast("Escolha outra Regra nº 1 antes de remover este hábito.");

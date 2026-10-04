@@ -31,7 +31,7 @@ ACT["inst-add"] = () => {
   const date = once ? $("#n-date").value : "";
   if (once && !/^\d{4}-\d\d-\d\d$/.test(date)) return toast("Escolha a data.");
   if (!once && !UI.edit.days.length) return toast("Escolha pelo menos um dia.");
-  schedAdd(Object.assign({ type: t, ref, title, days: once ? [] : UI.edit.days.slice(), date }, p));
+  schedAdd(Object.assign({ type: t, ref, title, days: once ? [] : UI.edit.days.slice(), date, from: once ? "" : dayK() }, p));
   closeSheet(); render(); toast("Adicionado à agenda.");
 };
 /* ---- metas diárias personalizadas (ex.: passos) ---- */
