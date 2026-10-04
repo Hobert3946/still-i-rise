@@ -2,7 +2,7 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-PObQW+gfmeNQODWv3uoG9zAyhXISNlthI3s36qjW/uk='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fe8Uq6fddAj40+4eBhWJ3RJ3Juwas6q384a6mkx2ke8=' 'sha256-BK/fNN5oXqkLM0GCPRsE9y7O668/x+ILat5z5g7Lf2g='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://upload.wikimedia.org https://thumb.wikimedia.org; connect-src 'self' https://generativelanguage.googleapis.com https://api.github.com https://gist.githubusercontent.com https://pt.wikipedia.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Still I Rise</title>
 <meta name="description" content="Still I Rise: treino, alimentação e hábitos para manter o peso perdido.">
@@ -173,6 +173,7 @@ body.lock .tabbar{pointer-events:none}
 .sheet-x{position:absolute;top:10px;right:10px}
 /* HOJE */
 .agora{position:relative;padding:22px 20px 16px;border-radius:var(--r-l);background:radial-gradient(120% 100% at 0% 0%,rgba(139,124,246,.28),transparent 60%),radial-gradient(100% 90% at 100% 100%,rgba(91,140,255,.2),transparent 60%),var(--surface);border:1px solid rgba(139,124,246,.3);box-shadow:var(--shadow);animation:rise var(--t3) var(--ease) both}
+.ag-min{position:absolute;top:8px;right:8px;color:var(--muted)}.agora .ag-kick{padding-right:40px}
 .ag-kick,.kick{font:700 12px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
 .ag-t{font:700 28px/1.12 var(--f-display);letter-spacing:-.025em;margin:6px 0 6px}
 .ag-p{color:var(--muted);font-size:15.5px;margin-bottom:14px}
@@ -282,12 +283,12 @@ details.supp>summary,details.tr>summary{gap:8px;min-height:64px}details.supp sum
 .font-op b{font-size:16px}.font-op small{color:var(--muted);font-size:13px}
 body.has-wall .block,body.has-wall .align{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 /* hero de frases */
-.hero{position:relative;overflow:hidden;padding:26px 20px 14px;border-radius:var(--r-l);text-align:center;background:radial-gradient(90% 80% at 50% 0%,rgba(139,124,246,.45),transparent 70%),radial-gradient(80% 70% at 100% 100%,rgba(91,140,255,.35),transparent 70%),var(--surface);border:1px solid rgba(139,124,246,.35);box-shadow:var(--shadow);animation:rise var(--t3) var(--ease) both}
-.hero-av{position:relative;width:96px;height:96px;margin:0 auto 14px;border-radius:50%;padding:3px;background:linear-gradient(135deg,var(--accent),var(--blue));box-shadow:0 0 32px rgba(139,124,246,.55)}
-.hero-av span,.hero-av img{position:absolute;inset:3px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font:700 30px var(--f-display);color:var(--accent-ink);object-fit:cover;width:calc(100% - 6px);height:calc(100% - 6px)}
-.hero-q{font:700 22px/1.3 var(--f-display);letter-spacing:-.015em;margin:0}
-.hero-a{margin-top:10px;color:var(--accent-ink);font-weight:600;font-size:14.5px}
-.hero-next{margin-top:8px}
+.hero{position:relative;overflow:hidden;display:grid;grid-template-columns:52px 1fr;column-gap:14px;align-items:start;padding:16px;border-radius:var(--r);text-align:left;background:radial-gradient(90% 80% at 0% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%),var(--surface);border:1px solid var(--line)}
+.hero-av{position:relative;grid-row:span 3;width:52px;height:52px;border-radius:50%;padding:2px;background:linear-gradient(135deg,var(--accent),var(--blue))}
+.hero-av span,.hero-av img{position:absolute;inset:2px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font:700 17px var(--f-display);color:var(--accent-ink);object-fit:cover;width:calc(100% - 4px);height:calc(100% - 4px)}
+.hero-q{font:600 17px/1.4 var(--f-display);letter-spacing:-.01em;margin:0}
+.hero-a{margin-top:6px;color:var(--accent-ink);font-weight:600;font-size:14px}
+.hero-next{justify-self:start;margin:6px 0 0 -14px}
 .ag-pill{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:10px 16px;border-radius:999px;background:var(--surface);border:1px solid rgba(139,124,246,.35);text-align:left}
 .ag-pill .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);flex:none}
 .hero-av img[hidden]{display:none}
@@ -2307,7 +2308,7 @@ function migrateV1(o, keepSecrets = true) {
   const p = mergeProfile(o);
   p.id = "p1";
   p.profile.avatar = true;
-  return { v: 2, active: "p1", theme: st.theme || "auto", profiles: { p1: p } };
+  return { v: 2, active: "p1", theme: st.theme || "auto", ui: { agoraMin: false, hints: {} }, profiles: { p1: p } };
 }
 function mergeRoot(o) {
   const r = {
@@ -2317,6 +2318,7 @@ function mergeRoot(o) {
     wall: o.wall || "none",
     accent: o.accent || "padrao",
     font: o.font || "padrao",
+    ui: Object.assign({ agoraMin: false, hints: {} }, o.ui),
     profiles: {}
   };
   Object.entries(o.profiles || {}).forEach(([id, p]) => {
@@ -2337,6 +2339,22 @@ const useProfile = id => {
   S = R.profiles[id];
 };
 
+function profileCreate(name, base) {
+  const p = newProfile(name, base);
+  R.profiles[p.id] = p;
+  useProfile(p.id);
+  save();
+  return p;
+}
+function profileDelete(id) {
+  if (Object.keys(R.profiles).length < 2 || !R.profiles[id]) return false;
+  delete R.profiles[id];
+  if (R.active === id) useProfile(Object.keys(R.profiles)[0]);
+  save();
+  return true;
+}
+
+/* ============ PERSISTÊNCIA: localStorage (camada 1) + espelho em IndexedDB (camada 2) ============ */
 const IDB = {
   // v2 do banco: "kv" (espelho do estado) + "photos" (fotos de progresso, só no aparelho)
   // uma conexão só, reaproveitada; se falhar ou o navegador fechar, a próxima chamada abre de novo
@@ -2429,20 +2447,6 @@ async function loadState() {
   useProfile(R.active);
   saveSec();
   save();
-}
-function profileCreate(name, base) {
-  const p = newProfile(name, base);
-  R.profiles[p.id] = p;
-  useProfile(p.id);
-  save();
-  return p;
-}
-function profileDelete(id) {
-  if (Object.keys(R.profiles).length < 2 || !R.profiles[id]) return false;
-  delete R.profiles[id];
-  if (R.active === id) useProfile(Object.keys(R.profiles)[0]);
-  save();
-  return true;
 }
 
 /* ============ REGRAS: dia, hábitos, sequências, ausência e metas (Mifflin-St Jeor) ============ */
@@ -4945,17 +4949,21 @@ const dataAttrs = o =>
   Object.entries(o || {})
     .map(([k, v]) => `data-${k}="${esc(v)}"`)
     .join(" ");
+// o card Agora abre a tela. Quem prefere pode recolher (fica no aparelho), mas o que é urgente aparece sempre aberto
+const AGORA_URGENT = 85;
 function agoraHTML() {
   const c = agoraCard();
   if (c.pri <= 1) return ""; // "a seguir"/"dia fechado" já estão na lista A seguir: não ocupar a tela
-  if (!UI.agoraOpen)
-    return `<button class="ag-pill" data-act="agora-toggle" aria-expanded="false"><span class="dot"></span><span class="grow"><b>Agora:</b> ${esc(c.title)}</span>${ic("right")}</button>`;
-  return `<section class="agora" aria-labelledby="ag-t"><div class="ag-kick">${esc(c.kick)}</div><h2 class="ag-t" id="ag-t">${esc(c.title)}</h2>${c.text ? `<p class="ag-p">${esc(c.text)}</p>` : ""}
+  const urgent = c.pri >= AGORA_URGENT;
+  if (R.ui.agoraMin && !urgent)
+    return `<button class="ag-pill" data-act="agora-toggle" aria-expanded="false"><span class="dot"></span><span class="grow"><b>Agora:</b> ${esc(c.title)}</span>${ic("down")}</button>`;
+  return `<section class="agora" aria-labelledby="ag-t">${urgent ? "" : `<button class="icon-btn ag-min" data-act="agora-toggle" aria-expanded="true" aria-label="Recolher o card Agora">${ic("up")}</button>`}<div class="ag-kick">${esc(c.kick)}</div><h2 class="ag-t" id="ag-t">${esc(c.title)}</h2>${c.text ? `<p class="ag-p">${esc(c.text)}</p>` : ""}
     <button class="btn solid xl full" data-act="${c.act}" ${dataAttrs(c.data)}>${esc(c.label)}</button>
     <div class="ag-alt">${c.alt ? `<button class="btn ghost" data-act="${c.alt[0]}" ${dataAttrs(c.alt[2])}>${c.alt[1]}</button>` : ""}${c.pri > 1 ? `<button class="btn ghost" data-act="snooze" data-id="${c.id}">Depois</button>` : ""}</div></section>`;
 }
 ACT["agora-toggle"] = () => {
-  UI.agoraOpen = !UI.agoraOpen;
+  R.ui.agoraMin = !R.ui.agoraMin;
+  save();
   render();
 };
 ACT.snooze = b => {
@@ -5012,7 +5020,8 @@ function footHTML() {
   const nm = MILESTONES.map(milestone).find(m => !m.ok);
   return `<section class="foot">${fold("Dica e próximo marco", `<p class="small"><b>Dica do dia:</b> ${tipOfDay()}</p>${nm ? `<p class="small"><b>Próximo marco:</b> ${nm.nm} · ${nm.lbl}. <span class="muted">${nm.txt}</span></p>` : ""}`, false, "foot")}</section>`;
 }
-VIEWS.hoje = () => `${heroHTML()}${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${footHTML()}`;
+// primeiro o que fazer agora; a frase do dia vem no fim, compacta
+VIEWS.hoje = () => `${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${heroHTML()}${footHTML()}`;
 ACT["quote-next"] = () => {
   UI.qOff++;
   render();
@@ -5094,7 +5103,7 @@ function heroHTML() {
   setTimeout(heroHydrate, 0);
   return `<section class="hero"><div class="hero-av" aria-hidden="true"><span>${esc(initials(n))}</span><img alt="" data-author="${esc(n)}" hidden></div>
     <blockquote class="hero-q">“${esc(ft)}”</blockquote><div class="hero-a">— ${esc(fa)}</div>
-    <button class="btn ghost hero-next" data-act="quote-next">Outra frase ${ic("right")}</button></section>`;
+    <button class="btn sm ghost hero-next" data-act="quote-next">Outra frase ${ic("right")}</button></section>`;
 }
 function heroHydrate() {
   $$("img[data-author]").forEach(async img => {

@@ -19,6 +19,7 @@ const JS = [
   "data/suplementos",
   "data/tratamento",
   "core/store",
+  "core/persist",
   "core/rules",
   "domain/progressao",
   "domain/treino",

@@ -17,7 +17,7 @@ module.exports = async T => {
   T.ok(!a.q(".agora"), "regressão: sem ação pendente o card grande não ocupa a tela");
   T.ok(
     a.q(".hero .hero-q") && a.q(".hero-av") && /—/.test(a.q(".hero").textContent),
-    "Hoje abre com a frase em destaque e o autor"
+    "Hoje mostra a frase do dia e o autor"
   );
   const q1 = a.q(".hero-q").textContent;
   a.click(".hero-next");
@@ -42,7 +42,11 @@ module.exports = async T => {
   );
   T.ok(top().act === "dose-log" && /Metformina/.test(top().title), "dose atrasada é a ação principal");
   a.ev("render()");
-  a.click(".ag-pill");
+  const kids = [...a.q("#view").children].map(e => e.className);
+  T.ok(
+    a.q("#view").firstElementChild.classList.contains("agora") && kids.indexOf("hero") > kids.indexOf("align"),
+    "o card Agora abre a tela, aberto; a frase vem depois"
+  );
   a.click(".agora .btn.solid");
   T.ok(ev("dosesLate().length") === 0, "um toque no card registra a dose");
   T.ok(top().act === "meal-open" && /Registrar almoço/.test(top().label), "depois vem a refeição do momento");
@@ -77,10 +81,18 @@ module.exports = async T => {
   );
   ev(`S.sched.items.push(schedItem("remedio", S.meds[0].id, "Metformina", { at: "${hhmm(Math.max(0, now - 40))}" }))`);
   ev("go('hoje')");
-  ev("UI.agoraOpen = false; render()");
-  T.ok(a.q(".ag-pill") && !a.q(".agora"), "card Agora fica recolhido até tocar");
+  T.ok(a.q(".agora") && !a.q(".ag-min"), "urgente (dose atrasada): sempre aberto, sem botão de recolher");
+  ev(
+    "S.sched.items = S.sched.items.filter(x => x.type !== 'remedio'); DW(today()).water = 0; UI.snooze = {}; render()"
+  );
+  T.ok(ev("agoraCard().pri") < 85 && a.q(".ag-min"), "card comum pode ser recolhido");
+  a.click(".ag-min");
+  T.ok(
+    a.q(".ag-pill") && !a.q(".agora") && ev("R.ui.agoraMin") === true,
+    "recolher vira uma linha e fica salvo no aparelho"
+  );
   a.click(".ag-pill");
-  T.ok(a.q(".agora .btn.solid"), "tocar abre o card");
+  T.ok(a.q(".agora .btn.solid") && ev("R.ui.agoraMin") === false, "tocar abre o card de novo");
   T.ok(!a.errors.length, "sem erros de script " + (a.errors[0] || ""));
   a.close();
 };

@@ -9,17 +9,21 @@ const dataAttrs = o =>
   Object.entries(o || {})
     .map(([k, v]) => `data-${k}="${esc(v)}"`)
     .join(" ");
+// o card Agora abre a tela. Quem prefere pode recolher (fica no aparelho), mas o que é urgente aparece sempre aberto
+const AGORA_URGENT = 85;
 function agoraHTML() {
   const c = agoraCard();
   if (c.pri <= 1) return ""; // "a seguir"/"dia fechado" já estão na lista A seguir: não ocupar a tela
-  if (!UI.agoraOpen)
-    return `<button class="ag-pill" data-act="agora-toggle" aria-expanded="false"><span class="dot"></span><span class="grow"><b>Agora:</b> ${esc(c.title)}</span>${ic("right")}</button>`;
-  return `<section class="agora" aria-labelledby="ag-t"><div class="ag-kick">${esc(c.kick)}</div><h2 class="ag-t" id="ag-t">${esc(c.title)}</h2>${c.text ? `<p class="ag-p">${esc(c.text)}</p>` : ""}
+  const urgent = c.pri >= AGORA_URGENT;
+  if (R.ui.agoraMin && !urgent)
+    return `<button class="ag-pill" data-act="agora-toggle" aria-expanded="false"><span class="dot"></span><span class="grow"><b>Agora:</b> ${esc(c.title)}</span>${ic("down")}</button>`;
+  return `<section class="agora" aria-labelledby="ag-t">${urgent ? "" : `<button class="icon-btn ag-min" data-act="agora-toggle" aria-expanded="true" aria-label="Recolher o card Agora">${ic("up")}</button>`}<div class="ag-kick">${esc(c.kick)}</div><h2 class="ag-t" id="ag-t">${esc(c.title)}</h2>${c.text ? `<p class="ag-p">${esc(c.text)}</p>` : ""}
     <button class="btn solid xl full" data-act="${c.act}" ${dataAttrs(c.data)}>${esc(c.label)}</button>
     <div class="ag-alt">${c.alt ? `<button class="btn ghost" data-act="${c.alt[0]}" ${dataAttrs(c.alt[2])}>${c.alt[1]}</button>` : ""}${c.pri > 1 ? `<button class="btn ghost" data-act="snooze" data-id="${c.id}">Depois</button>` : ""}</div></section>`;
 }
 ACT["agora-toggle"] = () => {
-  UI.agoraOpen = !UI.agoraOpen;
+  R.ui.agoraMin = !R.ui.agoraMin;
+  save();
   render();
 };
 ACT.snooze = b => {
@@ -76,7 +80,8 @@ function footHTML() {
   const nm = MILESTONES.map(milestone).find(m => !m.ok);
   return `<section class="foot">${fold("Dica e próximo marco", `<p class="small"><b>Dica do dia:</b> ${tipOfDay()}</p>${nm ? `<p class="small"><b>Próximo marco:</b> ${nm.nm} · ${nm.lbl}. <span class="muted">${nm.txt}</span></p>` : ""}`, false, "foot")}</section>`;
 }
-VIEWS.hoje = () => `${heroHTML()}${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${footHTML()}`;
+// primeiro o que fazer agora; a frase do dia vem no fim, compacta
+VIEWS.hoje = () => `${agoraHTML()}${alignHTML()}${metersHTML()}${nextHTML()}${heroHTML()}${footHTML()}`;
 ACT["quote-next"] = () => {
   UI.qOff++;
   render();

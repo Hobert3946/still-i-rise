@@ -46,7 +46,7 @@ function heroHTML() {
   setTimeout(heroHydrate, 0);
   return `<section class="hero"><div class="hero-av" aria-hidden="true"><span>${esc(initials(n))}</span><img alt="" data-author="${esc(n)}" hidden></div>
     <blockquote class="hero-q">“${esc(ft)}”</blockquote><div class="hero-a">— ${esc(fa)}</div>
-    <button class="btn ghost hero-next" data-act="quote-next">Outra frase ${ic("right")}</button></section>`;
+    <button class="btn sm ghost hero-next" data-act="quote-next">Outra frase ${ic("right")}</button></section>`;
 }
 function heroHydrate() {
   $$("img[data-author]").forEach(async img => {
