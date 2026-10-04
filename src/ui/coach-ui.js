@@ -5,7 +5,10 @@ const KEY_NOTE = `<p class="muted small">A chave fica só neste aparelho e não 
 function auraSetup() {
   return sec(
     "Chave API do Gemini",
-    `<input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui" aria-label="Chave API do Gemini">
+    `<ol class="steps"><li>Abra o <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> e entre com sua conta Google.</li>
+      <li>Toque no botão de criar chave (<b>Create API key</b>).</li><li>Copie a chave e cole no campo abaixo.</li></ol>
+    <p class="muted xs">Confira na página do Google os limites de uso e se há custo para a sua conta.</p>
+    <input class="field" id="gemKey" type="password" autocomplete="off" placeholder="Cole a chave aqui" aria-label="Chave API do Gemini">
     <label class="lbl" for="gemModel">Modelo</label>${gemSelect()}<button class="btn solid full" data-act="gem-save">Conectar IA</button>${KEY_NOTE}`
   );
 }

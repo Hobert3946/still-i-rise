@@ -60,6 +60,8 @@ select.field{appearance:none}
 .li:last-child{border-bottom:0}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--surface2);font-size:12.5px;font-weight:600}
 .pill.ok{color:var(--ok)}.pill.acc{color:var(--accent-ink)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}
+ol.steps{padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:14.5px}
+ol.steps a{color:var(--accent-ink);font-weight:600}
 .hint{display:flex;gap:10px;align-items:center;padding:10px 6px 10px 14px;border-radius:var(--r-s);background:color-mix(in srgb,var(--accent) 9%,var(--surface2));font-size:14px;line-height:1.4}
 .hint>.icon{color:var(--accent-ink);align-self:flex-start;margin-top:2px}
 .hint.tip{border:1px dashed color-mix(in srgb,var(--accent) 45%,transparent)}

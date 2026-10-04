@@ -45,6 +45,15 @@ function cloudFold() {
     "Nuvem (GitHub Gist, automático)",
     `<p class="muted small">Grava um gist secreto no seu GitHub a cada alteração (todos os perfis). Gist secreto não é privado: quem tiver o link consegue ler. Com uma senha, os dados vão criptografados e só abrem com ela. Token, Gist ID e senha ficam só neste aparelho.${at ? ` Última cópia: ${new Date(at).toLocaleString("pt-BR")}.` : ""}</p>
     ${SEC.ghConflict ? banner("warn", "info", "Cópia automática parada", "A nuvem tem dados que este aparelho ainda não baixou. Escolha qual versão vale.", `<div class="sig-act"><button class="btn sm solid" data-act="cloud-resolve">Escolher</button></div>`) : ""}
+    ${fold(
+      "Passo a passo para ligar a nuvem",
+      `<ol class="steps"><li>Crie uma conta grátis no <a href="https://github.com/signup" target="_blank" rel="noopener noreferrer">GitHub</a>, se ainda não tiver.</li>
+      <li>Abra <a href="https://github.com/settings/tokens/new?scopes=gist&description=Still%20I%20Rise" target="_blank" rel="noopener noreferrer">este link</a>: ele já vem com a permissão "gist" marcada.</li>
+      <li>Escolha a validade, toque em <b>Generate token</b>, copie o código e cole no campo Token abaixo.</li>
+      <li>No primeiro aparelho, deixe o Gist ID vazio e toque em Salvar: o app cria. Nos outros aparelhos, cole o mesmo Gist ID e toque em Baixar da nuvem.</li></ol>`,
+      !SEC.ghToken,
+      "nuvem-passos"
+    )}
     <label class="lbl" for="ghToken">Token pessoal (GitHub PAT, escopo "gist")</label><input class="field" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off" value="${SEC.ghToken ? MASK : ""}">
     <label class="lbl" for="ghGistId">Gist ID (o app cria se estiver vazio)</label><input class="field" id="ghGistId" type="text" placeholder="Ex.: 5b4e72a..." autocomplete="off" value="${esc(SEC.ghGistId || "")}">
     <label class="lbl" for="ghPass">Senha da cópia (opcional, criptografa os dados)</label><input class="field" id="ghPass" type="password" placeholder="Sem senha" autocomplete="new-password" value="${SEC.ghPass ? MASK : ""}">
