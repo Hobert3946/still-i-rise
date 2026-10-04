@@ -10,7 +10,10 @@ module.exports = async T => {
   a.ev("R.theme='dark'; applyTheme()");
   T.ok(a.ev("R.accent") === "ouro" && st().getPropertyValue("--accent") === "#D4AF6A", "ouro no escuro");
   a.ev("R.theme='light'; applyTheme()");
-  T.ok(st().getPropertyValue("--accent") === "#9C7328", "ouro troca de tom no claro");
+  T.ok(
+    st().getPropertyValue("--accent") === "#966E26",
+    "ouro troca de tom no claro (tom que passa AA com texto branco)"
+  );
   a.click('[data-act=look-font][data-v="elegante"]');
   T.ok(
     /Fraunces/.test(st().getPropertyValue("--f-display")) && a.q("#font-elegante"),

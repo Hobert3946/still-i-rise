@@ -27,7 +27,7 @@
 .pips{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .pip{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:52px;min-height:56px}
 .pip i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font:700 14px var(--f-display);font-style:normal;border:2px solid var(--line2);transition:all var(--t2) var(--spring)}
-.pip small{font-size:11px;color:var(--muted)}
+.pip small{font-size:12px;color:var(--muted)}
 .pip.cur i{border-color:var(--hue);box-shadow:0 0 0 4px color-mix(in srgb,var(--hue) 25%,transparent)}
 .pip.done i{background:var(--hue);border-color:var(--hue);color:#0D0D0F}
 .pip.pop i{animation:kpop 480ms var(--spring)}

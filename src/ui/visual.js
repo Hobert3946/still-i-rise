@@ -3,11 +3,11 @@
 const PALETTES = [
   ["padrao", "Violeta", 0, ["#8B7CF6", "#B4A8FF", "#B4A8FF", "#5B8CFF"], ["#6A55E0", "#8B7CF6", "#5B46D6", "#2F6FE0"]],
   ["azul", "Azul", 0, ["#4F8BFF", "#8FB4FF", "#8FB4FF", "#38BDF8"], ["#2563EB", "#4F8BFF", "#1D4FC4", "#0E8FC7"]],
-  ["verde", "Verde", 0, ["#34C98A", "#7FE0B5", "#7FE0B5", "#2BB3A3"], ["#15935F", "#34C98A", "#0F7A4E", "#0E8A80"]],
-  ["laranja", "Laranja", 0, ["#FF8A3D", "#FFB27D", "#FFB27D", "#F2566B"], ["#D9621A", "#FF8A3D", "#B54E10", "#D63A50"]],
-  ["rosa", "Rosa", 0, ["#F0609E", "#F79BC2", "#F79BC2", "#B06CF0"], ["#D23C7E", "#F0609E", "#B02A67", "#8B45D0"]],
+  ["verde", "Verde", 0, ["#34C98A", "#7FE0B5", "#7FE0B5", "#2BB3A3"], ["#138456", "#34C98A", "#0F7A4E", "#0E8A80"]],
+  ["laranja", "Laranja", 0, ["#FF8A3D", "#FFB27D", "#FFB27D", "#F2566B"], ["#BF5617", "#FF8A3D", "#B54E10", "#D63A50"]],
+  ["rosa", "Rosa", 0, ["#F0609E", "#F79BC2", "#F79BC2", "#B06CF0"], ["#CE3B7B", "#F0609E", "#B02A67", "#8B45D0"]],
   ["grafite", "Grafite", 0, ["#8C93A3", "#C3C8D2", "#C3C8D2", "#5E6677"], ["#4A5263", "#6B7384", "#3A4150", "#2A303C"]],
-  ["ouro", "Ouro", 1, ["#D4AF6A", "#EBD3A0", "#E3C78E", "#A8793A"], ["#9C7328", "#C09A55", "#7E5C1C", "#6E4E18"]],
+  ["ouro", "Ouro", 1, ["#D4AF6A", "#EBD3A0", "#E3C78E", "#A8793A"], ["#966E26", "#C09A55", "#7E5C1C", "#6E4E18"]],
   [
     "esmeralda",
     "Esmeralda",
@@ -22,7 +22,7 @@ const PALETTES = [
     ["#5A7BD8", "#A3B6EC", "#A3B6EC", "#C9A45C"],
     ["#1F3A8A", "#3E5BB8", "#1A3175", "#8C6A2A"]
   ],
-  ["bordo", "Bordô", 1, ["#C2566E", "#E49AAB", "#E49AAB", "#D4AF6A"], ["#7A1F35", "#A33A52", "#6A1A2E", "#9C7328"]],
+  ["bordo", "Bordô", 1, ["#C45B72", "#E49AAB", "#E49AAB", "#D4AF6A"], ["#7A1F35", "#A33A52", "#6A1A2E", "#9C7328"]],
   [
     "rosegold",
     "Rose gold",
